@@ -1,0 +1,178 @@
+import json
+
+import pytest
+from evdev import ecodes as E
+
+from naga_config.config import (
+    ComboAction, ConfigStore, DefaultAction, DisabledAction, DpiStageAction,
+    HypershiftAction, KeyAction, LightingZone, Macro, MacroAction, Profile,
+    Settings, DelayStep, KeyStep, ButtonStep, default_profile, new_profile_id,
+    validate,
+)
+from naga_config.hw.buttons import ButtonId
+
+
+def full_profile():
+    p = default_profile()
+    p.id, p.name = "gaming", "Gaming"
+    p.standard[ButtonId.SIDE_1] = KeyAction(E.KEY_A)
+    p.standard[ButtonId.SIDE_2] = ComboAction([E.KEY_LEFTCTRL, E.KEY_C])
+    p.standard[ButtonId.SIDE_3] = MacroAction("m1", "repeat_n", 3)
+    p.standard[ButtonId.SIDE_4] = DisabledAction()
+    p.standard[ButtonId.SIDE_12] = HypershiftAction()
+    p.hypershift[ButtonId.SIDE_1] = KeyAction(E.KEY_B)
+    p.dpi_stages = [(800, 800), (1600, 1600)]
+    p.active_stage = 2
+    p.poll_rate = 500
+    p.lighting = {"logo": LightingZone("static", (1, 2, 3), 200)}
+    p.scroll_profile = 1
+    return p
+
+
+def test_default_profile_leaves_device_untouched():
+    p = default_profile()
+    assert (p.id, p.name) == ("default", "Standard")
+    assert p.dpi_stages == [] and p.active_stage == 0
+    assert p.poll_rate is None and p.lighting == {} and p.scroll_profile is None
+    assert p.hypershift == {}
+    assert p.standard[ButtonId.TOP_1] == DpiStageAction("up")
+    assert p.standard[ButtonId.TOP_2] == DpiStageAction("down")
+    assert set(p.standard) == set(ButtonId)
+    assert p.standard[ButtonId.LEFT] == DefaultAction()
+    assert validate(p) == []
+
+
+def test_profile_roundtrip(tmp_path):
+    store = ConfigStore(tmp_path)
+    p = full_profile()
+    store.save_profile(p)
+    assert store.load_profile("gaming") == p
+    assert Profile.from_dict(json.loads(json.dumps(p.to_dict()))) == p
+
+
+def test_profile_file_is_pretty_utf8(tmp_path):
+    store = ConfigStore(tmp_path)
+    p = default_profile()
+    p.name = "Größe"
+    store.save_profile(p)
+    text = (tmp_path / "profiles" / "default.json").read_text(encoding="utf-8")
+    assert "Größe" in text and "\n  " in text
+    assert not list((tmp_path / "profiles").glob("*.tmp"))
+
+
+def test_left_click_lockout_rejected():
+    p = default_profile()
+    p.standard[ButtonId.LEFT] = DisabledAction()
+    assert "Linksklick nicht erreichbar" in validate(p)
+
+
+def test_left_click_remapped_elsewhere_ok():
+    p = default_profile()
+    p.standard[ButtonId.LEFT] = DisabledAction()
+    p.standard[ButtonId.SIDE_1] = KeyAction(E.BTN_LEFT)
+    assert validate(p) == []
+
+
+def test_two_hypershift_keys_rejected():
+    p = default_profile()
+    p.standard[ButtonId.SIDE_1] = HypershiftAction()
+    p.standard[ButtonId.SIDE_2] = HypershiftAction()
+    assert any("Hypershift" in e for e in validate(p))
+
+
+def test_missing_macro_reported():
+    p = default_profile()
+    p.standard[ButtonId.SIDE_1] = MacroAction("weg", "once")
+    assert "Makro fehlt: weg" in validate(p, {})
+    assert validate(p) == []
+    assert validate(p, {"weg": Macro("weg", "W", [])}) == []
+
+
+@pytest.mark.parametrize("change", [
+    {"dpi_stages": [(100, 100)] * 6, "active_stage": 1},
+    {"dpi_stages": [(50, 100)], "active_stage": 1},
+    {"dpi_stages": [(100, 30001)], "active_stage": 1},
+    {"dpi_stages": [(800, 800)], "active_stage": 0},
+    {"dpi_stages": [(800, 800)], "active_stage": 2},
+    {"poll_rate": 250},
+    {"lighting": {"logo": LightingZone("static", (0, 0, 0), 256)}},
+    {"lighting": {"logo": LightingZone("static", (0, 256, 0), 10)}},
+])
+def test_invalid_values_rejected(change):
+    p = default_profile()
+    for k, v in change.items():
+        setattr(p, k, v)
+    assert validate(p)
+
+
+def test_valid_values_accepted():
+    assert validate(full_profile(), {"m1": Macro("m1", "M", [])}) == []
+
+
+def test_corrupt_profile_falls_back(tmp_path):
+    (tmp_path / "profiles").mkdir()
+    (tmp_path / "profiles/x.json").write_text("{kaputt")
+    s = ConfigStore(tmp_path)
+    assert [p.id for p in s.list_profiles()] == ["default"]
+    assert s.errors and "x.json" in s.errors[0]
+    assert not (tmp_path / "profiles/default.json").exists()
+
+
+def test_unknown_action_type_is_corrupt(tmp_path):
+    s = ConfigStore(tmp_path)
+    p = default_profile()
+    s.save_profile(p)
+    d = p.to_dict()
+    d["id"] = "evil"
+    d["standard"]["side_1"] = {"type": "zauber"}
+    (tmp_path / "profiles/evil.json").write_text(json.dumps(d))
+    s2 = ConfigStore(tmp_path)
+    assert [x.id for x in s2.list_profiles()] == ["default"]
+    assert any("evil.json" in e for e in s2.errors)
+
+
+def test_corrupt_settings_and_macros(tmp_path):
+    (tmp_path / "settings.json").write_text("nope")
+    (tmp_path / "macros.json").write_text("[")
+    s = ConfigStore(tmp_path)
+    assert s.load_settings() == Settings(active_profile="default")
+    assert s.load_macros() == {}
+    assert any("settings.json" in e for e in s.errors)
+    assert any("macros.json" in e for e in s.errors)
+
+
+def test_settings_and_macros_roundtrip(tmp_path):
+    s = ConfigStore(tmp_path)
+    assert s.load_settings() == Settings(active_profile="default")
+    s.save_settings(Settings("gaming", 20))
+    assert s.load_settings() == Settings("gaming", 20)
+    m = {"m1": Macro("m1", "Test", [KeyStep(E.KEY_A, True), DelayStep(10),
+                                    ButtonStep(E.BTN_LEFT, False)])}
+    s.save_macros(m)
+    assert s.load_macros() == m
+    assert s.errors == []
+
+
+def test_delete_profile(tmp_path):
+    s = ConfigStore(tmp_path)
+    s.save_profile(full_profile())
+    s.delete_profile("gaming")
+    assert [p.id for p in s.list_profiles()] == ["default"]
+
+
+def test_import_with_existing_id_gets_new_id(tmp_path):
+    s = ConfigStore(tmp_path)
+    s.save_profile(full_profile())
+    out = tmp_path / "exp.json"
+    s.export_profile("gaming", out)
+    imp = s.import_profile(out)
+    assert imp.id != "gaming" and imp.name == "Gaming"
+    assert s.load_profile(imp.id) == imp
+    assert len(s.list_profiles()) == 2
+
+
+def test_new_profile_id_is_filesystem_safe():
+    a, b = new_profile_id("Mein Süßes Profil!"), new_profile_id("Mein Süßes Profil!")
+    assert a != b
+    assert all(c in "abcdefghijklmnopqrstuvwxyz0123456789-" for c in a)
+    assert new_profile_id("§§§")
