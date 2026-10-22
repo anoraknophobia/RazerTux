@@ -1,0 +1,4 @@
+# naga-config: give the logged-in user access to the Razer Naga V2 Pro and /dev/uinput
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00a7|00a8", TAG+="uaccess"
+SUBSYSTEM=="input", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00a7|00a8", TAG+="uaccess"
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"

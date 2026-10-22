@@ -85,8 +85,7 @@ class HidrawTransport:
         return resp
 
 
-def find_control_hidraw(pid_filter=(0x00A7, 0x00A8)) -> str | None:
-    """Return the hidraw node of the mouse interface (interface 0), or None."""
+def _find_hidraw(interface: str, pid_filter) -> str | None:
     pids = {f"{p:04x}" for p in pid_filter}
     for dev in pyudev.Context().list_devices(subsystem="hidraw"):
         usb_if = dev.find_parent("usb", "usb_interface")
@@ -96,7 +95,18 @@ def find_control_hidraw(pid_filter=(0x00A7, 0x00A8)) -> str | None:
         if (
             usb_dev.attributes.asstring("idVendor").lower() == RAZER_VID
             and usb_dev.attributes.asstring("idProduct").lower() in pids
-            and usb_if.attributes.asstring("bInterfaceNumber") == "00"
+            and usb_if.attributes.asstring("bInterfaceNumber") == interface
         ):
             return dev.device_node
     return None
+
+
+def find_control_hidraw(pid_filter=(0x00A7, 0x00A8)) -> str | None:
+    """Return the hidraw node of the mouse interface (interface 0), or None."""
+    return _find_hidraw("00", pid_filter)
+
+
+def find_vendor_hidraw(pid_filter=(0x00A7, 0x00A8)) -> str | None:
+    """Return the hidraw node of interface 1 (vendor input reports: top
+    buttons in driver mode), or None."""
+    return _find_hidraw("01", pid_filter)

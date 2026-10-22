@@ -1,4 +1,4 @@
-"""Razer Naga V2 Pro: read-only commands.
+"""Razer Naga V2 Pro: read commands plus device mode.
 
 Byte layouts follow OpenRazer (driver/razerchromacommon.c, razermouse_driver.c)
 for USB_DEVICE_ID_RAZER_NAGA_V2_PRO_WIRED/WIRELESS: transaction id 0x1F everywhere.
@@ -27,6 +27,13 @@ class NagaV2Pro:
     def _get(self, cmd_class: int, cmd_id: int, args: bytes, size: int) -> bytes:
         report = build_report(cmd_class, cmd_id, args, size=size, txn=TXN)
         return self._t.query(report).args
+
+    def device_mode(self) -> int:
+        """0x00 normal, 0x03 driver mode (top buttons as vendor reports)."""
+        return self._get(0x00, 0x84, b"", 0x02)[0]
+
+    def set_device_mode(self, mode: int) -> None:
+        self._get(0x00, 0x04, bytes([mode, 0x00]), 0x02)
 
     def firmware(self) -> str:
         a = self._get(0x00, 0x81, b"", 0x02)

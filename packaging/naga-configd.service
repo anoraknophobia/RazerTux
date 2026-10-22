@@ -1,0 +1,11 @@
+[Unit]
+Description=naga-config Daemon (Razer Naga V2 Pro)
+
+[Service]
+Type=dbus
+BusName=io.github.nagaconfig
+ExecStart=/usr/bin/naga-configd
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
