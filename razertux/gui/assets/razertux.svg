@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>RazerTux</title>
+  <!-- Original penguin silhouette for RazerTux (not derived from Larry Ewing's Tux). -->
+  <defs>
+    <radialGradient id="rt-eye" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#C8FFB8"/>
+      <stop offset="0.45" stop-color="#44D62C"/>
+      <stop offset="1" stop-color="#2E9E1C"/>
+    </radialGradient>
+  </defs>
+  <!-- feet -->
+  <ellipse cx="23" cy="59.5" rx="7.5" ry="3.2" fill="#3A3A3A"/>
+  <ellipse cx="41" cy="59.5" rx="7.5" ry="3.2" fill="#3A3A3A"/>
+  <!-- body, head and flippers: one dark silhouette with a thin lighter rim -->
+  <path fill="#1E1E1E" stroke="#4A4A4A" stroke-width="1.5" stroke-linejoin="round"
+        d="M32 4.5
+           C40.5 4.5 46 11 46 19
+           C46 22.5 45 25.5 44 27.5
+           C48 30 51 33 54 39
+           C56 43 57.5 47 56 48.5
+           C54.5 50 52 46.5 50.5 44
+           C51 47 51 50 50 52.5
+           C47.5 58 40.5 60.5 32 60.5
+           C23.5 60.5 16.5 58 14 52.5
+           C13 50 13 47 13.5 44
+           C12 46.5 9.5 50 8 48.5
+           C6.5 47 8 43 10 39
+           C13 33 16 30 20 27.5
+           C19 25.5 18 22.5 18 19
+           C18 11 23.5 4.5 32 4.5 Z"/>
+  <!-- belly -->
+  <path fill="#E9ECE8" d="M32 27
+           C39.5 27 44.5 34 44.5 43
+           C44.5 52 39.5 57.5 32 57.5
+           C24.5 57.5 19.5 52 19.5 43
+           C19.5 34 24.5 27 32 27 Z"/>
+  <!-- green scroll-wheel stripe on the belly -->
+  <rect x="29.6" y="31" width="4.8" height="10" rx="2.4" fill="#44D62C"/>
+  <!-- glowing green eyes -->
+  <ellipse cx="26.2" cy="17.2" rx="3.6" ry="4.2" fill="url(#rt-eye)"/>
+  <ellipse cx="37.8" cy="17.2" rx="3.6" ry="4.2" fill="url(#rt-eye)"/>
+  <!-- beak -->
+  <path fill="#8A8A8A" d="M28.2 23.2 L35.8 23.2 L32 27.6 Z"/>
+</svg>

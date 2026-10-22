@@ -15,9 +15,9 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Signal
 
-BUS_NAME = "io.github.nagaconfig"
-OBJECT_PATH = "/io/github/nagaconfig"
-INTERFACE = "io.github.nagaconfig.Daemon"
+BUS_NAME = "io.github.razertux"
+OBJECT_PATH = "/io/github/razertux"
+INTERFACE = "io.github.razertux.Daemon"
 CALL_TIMEOUT = 5.0
 
 

@@ -1,4 +1,4 @@
-"""Virtual output device ("naga-config virtual") the engine writes to."""
+"""Virtual output device ("RazerTux virtual") the engine writes to."""
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -7,7 +7,9 @@ from typing import Any
 from evdev import UInput
 from evdev import ecodes as E
 
-VIRTUAL_NAME = "naga-config virtual"
+VIRTUAL_NAME = "RazerTux virtual"
+# Never grab our own output, also not the one of a still running old naga-configd.
+VIRTUAL_NAMES = frozenset({VIRTUAL_NAME, "naga-config virtual"})
 
 _RELS = [E.REL_X, E.REL_Y, E.REL_WHEEL, E.REL_HWHEEL, E.REL_WHEEL_HI_RES, E.REL_HWHEEL_HI_RES]
 

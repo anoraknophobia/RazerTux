@@ -1,15 +1,21 @@
-# naga-config
+# RazerTux
 
-> **English:** Linux replacement for Razer Synapse for the Razer Naga V2 Pro: a background
-> service (`naga-configd`), a command line tool (`naga-config`) and a Qt GUI with tray icon
-> (`naga-config-gui`) for button assignments, macros, Hypershift, DPI stages, polling rate,
-> lighting and power settings. Install with `cd packaging && makepkg -si`, then
-> `systemctl --user enable --now naga-configd`. The GUI is available in German, English,
-> Spanish and French (*View → Language*, see below); this README is in German.
+> **Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.**
+> **Not an official Razer product; not affiliated with Razer Inc.**
+> „Razer“ und „Naga“ sind Marken von Razer Inc.; RazerTux nutzt keine Razer-Logos.
 
-Linux-Ersatz für Razer Synapse für die Razer Naga V2 Pro (getestet unter CachyOS/Arch,
-KDE Plasma Wayland). Besteht aus einem Hintergrunddienst (`naga-configd`), einer
-Kommandozeile (`naga-config`) und einer Qt-Oberfläche mit Tray-Symbol (`naga-config-gui`).
+> **English:** RazerTux (formerly *naga-config*) is an unofficial Linux replacement for
+> Razer Synapse, currently for the Razer Naga V2 Pro: a background service (`razertuxd`),
+> a command line tool (`razertux`) and a Qt GUI with tray icon (`razertux-gui`) for button
+> assignments, macros, Hypershift, DPI stages, polling rate, lighting and power settings.
+> Install with `cd packaging && makepkg -si`, then
+> `systemctl --user enable --now razertuxd.service`. The GUI is available in German,
+> English, Spanish and French (*View → Language*, see below); this README is in German.
+
+Inoffizieller Linux-Ersatz für Razer Synapse, derzeit für die Razer Naga V2 Pro (getestet
+unter CachyOS/Arch, KDE Plasma Wayland). Besteht aus einem Hintergrunddienst
+(`razertuxd`), einer Kommandozeile (`razertux`) und einer Qt-Oberfläche mit Tray-Symbol
+(`razertux-gui`). Früherer Name: *naga-config* (siehe „Umstieg von naga-config“).
 
 ## Funktionen
 
@@ -30,31 +36,47 @@ Kommandozeile (`naga-config`) und einer Qt-Oberfläche mit Tray-Symbol (`naga-co
 ```
 cd packaging
 makepkg -si
-systemctl --user enable --now naga-configd
+systemctl --user enable --now razertuxd.service
 ```
 
 Der Dienst startet mit der grafischen Sitzung (`graphical-session.target`) und wird
-außerdem bei Bedarf per D-Bus gestartet. Wer ihn mit einer älteren Version schon aktiviert
-hatte, aktiviert ihn einmal neu: `systemctl --user reenable naga-configd`.
+außerdem bei Bedarf per D-Bus (`io.github.razertux`) gestartet.
 Das Tray-Symbol startet beim Anmelden automatisch
-(`/etc/xdg/autostart/naga-config-tray.desktop`).
-Eine früher von Hand nach `/etc/udev/rules.d/` kopierte Regel `70-naga-config.rules`
-bitte entfernen; das Paket installiert sie nach `/usr/lib/udev/rules.d/`.
+(`/etc/xdg/autostart/razertux-tray.desktop`).
+Eine früher von Hand nach `/etc/udev/rules.d/` kopierte udev-Regel bitte entfernen; das
+Paket installiert `70-razertux.rules` nach `/usr/lib/udev/rules.d/`.
 
 Das Paket steht im Konflikt mit `openrazer-daemon` und `openrazer-driver-dkms`: Beide
 greifen auf dasselbe Gerät zu und stören sich gegenseitig.
 
+## Umstieg von naga-config
+
+RazerTux ersetzt das Paket `naga-config` (`replaces`/`conflicts` im PKGBUILD); `makepkg -si`
+bzw. pacman entfernt es dabei. Danach einmal **als normaler Benutzer** (nicht mit sudo)
+den alten Dienst ab- und den neuen anmelden:
+
+```
+systemctl --user disable --now naga-configd.service 2>/dev/null
+systemctl --user enable --now razertuxd.service
+```
+
+Beim ersten Start von Dienst oder Oberfläche wird `~/.config/naga-config/` vollständig nach
+`~/.config/razertux/` kopiert (Profile, Makros, Einstellungen, Sicherung
+`mouse-backup.json`). Der alte Ordner bleibt unverändert und kann danach von Hand gelöscht
+werden; ein vorhandenes `~/.config/razertux/` wird nie überschrieben. Ein noch laufendes
+altes Tray-Symbol einfach beenden (oder ab- und wieder anmelden).
+
 ## Erste Schritte
 
-1. Maus per Funk-Dongle oder USB verbinden und `naga-config-gui` starten (oder das
+1. Maus per Funk-Dongle oder USB verbinden und `razertux-gui` starten (oder das
    Tray-Symbol anklicken). Beim ersten Verbinden sichert der Dienst den Ausgangszustand
-   der Maus automatisch nach `~/.config/naga-config/mouse-backup.json` (eine vorhandene
+   der Maus automatisch nach `~/.config/razertux/mouse-backup.json` (eine vorhandene
    Sicherung wird nie überschrieben).
 2. Profil anlegen, Tasten, DPI und Beleuchtung einstellen. Profile lassen sich im Tray
    wechseln.
 
-Kommandozeile: `naga-config status` zeigt den Maus-Zustand, `naga-config restore` stellt
-den gesicherten Zustand wieder her. `naga-config backup` legt die Sicherung von Hand an
+Kommandozeile: `razertux status` zeigt den Maus-Zustand, `razertux restore` stellt
+den gesicherten Zustand wieder her. `razertux backup` legt die Sicherung von Hand an
 (optional, nur nötig ohne laufenden Dienst; überschreibt ebenfalls nichts).
 
 ## Sprache / Language
@@ -63,7 +85,7 @@ den gesicherten Zustand wieder her. `naga-config backup` legt die Sicherung von 
 „Systemsprache“ nimmt die Sprache des Systems und, wenn sie nicht dabei ist, Englisch. Die
 Oberfläche übernimmt eine neue Sprache nach einem Neustart („Jetzt neu starten“ startet sie
 sofort neu); der Dienst übernimmt sie sofort (Akku-Warnung, Konfigurationsfehler). Die
-Einstellung steht als `"language"` in `~/.config/naga-config/settings.json`.
+Einstellung steht als `"language"` in `~/.config/razertux/settings.json`.
 
 *View → Language* (also in the tray menu): system language, German, English, Spanish,
 French. "System language" falls back to English if the system language is not supported.
@@ -76,26 +98,26 @@ Text übersetzt ist und die Platzhalter stimmen.
 ## Originalzustand wiederherstellen
 
 ```
-naga-config restore
+razertux restore
 ```
 
 (oder „Originalzustand wiederherstellen“ im Tray) schreibt die gesicherten Werte zurück:
 DPI, DPI-Stufen, Abfragerate, Helligkeit und die Energie-Einstellungen (Leerlaufzeit,
 Akku-Energiesparschwelle). Effekte und Farben gehören nicht dazu; die setzt die Maus beim
-Aus- und wieder Einstecken selbst zurück. Mit `naga-config status` lässt sich das Ergebnis
-gegen die Sicherung prüfen. Die Sicherung liegt in `~/.config/naga-config/mouse-backup.json`.
+Aus- und wieder Einstecken selbst zurück. Mit `razertux status` lässt sich das Ergebnis
+gegen die Sicherung prüfen. Die Sicherung liegt in `~/.config/razertux/mouse-backup.json`.
 
 ## Deinstallation
 
 ```
-naga-config restore
-systemctl --user disable --now naga-configd
-sudo pacman -Rns naga-config
-rm -r ~/.config/naga-config
+razertux restore
+systemctl --user disable --now razertuxd.service
+sudo pacman -Rns razertux
+rm -r ~/.config/razertux
 ```
 
 `restore` vor der Deinstallation ausführen, solange der Dienst noch da ist. Das Entfernen
-von `~/.config/naga-config` löscht auch die Sicherung und die Profile.
+von `~/.config/razertux` löscht auch die Sicherung und die Profile.
 
 ## Bekannte Grenzen
 
@@ -108,6 +130,15 @@ von `~/.config/naga-config` löscht auch die Sicherung und die Profile.
 - `dbus-next` ist ab Python 3.15 veraltet (deprecation); dann ist ein Ersatz nötig.
 - Parallel laufender OpenRazer-Dienst wird nicht unterstützt (Paketkonflikt).
 - Weitere Details zur Hardware: `docs/hardware-notes.md`.
+
+## Danksagung / Credits
+
+Das Wissen über das HID-Protokoll der Razer-Mäuse stammt zu einem großen Teil aus
+[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0). Vielen Dank an das
+OpenRazer-Projekt. Das Programmsymbol (Pinguin) ist eine eigene Zeichnung.
+
+Protocol knowledge comes largely from OpenRazer (GPL-2.0); thanks to the OpenRazer
+project. The app icon (penguin) is an original drawing.
 
 ## License
 

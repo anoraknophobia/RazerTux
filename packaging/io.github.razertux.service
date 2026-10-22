@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.razertux
+Exec=/usr/bin/razertuxd
+SystemdService=razertuxd.service

@@ -53,7 +53,7 @@ def test_recovers_and_signals(qapp):
 def test_daemon_error_raises_daemon_error(qapp):
     class T(FakeTransport):
         def call(self, member, signature="", args=()):
-            raise DaemonError("io.github.nagaconfig.Error.NoBackup", "Keine Sicherung")
+            raise DaemonError("io.github.razertux.Error.NoBackup", "Keine Sicherung")
 
     c, _ = make(T())
     try:

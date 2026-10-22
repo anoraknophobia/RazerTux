@@ -13,3 +13,11 @@ def german_locale(monkeypatch):
     i18n.set_language("de")
     yield
     i18n.set_language("de")
+
+
+@pytest.fixture(autouse=True)
+def fake_home(monkeypatch, tmp_path_factory):
+    """No test may read or write the real ~/.config (naga-config or razertux)."""
+    home = tmp_path_factory.mktemp("home")
+    monkeypatch.setenv("HOME", str(home))
+    return home

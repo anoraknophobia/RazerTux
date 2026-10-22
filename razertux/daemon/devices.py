@@ -16,11 +16,11 @@ from evdev import ecodes as E
 from razertux.engine.output import Output
 from razertux.hw.buttons import NAGA_DEVICE_SUFFIXES, ButtonId, identify, identify_vendor
 
-from .uinput_out import VIRTUAL_NAME
+from .uinput_out import VIRTUAL_NAME, VIRTUAL_NAMES
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["VIRTUAL_NAME", "DeviceWatcher", "HidrawReader", "InputRouter",
+__all__ = ["VIRTUAL_NAME", "VIRTUAL_NAMES", "DeviceWatcher", "HidrawReader", "InputRouter",
            "classify", "source_from_links"]
 
 NAGA_VENDOR = "1532"
@@ -148,7 +148,7 @@ class DeviceWatcher:
             else:
                 logger.warning("Kann %s nicht öffnen: %s", path, e)
             return
-        if dev.name == VIRTUAL_NAME:
+        if dev.name in VIRTUAL_NAMES:
             dev.close()
             return
         self._known[path] = source

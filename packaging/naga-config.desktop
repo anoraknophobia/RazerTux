@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Naga Config
-GenericName=Mauskonfiguration
-Comment=Razer Naga V2 Pro konfigurieren
-Exec=naga-config-gui
-Icon=input-mouse
-Terminal=false
-Categories=Settings;HardwareSettings;Qt;

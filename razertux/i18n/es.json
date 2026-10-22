@@ -1,4 +1,13 @@
 {
+  "AboutDialog": {
+    "Inoffizieller Ersatz für Razer Synapse unter Linux: Tastenbelegung, Makros, DPI, Beleuchtung und Energie für die Razer Naga V2 Pro.": "Sustituto no oficial de Razer Synapse para Linux: asignación de botones, macros, DPI, iluminación y energía para el Razer Naga V2 Pro.",
+    "Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.": "No es un producto oficial de Razer; no está afiliado a Razer Inc.",
+    "Lizenz: %1": "Licencia: %1",
+    "Protokollwissen aus OpenRazer (GPL-2.0)": "Conocimiento del protocolo procedente de OpenRazer (GPL-2.0)",
+    "Version %1": "Versión %1",
+    "Über RazerTux": "Acerca de RazerTux",
+    "Schließen": "Cerrar"
+  },
   "ActionDialog": {
     "Abbrechen": "Cancelar",
     "Aktion:": "Acción:",
@@ -130,7 +139,7 @@
     "Das Profil konnte nicht exportiert werden:": "No se pudo exportar el perfil:",
     "Das Profil konnte nicht geschrieben werden:": "No se pudo escribir el perfil:",
     "Das letzte Profil kann nicht gelöscht werden.": "No se puede eliminar el último perfil.",
-    "Der Dienst (naga-configd) läuft nicht. Änderungen werden gespeichert, aber erst nach dem Start des Dienstes angewendet.": "El servicio (naga-configd) no está en ejecución. Los cambios se guardan, pero no se aplican hasta que se inicie el servicio.",
+    "Der Dienst (razertuxd) läuft nicht. Änderungen werden gespeichert, aber erst nach dem Start des Dienstes angewendet.": "El servicio (razertuxd) no está en ejecución. Los cambios se guardan, pero no se aplican hasta que se inicie el servicio.",
     "Die Datei „%1“ ist kein gültiges Profil und wurde nicht importiert.": "El archivo «%1» no es un perfil válido y no se ha importado.",
     "ENERGIE": "ENERGÍA",
     "Export fehlgeschlagen": "Error al exportar",
@@ -140,7 +149,6 @@
     "Löschen nicht möglich": "No se puede eliminar",
     "MAKROS": "MACROS",
     "MAUSRAD": "RUEDA DE DESPLAZAMIENTO",
-    "Naga-Konfiguration": "Configuración de Naga",
     "Name des Profils:": "Nombre del perfil:",
     "Neues Profil": "Nuevo perfil",
     "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme": "El controlador OpenRazer está cargado: desinstálalo, de lo contrario ambos programas interfieren entre sí",
@@ -156,7 +164,9 @@
     "Speichern nicht möglich": "No se puede guardar",
     "Systemfarben verwenden": "Usar colores del sistema",
     "TASTEN": "PERSONALIZAR",
-    "Verwerfen": "Descartar"
+    "Verwerfen": "Descartar",
+    "Hilfe": "Ayuda",
+    "Über RazerTux": "Acerca de RazerTux"
   },
   "MouseView": {
     "Belegbar, wenn „Obere Tasten frei belegen“ an ist": "Asignable si «Asignar libremente los botones superiores» está activado"
@@ -226,7 +236,6 @@
     "Helligkeit Logo": "Brillo del logotipo",
     "Helligkeit Mausrad": "Brillo de la rueda",
     "Leerlaufzeit": "Tiempo de inactividad",
-    "Naga-Konfiguration": "Configuración de Naga",
     "Originalzustand wiederherstellen": "Restaurar estado original",
     "Systemfarben verwenden": "Usar colores del sistema",
     "Teilweise wiederhergestellt": "Restaurado parcialmente",
@@ -237,7 +246,6 @@
   "app": {
     "Konfiguration für die Razer Naga V2 Pro": "Configuración del Razer Naga V2 Pro",
     "Konfigurationsverzeichnis": "directorio de configuración",
-    "Naga-Konfiguration": "Configuración de Naga",
     "nur Tray-Symbol starten (Fenster versteckt)": "iniciar solo el icono de la bandeja (ventana oculta)"
   },
   "daemon": {

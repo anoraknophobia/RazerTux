@@ -3,15 +3,17 @@ from __future__ import annotations
 
 import copy
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget, QVBoxLayout,
     QWidget,
 )
 
+from razertux import APP_NAME
 from razertux.config.model import DefaultAction, Profile, default_profile, validate
 from razertux.config.store import ConfigStore
+from razertux.gui.about import AboutDialog
 from razertux.gui.action_dialog import ActionDialog
 from razertux.gui.buttons_tab import ButtonsTab
 from razertux.gui.dbus_client import DaemonClient
@@ -27,7 +29,6 @@ from razertux.gui.profile_actions import ProfileActions
 from razertux.gui.scroll_tab import ScrollTab
 from razertux.hw.buttons import ButtonId
 
-APP_TITLE = QT_TRANSLATE_NOOP("MainWindow", "Naga-Konfiguration")
 POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # GUI-owned settings
                 "scroll_stage_names")
 
@@ -72,7 +73,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self.profile_combo.activated.connect(lambda _i: self.select_profile(self.profile_combo.currentData()))
 
         self.banner = self._make_banner(self.tr(
-            "Der Dienst (naga-configd) läuft nicht. Änderungen werden gespeichert, "
+            "Der Dienst (razertuxd) läuft nicht. Änderungen werden gespeichert, "
             "aber erst nach dem Start des Dienstes angewendet."))
         self.openrazer_banner = self._make_banner(self.tr(
             "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme"))
@@ -106,6 +107,9 @@ class MainWindow(QMainWindow, ProfileActions):
         self.system_colors_action.triggered.connect(
             lambda on: self.themeRequested.emit("system" if on else "synapse"))
         self.language_menu = add_language_menu(view, self.settings.language, self.languageRequested.emit)
+        help_menu = self.menuBar().addMenu(self.tr("Hilfe"))
+        self.about_action = help_menu.addAction(self.tr("Über RazerTux"))
+        self.about_action.triggered.connect(lambda _=False: self.show_about())
 
         self.save_btn = QPushButton(self.tr("Speichern"))
         self.save_btn.clicked.connect(lambda _=False: self.save())
@@ -149,7 +153,7 @@ class MainWindow(QMainWindow, ProfileActions):
         QMessageBox.warning(self, title, text)
 
     def _ask_unsaved(self) -> str:
-        box = QMessageBox(QMessageBox.Icon.Question, self.tr(APP_TITLE),
+        box = QMessageBox(QMessageBox.Icon.Question, APP_NAME,
                           self.tr("Das Profil hat ungespeicherte Änderungen."), parent=self)
         save = box.addButton(self.tr("Speichern"), QMessageBox.ButtonRole.AcceptRole)
         discard = box.addButton(self.tr("Verwerfen"), QMessageBox.ButtonRole.DestructiveRole)
@@ -197,9 +201,12 @@ class MainWindow(QMainWindow, ProfileActions):
     def _all_profiles(self) -> list[Profile]:
         return [self.profile if p.id == self.profile.id else p for p in self.store.list_profiles()]
 
+    def show_about(self) -> None:
+        AboutDialog(self).exec()
+
     def _update_dirty(self) -> None:
         dirty = self.is_dirty
-        self.setWindowTitle(f"{self.tr(APP_TITLE)} – {self.profile.name}{' *' if dirty else ''}")
+        self.setWindowTitle(f"{APP_NAME} – {self.profile.name}{' *' if dirty else ''}")
         self.save_btn.setEnabled(dirty)
         self.revert_btn.setEnabled(dirty)
         self.activate_btn.setEnabled(self.profile.id != self._active_id and self.client.is_available)

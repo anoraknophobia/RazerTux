@@ -1,4 +1,4 @@
-"""D-Bus interface io.github.nagaconfig.Daemon (session bus, dbus-next).
+"""D-Bus interface io.github.razertux.Daemon (session bus, dbus-next).
 
 No `from __future__ import annotations` here: dbus-next reads the D-Bus
 signatures from the (string) annotations.
@@ -15,16 +15,17 @@ from dbus_next.service import method as _dbus_method
 from dbus_next.service import signal as _dbus_signal
 
 from razertux.backup import load_backup
+from razertux.config.migrate import default_config_dir
 from razertux.config.model import Profile, Settings, validate
 from razertux.config.store import ConfigStore
 from razertux.i18n import apply_settings as apply_language, tr
 
 logger = logging.getLogger(__name__)
 
-BUS_NAME = "io.github.nagaconfig"
-OBJECT_PATH = "/io/github/nagaconfig"
-INTERFACE = "io.github.nagaconfig.Daemon"
-_ERR = "io.github.nagaconfig.Error."
+BUS_NAME = "io.github.razertux"
+OBJECT_PATH = "/io/github/razertux"
+INTERFACE = "io.github.razertux.Daemon"
+_ERR = "io.github.razertux.Error."
 
 
 class Hardware(Protocol):
@@ -71,7 +72,7 @@ class NagaService(ServiceInterface):
         self._restore = restore
         self._openrazer = openrazer_loaded
         self._backup_path = backup_path or (
-            Path.home() / ".config" / "naga-config" / "mouse-backup.json")
+            default_config_dir() / "mouse-backup.json")
         self._settings = store.load_settings()
         apply_language(self._settings)  # language of config errors and notifications
         self.active_profile_id = self._settings.active_profile

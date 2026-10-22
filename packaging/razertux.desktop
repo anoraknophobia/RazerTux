@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=RazerTux
+GenericName=Razer-Gerätekonfiguration
+GenericName[en]=Razer device configuration
+Comment=Inoffizielle Konfiguration für Razer-Mäuse
+Comment[en]=Unofficial configuration for Razer mice
+Exec=razertux-gui
+Icon=razertux
+Terminal=false
+Categories=Settings;HardwareSettings;Qt;
+Keywords=Razer;Naga;Maus;Mouse;Synapse;

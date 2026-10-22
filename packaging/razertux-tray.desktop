@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=RazerTux (Tray)
+Comment=RazerTux-Tray-Symbol beim Anmelden starten
+Comment[en]=Start the RazerTux tray icon at login
+Exec=razertux-gui --tray
+Icon=razertux
+Terminal=false
+X-KDE-autostart-after=panel
+X-GNOME-Autostart-enabled=true

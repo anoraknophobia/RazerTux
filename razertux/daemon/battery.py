@@ -104,4 +104,4 @@ async def notify_desktop(bus: Any, summary: str, body: str,
         path="/org/freedesktop/Notifications",
         interface="org.freedesktop.Notifications", member="Notify",
         signature="susssasa{sv}i",
-        body=["naga-config", 0, icon, summary, body, [], {}, -1]))
+        body=["RazerTux", 0, icon, summary, body, [], {}, -1]))

@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+packaging/src/
+packaging/pkg/
+*.pkg.tar.zst

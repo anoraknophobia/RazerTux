@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Naga Config (Tray)
-Comment=Naga-Config-Tray-Symbol beim Anmelden starten
-Exec=naga-config-gui --tray
-Icon=input-mouse
-Terminal=false
-X-KDE-autostart-after=panel
-X-GNOME-Autostart-enabled=true

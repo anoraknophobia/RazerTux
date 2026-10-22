@@ -1,1 +1,7 @@
-"""naga-config: Linux replacement for Razer Synapse (Naga V2 Pro)."""
+"""RazerTux: unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro).
+
+Not an official Razer product; not affiliated with Razer Inc."""
+
+APP_NAME = "RazerTux"
+__version__ = "0.2.0"
+PROJECT_URL = "https://github.com/anoraknophobia/razertux"

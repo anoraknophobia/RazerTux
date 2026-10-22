@@ -80,9 +80,9 @@ def make(tmp_path, **kw):
 
 
 def test_names():
-    assert BUS_NAME == "io.github.nagaconfig"
-    assert OBJECT_PATH == "/io/github/nagaconfig"
-    assert INTERFACE == "io.github.nagaconfig.Daemon"
+    assert BUS_NAME == "io.github.razertux"
+    assert OBJECT_PATH == "/io/github/razertux"
+    assert INTERFACE == "io.github.razertux.Daemon"
 
 
 async def test_activate_profile_sets_mapper_saves_and_signals(tmp_path):
@@ -99,7 +99,7 @@ async def test_activate_unknown_profile_raises_dbus_error(tmp_path):
     svc, store, mapper, bus, _ = make(tmp_path)
     with pytest.raises(DBusError) as ei:
         await call(svc, "ActivateProfile", "nope")
-    assert ei.value.type == "io.github.nagaconfig.Error.UnknownProfile"
+    assert ei.value.type == "io.github.razertux.Error.UnknownProfile"
     assert mapper.profiles == []
     assert bus.signals == []
     assert json.loads((tmp_path / "settings.json").read_text())["active_profile"] == "default"
@@ -181,7 +181,7 @@ async def test_restore_original_without_backup(tmp_path):
     svc, *_ = make(tmp_path)
     with pytest.raises(DBusError) as ei:
         await call(svc, "RestoreOriginal")
-    assert ei.value.type == "io.github.nagaconfig.Error.NoBackup"
+    assert ei.value.type == "io.github.razertux.Error.NoBackup"
 
 
 async def test_restore_original_not_implemented_yet(tmp_path):
@@ -189,7 +189,7 @@ async def test_restore_original_not_implemented_yet(tmp_path):
     (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
     with pytest.raises(DBusError) as ei:
         await call(svc, "RestoreOriginal")
-    assert ei.value.type == "io.github.nagaconfig.Error.NotImplemented"
+    assert ei.value.type == "io.github.razertux.Error.NotImplemented"
 
 
 async def test_restore_original_calls_hook(tmp_path):

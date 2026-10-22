@@ -56,7 +56,7 @@ def test_cli_backup_writes_then_refuses(monkeypatch, tmp_path, capsys):
 
 def test_cli_default_backup_path(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert cli.default_backup_path() == tmp_path / ".config/naga-config/mouse-backup.json"
+    assert cli.default_backup_path() == tmp_path / ".config/razertux/mouse-backup.json"
 
 
 def test_backup_refuses_when_core_fields_missing(tmp_path):
@@ -144,8 +144,8 @@ def test_restore_empty_backup_reports_all_restorable_fields():
 
 def test_cli_restore_prefers_dbus(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("HOME", str(tmp_path))
-    (tmp_path / ".config/naga-config").mkdir(parents=True)
-    (tmp_path / ".config/naga-config/mouse-backup.json").write_text(json.dumps(REAL))
+    (tmp_path / ".config/razertux").mkdir(parents=True)
+    (tmp_path / ".config/razertux/mouse-backup.json").write_text(json.dumps(REAL))
     monkeypatch.setattr(cli, "_dbus_restore", lambda: [])
 
     def no_hidraw(path):
@@ -174,7 +174,7 @@ def test_cli_restore_dbus_error(monkeypatch, tmp_path, capsys):
 
 def test_cli_restore_falls_back_to_hidraw(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("HOME", str(tmp_path))
-    d = tmp_path / ".config/naga-config"
+    d = tmp_path / ".config/razertux"
     d.mkdir(parents=True)
     (d / "mouse-backup.json").write_text(json.dumps(REAL))
     t = FakeTransport.full()

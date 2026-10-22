@@ -1,4 +1,4 @@
-"""naga-config command line: backup, status, restore."""
+"""razertux command line: backup, status, restore."""
 import argparse
 import asyncio
 import gc
@@ -8,12 +8,13 @@ import warnings
 from pathlib import Path
 
 from .backup import BackupError, load_backup, restore_backup, save_backup
+from .config.migrate import default_config_dir, migrate_legacy_config
 from .razer.naga_v2_pro import NagaV2Pro
 from .razer.transport import HidrawTransport, find_control_hidraw
 
 
 def default_backup_path() -> Path:
-    return Path.home() / ".config" / "naga-config" / "mouse-backup.json"
+    return default_config_dir() / "mouse-backup.json"
 
 
 def _open_transport(hidraw: str | None):
@@ -71,7 +72,7 @@ def _dbus_restore() -> list[str] | None:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="naga-config")
+    ap = argparse.ArgumentParser(prog="razertux")
     ap.add_argument("--hidraw", help="hidraw-Pfad statt Autoerkennung")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status", help="Maus-Zustand als JSON ausgeben")
@@ -83,6 +84,8 @@ def main(argv=None) -> int:
     for p in sub.choices.values():
         p.add_argument("--hidraw", default=argparse.SUPPRESS)
     args = ap.parse_args(argv)
+    if getattr(args, "path", None) is None and args.cmd != "status":
+        migrate_legacy_config()  # the default backup may still be in ~/.config/naga-config
 
     if args.cmd == "backup":
         path = args.path or default_backup_path()

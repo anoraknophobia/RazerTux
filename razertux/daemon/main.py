@@ -1,4 +1,4 @@
-"""naga-configd: grabs the Naga, remaps via uinput, serves D-Bus.
+"""razertuxd: grabs the Naga, remaps via uinput, serves D-Bus.
 
 Run in the foreground: `python -m razertux.daemon.main [--debug]`.
 """
@@ -30,10 +30,11 @@ from razertux.razer.transport import (
 
 from dbus_next import DBusError
 
+from razertux.config.migrate import default_config_dir, migrate_legacy_config
 from razertux.i18n import tr
 
 from .battery import BatteryMonitor, WarnState, notify_desktop
-from .dbus_service import BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
+from .dbus_service import _ERR, BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
 from .devices import DeviceWatcher, HidrawReader, InputRouter
 
 logger = logging.getLogger("razertux.daemon")
@@ -42,10 +43,6 @@ CONNECTION = {0x00A7: "wired", 0x00A8: "wireless"}
 _DISCONNECTED = {"connected": False, "connection": "", "battery": -1, "charging": False,
                  "dpi": -1}
 _HW_ERRORS = (RazerError, OSError, ValueError, IndexError)
-
-
-def default_config_dir() -> Path:
-    return Path.home() / ".config" / "naga-config"
 
 
 def default_backup_path() -> Path:
@@ -224,7 +221,7 @@ class Daemon:
     def _warn_openrazer(self) -> None:
         if self._openrazer():
             logger.warning("OpenRazer-Treiber (razermouse) ist geladen und kann mit "
-                           "naga-config kollidieren – bitte entladen oder deaktivieren")
+                           "RazerTux kollidieren – bitte entladen oder deaktivieren")
 
     def _apply_to_mouse(self, profile: Profile) -> None:
         if self._naga is not None:
@@ -367,7 +364,7 @@ class Daemon:
 
     def _restore_backup(self, backup: dict) -> list[str]:
         if self._naga is None:
-            raise DBusError("io.github.nagaconfig.Error.NotConnected", "Maus nicht verbunden")
+            raise DBusError(_ERR + "NotConnected", "Maus nicht verbunden")
         failed = restore_backup(self._naga, backup)
         self._written.clear()
         self._power_applied = {}  # the mouse now holds the backup's values
@@ -534,11 +531,11 @@ async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="naga-configd",
-                                 description="naga-config Dienst (Razer Naga V2 Pro)")
+    ap = argparse.ArgumentParser(prog="razertuxd",
+                                 description="RazerTux-Dienst (Razer Naga V2 Pro)")
     ap.add_argument("--debug", action="store_true", help="ausführliches Protokoll")
     ap.add_argument("--config-dir", type=Path, default=None,
-                    help="Konfigurationsordner (Standard: ~/.config/naga-config)")
+                    help="Konfigurationsordner (Standard: ~/.config/razertux)")
     return ap
 
 
@@ -580,7 +577,7 @@ async def run(config_dir: Path) -> int:
             loop.add_signal_handler(sig, stop.set)
         watcher.start()  # monitor first, then scan: nothing is missed
         watcher.scan()
-        logger.info("naga-configd läuft")
+        logger.info("razertuxd läuft")
         await stop.wait()
         logger.info("Beende …")
         return 0
@@ -596,6 +593,8 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(stream=sys.stderr,
                         level=logging.DEBUG if args.debug else logging.INFO,
                         format="%(levelname)s %(name)s: %(message)s")
+    if args.config_dir is None:
+        migrate_legacy_config()  # once: ~/.config/naga-config -> ~/.config/razertux
     return asyncio.run(run(args.config_dir or default_config_dir()))
 
 

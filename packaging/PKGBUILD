@@ -1,15 +1,19 @@
 # Maintainer: anoraknophobia
+# RazerTux – not an official Razer product; not affiliated with Razer Inc.
 # Baut aus dem lokalen Git-Checkout (ein Verzeichnis ueber packaging/), kein Netzwerk noetig.
-pkgname=naga-config
-pkgver=0.1.0
+pkgname=razertux
+pkgver=0.2.0
 pkgrel=1
-pkgdesc='Linux replacement for Razer Synapse for the Razer Naga V2 Pro'
+pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro)'
 arch=('any')
-url='https://github.com/anoraknophobia/naga-config'
+url='https://github.com/anoraknophobia/razertux'
 license=('GPL-2.0-or-later')
 depends=(python python-evdev pyside6 python-pyudev python-dbus-next)
 makedepends=(python-build python-installer python-wheel python-setuptools)
-conflicts=(openrazer-daemon openrazer-driver-dkms)
+replaces=(naga-config)
+conflicts=(naga-config openrazer-daemon openrazer-driver-dkms)
+provides=()
+install=razertux.install
 source=()
 
 prepare() {
@@ -31,11 +35,12 @@ package() {
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local p="$startdir"
-  install -Dm644 "$p/70-naga-config.rules" "$pkgdir/usr/lib/udev/rules.d/70-naga-config.rules"
-  install -Dm644 "$p/naga-configd.service" "$pkgdir/usr/lib/systemd/user/naga-configd.service"
-  install -Dm644 "$p/io.github.nagaconfig.service" "$pkgdir/usr/share/dbus-1/services/io.github.nagaconfig.service"
-  install -Dm644 "$p/naga-config.desktop" "$pkgdir/usr/share/applications/naga-config.desktop"
-  install -Dm644 "$p/naga-config-tray.desktop" "$pkgdir/etc/xdg/autostart/naga-config-tray.desktop"
+  install -Dm644 "$p/70-razertux.rules" "$pkgdir/usr/lib/udev/rules.d/70-razertux.rules"
+  install -Dm644 "$p/razertuxd.service" "$pkgdir/usr/lib/systemd/user/razertuxd.service"
+  install -Dm644 "$p/io.github.razertux.service" "$pkgdir/usr/share/dbus-1/services/io.github.razertux.service"
+  install -Dm644 "$p/razertux.desktop" "$pkgdir/usr/share/applications/razertux.desktop"
+  install -Dm644 "$p/razertux-tray.desktop" "$pkgdir/etc/xdg/autostart/razertux-tray.desktop"
+  install -Dm644 "$p/razertux.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/razertux.svg"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

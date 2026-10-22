@@ -3,7 +3,7 @@ controller that saves the choice, and the restart that applies it.
 
 Texts are translated once at start-up, so a new language needs a restart; the
 restart runs `python -m razertux.gui.app` with the original options (the same
-code as the installed naga-config-gui entry point)."""
+code as the installed razertux-gui entry point)."""
 from __future__ import annotations
 
 import sys

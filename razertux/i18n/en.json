@@ -1,4 +1,13 @@
 {
+  "AboutDialog": {
+    "Inoffizieller Ersatz für Razer Synapse unter Linux: Tastenbelegung, Makros, DPI, Beleuchtung und Energie für die Razer Naga V2 Pro.": "Unofficial Razer Synapse replacement for Linux: button assignments, macros, DPI, lighting and power for the Razer Naga V2 Pro.",
+    "Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.": "Not an official Razer product; not affiliated with Razer Inc.",
+    "Lizenz: %1": "License: %1",
+    "Protokollwissen aus OpenRazer (GPL-2.0)": "Protocol knowledge from OpenRazer (GPL-2.0)",
+    "Version %1": "Version %1",
+    "Über RazerTux": "About RazerTux",
+    "Schließen": "Close"
+  },
   "ActionDialog": {
     "Abbrechen": "Cancel",
     "Aktion:": "Action:",
@@ -130,7 +139,7 @@
     "Das Profil konnte nicht exportiert werden:": "The profile could not be exported:",
     "Das Profil konnte nicht geschrieben werden:": "The profile could not be written:",
     "Das letzte Profil kann nicht gelöscht werden.": "The last profile cannot be deleted.",
-    "Der Dienst (naga-configd) läuft nicht. Änderungen werden gespeichert, aber erst nach dem Start des Dienstes angewendet.": "The service (naga-configd) is not running. Changes are saved but only applied once the service starts.",
+    "Der Dienst (razertuxd) läuft nicht. Änderungen werden gespeichert, aber erst nach dem Start des Dienstes angewendet.": "The service (razertuxd) is not running. Changes are saved but only applied once the service starts.",
     "Die Datei „%1“ ist kein gültiges Profil und wurde nicht importiert.": "The file “%1” is not a valid profile and was not imported.",
     "ENERGIE": "POWER",
     "Export fehlgeschlagen": "Export failed",
@@ -140,7 +149,6 @@
     "Löschen nicht möglich": "Cannot delete",
     "MAKROS": "MACROS",
     "MAUSRAD": "SCROLL WHEEL",
-    "Naga-Konfiguration": "Naga Config",
     "Name des Profils:": "Profile name:",
     "Neues Profil": "New profile",
     "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme": "The OpenRazer driver is loaded – please uninstall it, otherwise both programs interfere with each other",
@@ -156,7 +164,9 @@
     "Speichern nicht möglich": "Cannot save",
     "Systemfarben verwenden": "Use system colors",
     "TASTEN": "CUSTOMIZE",
-    "Verwerfen": "Discard"
+    "Verwerfen": "Discard",
+    "Hilfe": "Help",
+    "Über RazerTux": "About RazerTux"
   },
   "MouseView": {
     "Belegbar, wenn „Obere Tasten frei belegen“ an ist": "Assignable when “Assign top buttons freely” is on"
@@ -226,7 +236,6 @@
     "Helligkeit Logo": "Logo brightness",
     "Helligkeit Mausrad": "Scroll wheel brightness",
     "Leerlaufzeit": "Idle time",
-    "Naga-Konfiguration": "Naga Config",
     "Originalzustand wiederherstellen": "Restore original state",
     "Systemfarben verwenden": "Use system colors",
     "Teilweise wiederhergestellt": "Partially restored",
@@ -237,7 +246,6 @@
   "app": {
     "Konfiguration für die Razer Naga V2 Pro": "Configuration for the Razer Naga V2 Pro",
     "Konfigurationsverzeichnis": "configuration directory",
-    "Naga-Konfiguration": "Naga Config",
     "nur Tray-Symbol starten (Fenster versteckt)": "start only the tray icon (window hidden)"
   },
   "daemon": {

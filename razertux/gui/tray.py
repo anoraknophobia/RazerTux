@@ -1,15 +1,15 @@
 """System tray icon: profile switch, battery, window toggle, restore."""
 from __future__ import annotations
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP, QByteArray, QCoreApplication, QObject, Qt, Signal
-from PySide6.QtGui import QAction, QActionGroup, QGuiApplication, QIcon, QPainter, QPixmap
-from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QObject, Signal
+from PySide6.QtGui import QAction, QActionGroup, QIcon
 from PySide6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon, QWidget
 
 from razertux.gui.dbus_client import DaemonClient, DaemonError
 from razertux.gui.labels import battery_text
 from razertux.gui.language import add_language_menu
-from razertux.gui.mouse_view import themed_svg
+from razertux import APP_NAME
+from razertux.gui.mouse_scene import ASSETS
 
 # German names for the field names restore_backup() reports as failed
 _FIELD_NAMES = {
@@ -29,13 +29,9 @@ def _tr(text: str) -> str:
 
 
 def app_icon() -> QIcon:
-    pm = QPixmap(64, 64)
-    pm.fill(Qt.GlobalColor.transparent)
-    r = QSvgRenderer(QByteArray(themed_svg("naga_v2_pro_top.svg", QGuiApplication.palette())))
-    p = QPainter(pm)
-    r.render(p, pm.rect().adjusted(14, 0, -14, 0).toRectF())
-    p.end()
-    return QIcon(pm)
+    """The RazerTux penguin (bundled SVG, the same file as the installed hicolor icon).
+    Its white belly and green eyes keep it visible on dark and light panels alike."""
+    return QIcon(str(ASSETS / "razertux.svg"))
 
 
 class TrayIcon(QSystemTrayIcon):
@@ -53,7 +49,7 @@ class TrayIcon(QSystemTrayIcon):
         self._theme = "synapse"
         self._language = "system"
         self._language_menu: QMenu | None = None
-        self.setToolTip(self.tr("Naga-Konfiguration"))
+        self.setToolTip(APP_NAME)
         self.menu = QMenu()
         self.menu.aboutToShow.connect(self.rebuild_menu)
         self.setContextMenu(self.menu)

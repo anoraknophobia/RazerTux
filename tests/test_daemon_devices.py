@@ -419,6 +419,22 @@ def test_capabilities():
                     E.REL_WHEEL_HI_RES, E.REL_HWHEEL_HI_RES}
 
 
+def test_virtual_device_is_named_razertux():
+    assert VIRTUAL_NAME == "RazerTux virtual"
+
+
+@pytest.mark.parametrize("name", ["RazerTux virtual", "naga-config virtual"])
+def test_watcher_never_grabs_its_own_virtual_device(name):
+    """Both names: an old naga-configd may still run while razertuxd starts."""
+    devs = [UdevDev(_props("00", devname="/dev/input/event40", ID_INPUT_MOUSE="1"))]
+    dev = FakeDev("/dev/input/event40", name=name)
+    added = []
+    w = DeviceWatcher(lambda s, d: added.append(s), lambda s: None,
+                      list_devices=lambda: devs, open_device=lambda p: dev)
+    w.scan()
+    assert added == [] and dev.closed
+
+
 def test_uinput_output_writes():
     out = UinputOutput(factory=FakeUInput)
     ui = out._ui

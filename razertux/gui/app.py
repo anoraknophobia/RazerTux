@@ -1,4 +1,4 @@
-"""Entry point: naga-config-gui [--tray] [--config-dir DIR]."""
+"""Entry point: razertux-gui [--tray] [--config-dir DIR]."""
 from __future__ import annotations
 
 import argparse
@@ -7,12 +7,8 @@ from pathlib import Path
 
 from razertux import i18n
 from razertux.config.store import ConfigStore
-from razertux.daemon.main import default_config_dir
-
-
-def _tr(text: str) -> str:
-    from PySide6.QtCore import QCoreApplication
-    return QCoreApplication.translate("app", text)
+from razertux import APP_NAME
+from razertux.config.migrate import default_config_dir, migrate_legacy_config
 
 
 def _help_tr(text: str) -> str:
@@ -21,7 +17,7 @@ def _help_tr(text: str) -> str:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(prog="naga-config-gui",
+    p = argparse.ArgumentParser(prog="razertux-gui",
                                 description=_help_tr("Konfiguration für die Razer Naga V2 Pro"))
     p.add_argument("--tray", action="store_true",
                    help=_help_tr("nur Tray-Symbol starten (Fenster versteckt)"))
@@ -31,6 +27,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(argv if argv is not None else sys.argv[1:])
+    if not any(a == "--config-dir" or a.startswith("--config-dir=") for a in argv):
+        if migrate_legacy_config():  # once: ~/.config/naga-config -> ~/.config/razertux
+            print("RazerTux: ~/.config/naga-config nach ~/.config/razertux kopiert", file=sys.stderr)
     if "-h" in argv or "--help" in argv:
         i18n.apply_settings(ConfigStore(default_config_dir()).load_settings())
     args = parse_args(argv)
@@ -45,11 +44,12 @@ def main(argv: list[str] | None = None) -> int:
     from razertux.gui.tray import TrayIcon, app_icon
 
     app = QApplication([sys.argv[0]])
-    app.setApplicationName("naga-config")
+    app.setApplicationName("razertux")
+    app.setDesktopFileName("razertux")  # Wayland: window icon and task bar entry
     app.setQuitOnLastWindowClosed(False)
     store = ConfigStore(args.config_dir or default_config_dir())
     install_language(app, store)  # before any text is created
-    app.setApplicationDisplayName(_tr("Naga-Konfiguration"))
+    app.setApplicationDisplayName(APP_NAME)
     theme = ThemeController(app, store)
     theme.apply()  # before any widget: the SVGs take their colours from the palette
     app.setWindowIcon(app_icon())

@@ -3,9 +3,9 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "naga-config"
-version = "0.1.0"
-description = "Linux replacement for Razer Synapse for the Razer Naga V2 Pro"
+name = "razertux"
+version = "0.2.0"
+description = "Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro); not affiliated with Razer Inc."
 requires-python = ">=3.11"
 license = "GPL-2.0-or-later"
 license-files = ["LICENSE"]
@@ -15,9 +15,9 @@ dependencies = ["evdev", "pyudev", "dbus-next", "PySide6"]
 test = ["pytest", "pytest-asyncio"]
 
 [project.scripts]
-naga-config = "razertux.cli:main"
-naga-configd = "razertux.daemon.main:main"
-naga-config-gui = "razertux.gui.app:main"
+razertux = "razertux.cli:main"
+razertuxd = "razertux.daemon.main:main"
+razertux-gui = "razertux.gui.app:main"
 
 [tool.setuptools.packages.find]
 include = ["razertux*"]

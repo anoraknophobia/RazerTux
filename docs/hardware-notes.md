@@ -4,10 +4,10 @@
 
 Alle Set-Befehle mit Speicher-Flag senden `NOSTORE` (0x00) an Arg-Index 0; nur
 `restore_backup` nutzt `VARSTORE` (0x01). Befehle ohne Speicher-Flag stehen in
-`PERSISTENT_COMMANDS` (`naga_config/razer/naga_v2_pro.py`).
+`PERSISTENT_COMMANDS` (`razertux/razer/naga_v2_pro.py`).
 
 Prüfverfahren je Befehl: Wert setzen, Dienst gestoppt, Maus ab- und wieder anstecken,
-Wert per `naga-config status` bzw. Sichtprüfung vergleichen. Ergebnis hier eintragen.
+Wert per `razertux status` bzw. Sichtprüfung vergleichen. Ergebnis hier eintragen.
 
 | Befehl | NOSTORE honored? | Notizen |
 |---|---|---|
@@ -65,4 +65,4 @@ Umsetzung: Der Gerätemodus folgt dem aktiven Profil (`remap_top_buttons`: an �
 aus → Normalmodus; bei Verbinden, Profilwechsel und Reload), beim sauberen Beenden immer
 Normalmodus. Im Normalmodus ignoriert der Dienst die Belegungen von TOP_1/TOP_2. Der Dienst
 wertet `05 3a`/`05 02` in beiden Modi aus (Status `scroll_stage`, `dpi`) und merkt sich den
-letzten Slot in `~/.config/naga-config/state.json`.
+letzten Slot in `~/.config/razertux/state.json`.
