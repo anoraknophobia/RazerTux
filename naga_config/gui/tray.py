@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon, QWidget
 
 from naga_config.gui.dbus_client import DaemonClient, DaemonError
 from naga_config.gui.labels import battery_text
+from naga_config.gui.language import add_language_menu
 from naga_config.gui.mouse_view import themed_svg
 
 # German names for the field names restore_backup() reports as failed
@@ -42,6 +43,7 @@ class TrayIcon(QSystemTrayIcon):
     showWindowRequested = Signal()
     quitRequested = Signal()
     themeRequested = Signal(str)  # "synapse" | "system"
+    languageRequested = Signal(str)  # Settings.language
 
     def __init__(self, client: DaemonClient, parent: QObject | None = None,
                  dialog_parent: QWidget | None = None):
@@ -49,6 +51,8 @@ class TrayIcon(QSystemTrayIcon):
         self.client = client
         self._dialog_parent = dialog_parent
         self._theme = "synapse"
+        self._language = "system"
+        self._language_menu: QMenu | None = None
         self.setToolTip(self.tr("Naga-Konfiguration"))
         self.menu = QMenu()
         self.menu.aboutToShow.connect(self.rebuild_menu)
@@ -74,10 +78,16 @@ class TrayIcon(QSystemTrayIcon):
         self._theme = name
         self.rebuild_menu()
 
+    def set_language_checked(self, name: str) -> None:
+        self._language = name
+        self.rebuild_menu()
+
     # -- menu -----------------------------------------------------------------
     def rebuild_menu(self) -> None:
         m = self.menu
         m.clear()
+        if self._language_menu is not None:  # clear() keeps submenus alive
+            self._language_menu.deleteLater()
         up = self.client.is_available
         if not up:
             m.addAction(self.tr("Dienst läuft nicht")).setEnabled(False)
@@ -101,6 +111,7 @@ class TrayIcon(QSystemTrayIcon):
         colours.setCheckable(True)
         colours.setChecked(self._theme == "system")
         colours.triggered.connect(lambda on: self.themeRequested.emit("system" if on else "synapse"))
+        self._language_menu = add_language_menu(m, self._language, self.languageRequested.emit)
         m.addAction(self.tr("Fenster öffnen")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
         m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(lambda _=False: self.restore_original())
         m.addSeparator()

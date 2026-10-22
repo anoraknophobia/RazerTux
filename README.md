@@ -1,5 +1,12 @@
 # naga-config
 
+> **English:** Linux replacement for Razer Synapse for the Razer Naga V2 Pro: a background
+> service (`naga-configd`), a command line tool (`naga-config`) and a Qt GUI with tray icon
+> (`naga-config-gui`) for button assignments, macros, Hypershift, DPI stages, polling rate,
+> lighting and power settings. Install with `cd packaging && makepkg -si`, then
+> `systemctl --user enable --now naga-configd`. The GUI is available in German, English,
+> Spanish and French (*View → Language*, see below); this README is in German.
+
 Linux-Ersatz für Razer Synapse für die Razer Naga V2 Pro (getestet unter CachyOS/Arch,
 KDE Plasma Wayland). Besteht aus einem Hintergrunddienst (`naga-configd`), einer
 Kommandozeile (`naga-config`) und einer Qt-Oberfläche mit Tray-Symbol (`naga-config-gui`).
@@ -16,6 +23,7 @@ Kommandozeile (`naga-config`) und einer Qt-Oberfläche mit Tray-Symbol (`naga-co
 - **Mausrad**: Anzeige der aktiven Mausrad-Stufe. Die Stufenwerte selbst lassen sich nur in
   Synapse ändern.
 - Heller/dunkler Stil umschaltbar.
+- Oberfläche auf Deutsch, Englisch, Spanisch und Französisch.
 
 ## Installation
 
@@ -48,6 +56,22 @@ greifen auf dasselbe Gerät zu und stören sich gegenseitig.
 Kommandozeile: `naga-config status` zeigt den Maus-Zustand, `naga-config restore` stellt
 den gesicherten Zustand wieder her. `naga-config backup` legt die Sicherung von Hand an
 (optional, nur nötig ohne laufenden Dienst; überschreibt ebenfalls nichts).
+
+## Sprache / Language
+
+*Ansicht → Sprache* (auch im Tray-Menü): Systemsprache, Deutsch, English, Español, Français.
+„Systemsprache“ nimmt die Sprache des Systems und, wenn sie nicht dabei ist, Englisch. Die
+Oberfläche übernimmt eine neue Sprache nach einem Neustart („Jetzt neu starten“ startet sie
+sofort neu); der Dienst übernimmt sie sofort (Akku-Warnung, Konfigurationsfehler). Die
+Einstellung steht als `"language"` in `~/.config/naga-config/settings.json`.
+
+*View → Language* (also in the tray menu): system language, German, English, Spanish,
+French. "System language" falls back to English if the system language is not supported.
+The GUI switches after a restart ("Restart now"); the service switches immediately.
+
+Übersetzungen liegen als JSON in `naga_config/i18n/<lang>.json`
+(`{"Kontext": {"deutscher Text": "Übersetzung"}}`); `tests/test_i18n.py` prüft, dass jeder
+Text übersetzt ist und die Platzhalter stimmen.
 
 ## Originalzustand wiederherstellen
 

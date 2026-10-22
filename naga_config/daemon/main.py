@@ -30,6 +30,8 @@ from naga_config.razer.transport import (
 
 from dbus_next import DBusError
 
+from naga_config.i18n import tr
+
 from .battery import BatteryMonitor, WarnState, notify_desktop
 from .dbus_service import BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
 from .devices import DeviceWatcher, HidrawReader, InputRouter
@@ -482,8 +484,8 @@ class Daemon:
         logger.warning("Akku schwach: %d %%", level)
         if self.notify is not None:
             try:
-                self.notify("Naga V2 Pro: Akku schwach",
-                            f"Akkustand {level} % – bitte die Maus laden.")
+                self.notify(tr("daemon", "Naga V2 Pro: Akku schwach"),
+                            tr("daemon", "Akkustand {level} % – bitte die Maus laden.", level=level))
             except Exception:
                 logger.exception("Benachrichtigung nicht gesendet")
 

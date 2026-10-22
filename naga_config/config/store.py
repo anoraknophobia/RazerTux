@@ -9,6 +9,8 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from naga_config.i18n import tr
+
 from .model import Macro, Profile, Settings, default_profile
 
 
@@ -50,14 +52,15 @@ class ConfigStore:
 
     def _profile_path(self, profile_id: str) -> Path:
         if not _SAFE_ID.fullmatch(profile_id):
-            raise ValueError(f"Ungültige Profil-ID: {profile_id!r}")
+            raise ValueError(tr("store", "Ungültige Profil-ID: {profile}", profile=repr(profile_id)))
         return self._profiles_dir / f"{profile_id}.json"
 
     def _read(self, path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
 
     def _error(self, path: Path, exc: Exception) -> None:
-        self.errors.append(f"{path.name} ist beschädigt und wurde ignoriert: {exc}")
+        self.errors.append(tr("store", "{file} ist beschädigt und wurde ignoriert: {error}",
+                              file=path.name, error=exc))
 
     # settings
     def load_settings(self) -> Settings:
@@ -95,11 +98,12 @@ class ConfigStore:
         try:
             path = self._profile_path(profile_id)
         except ValueError as e:
-            self.errors.append(f"Profil {profile_id!r} nicht lesbar: {e}")
+            self.errors.append(tr("store", "Profil {profile} nicht lesbar: {error}",
+                                  profile=repr(profile_id), error=e))
             return default_profile()
         if not path.exists():
             if profile_id != "default":
-                self.errors.append(f"{path.name} fehlt, Standardprofil wird verwendet")
+                self.errors.append(tr("store", "{file} fehlt, Standardprofil wird verwendet", file=path.name))
             return default_profile()
         try:
             return self._load_path(path)
@@ -134,11 +138,12 @@ class ConfigStore:
             try:
                 profile = self._load_path(src)
             except _READ_ERRORS as e:
-                raise ValueError(f"{src.name} ist beschädigt und kann nicht exportiert werden: {e}") from e
+                raise ValueError(tr("store", "{file} ist beschädigt und kann nicht exportiert werden: {error}",
+                                    file=src.name, error=e)) from e
         elif profile_id == "default":
             profile = default_profile()
         else:
-            raise ValueError(f"{src.name} fehlt und kann nicht exportiert werden")
+            raise ValueError(tr("store", "{file} fehlt und kann nicht exportiert werden", file=src.name))
         _write_json(Path(path), profile.to_dict())
 
     def import_profile(self, path: Path) -> Profile:

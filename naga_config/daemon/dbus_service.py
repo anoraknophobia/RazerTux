@@ -17,6 +17,7 @@ from dbus_next.service import signal as _dbus_signal
 from naga_config.backup import load_backup
 from naga_config.config.model import Profile, Settings, validate
 from naga_config.config.store import ConfigStore
+from naga_config.i18n import apply_settings as apply_language, tr
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ class NagaService(ServiceInterface):
         self._backup_path = backup_path or (
             Path.home() / ".config" / "naga-config" / "mouse-backup.json")
         self._settings = store.load_settings()
+        apply_language(self._settings)  # language of config errors and notifications
         self.active_profile_id = self._settings.active_profile
         self.active_profile: Profile | None = None
         self._macros: dict = {}
@@ -89,7 +91,7 @@ class NagaService(ServiceInterface):
     async def activate(self, profile_id: str) -> None:
         known = {p.id for p in self._store.list_profiles()} | {"default"}
         if profile_id not in known:
-            raise DBusError(_ERR + "UnknownProfile", f"Unbekanntes Profil: {profile_id}")
+            raise DBusError(_ERR + "UnknownProfile", tr("daemon", "Unbekanntes Profil: {profile}", profile=profile_id))
         profile = self._store.load_profile(profile_id)
         await self._use(profile)
         self._settings = self._store.load_settings()  # keep what the GUI saved meanwhile
@@ -102,6 +104,9 @@ class NagaService(ServiceInterface):
         """Re-read settings, macros and the active profile from disk."""
         self._store.errors.clear()
         old = self.active_profile_id
+        self._settings = self._store.load_settings()
+        apply_language(self._settings)
+        self._store.errors.clear()  # settings.json errors again, in the (new) language
         self._settings = self._store.load_settings()
         try:
             self._apply_settings(self._settings)
@@ -150,10 +155,11 @@ class NagaService(ServiceInterface):
             backup = load_backup(self._backup_path)
         except (OSError, ValueError) as e:
             raise DBusError(_ERR + "NoBackup",
-                            f"Keine lesbare Sicherung unter {self._backup_path}: {e}") from e
+                            tr("daemon", "Keine lesbare Sicherung unter {path}: {error}",
+                               path=self._backup_path, error=e)) from e
         if self._restore is None:
             raise DBusError(_ERR + "NotImplemented",
-                            "Wiederherstellen des Originalzustands ist noch nicht umgesetzt")
+                            tr("daemon", "Wiederherstellen des Originalzustands ist noch nicht umgesetzt"))
         return list(self._restore(backup) or [])
 
     # -- D-Bus ---------------------------------------------------------------

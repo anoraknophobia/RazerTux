@@ -28,3 +28,4 @@ asyncio_mode = "auto"
 
 [tool.setuptools.package-data]
 "naga_config.gui" = ["assets/*.svg"]
+"naga_config.i18n" = ["*.json"]

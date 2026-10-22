@@ -84,3 +84,12 @@ def test_readme_has_no_manual_backup_step():
     assert not re.search(r"^\d+\..*naga-config backup", steps, re.M)  # no numbered step
     assert "automatisch" in steps and "optional" in steps
     assert "lässt die Maus im Treibermodus, bis sie neu angesteckt wird" not in readme
+
+
+def test_translations_are_packaged():
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert data["tool"]["setuptools"]["package-data"]["naga_config.i18n"] == ["*.json"]
+    for lang in ("en", "es", "fr"):
+        assert (ROOT / "naga_config" / "i18n" / f"{lang}.json").is_file()
+    # the PKGBUILD copies the whole package directory, catalogs included
+    assert 'cp -r "$startdir/../naga_config"' in _read("PKGBUILD")

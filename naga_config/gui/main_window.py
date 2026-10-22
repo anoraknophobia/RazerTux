@@ -15,6 +15,7 @@ from naga_config.config.store import ConfigStore
 from naga_config.gui.action_dialog import ActionDialog
 from naga_config.gui.buttons_tab import ButtonsTab
 from naga_config.gui.dbus_client import DaemonClient
+from naga_config.gui.language import add_language_menu, check_language
 from naga_config.gui.labels import battery_text
 from naga_config.gui.lighting_tab import LightingTab
 from naga_config.gui.macro_tab import MacroTab, strip_macro
@@ -31,6 +32,7 @@ POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # G
 
 class MainWindow(QMainWindow, ProfileActions):
     themeRequested = Signal(str)  # "synapse" | "system"
+    languageRequested = Signal(str)  # Settings.language
 
     def __init__(self, store: ConfigStore, client: DaemonClient, parent: QWidget | None = None):
         super().__init__(parent)
@@ -115,6 +117,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self.system_colors_action.setCheckable(True)
         self.system_colors_action.triggered.connect(
             lambda on: self.themeRequested.emit("system" if on else "synapse"))
+        self.language_menu = add_language_menu(view, self.settings.language, self.languageRequested.emit)
 
         self.save_btn = QPushButton(self.tr("Speichern"))
         self.save_btn.clicked.connect(lambda _=False: self.save())
@@ -178,6 +181,9 @@ class MainWindow(QMainWindow, ProfileActions):
 
     def set_theme_checked(self, name: str) -> None:
         self.system_colors_action.setChecked(name == "system")
+
+    def set_language_checked(self, name: str) -> None:
+        check_language(self.language_menu, name)
 
     def _macro_dicts(self) -> dict:
         return {k: m.to_dict() for k, m in self.macros.items()}

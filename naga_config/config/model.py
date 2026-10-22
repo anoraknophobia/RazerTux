@@ -7,6 +7,7 @@ from typing import Any, Literal
 from evdev import ecodes as E
 
 from naga_config.hw.buttons import ButtonId
+from naga_config.i18n import tr
 
 MacroMode = Literal["once", "repeat_n", "while_held", "toggle"]
 Effect = Literal["off", "static", "breath", "spectrum", "wave", "reactive"]
@@ -217,6 +218,7 @@ class Settings:
     idle_time: int | None = None
     low_battery_threshold: int | None = None
     scroll_stage_names: dict[int, str] = field(default_factory=default_stage_names)
+    language: str = "system"  # "system" | "de" | "en" | "es" | "fr" (GUI restart needed)
 
     def to_dict(self) -> dict[str, Any]:
         return {"active_profile": self.active_profile,
@@ -225,7 +227,8 @@ class Settings:
                 "idle_time": self.idle_time,
                 "low_battery_threshold": self.low_battery_threshold,
                 "scroll_stage_names": {str(k): v for k, v in
-                                       sorted(self.scroll_stage_names.items())}}
+                                       sorted(self.scroll_stage_names.items())},
+                "language": self.language}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
@@ -236,7 +239,8 @@ class Settings:
             stage_names = default_stage_names()
         return cls(d["active_profile"], d.get("low_battery_notify", 15),
                    d.get("theme", "synapse"), d.get("idle_time"),
-                   d.get("low_battery_threshold"), stage_names)
+                   d.get("low_battery_threshold"), stage_names,
+                   str(d.get("language", "system")))
 
 
 def default_profile() -> Profile:
@@ -247,42 +251,44 @@ def default_profile() -> Profile:
 
 
 def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[str]:
-    """Return human-readable (German) errors; empty list means valid."""
+    """Return human-readable errors in the current language (naga_config.i18n);
+    empty list means valid."""
     errors: list[str] = []
     left = profile.standard.get(ButtonId.LEFT, DefaultAction())
     if not isinstance(left, DefaultAction) and not any(
         isinstance(a, KeyAction) and a.code == E.BTN_LEFT
         for a in profile.standard.values()
     ):
-        errors.append("Linksklick nicht erreichbar")
+        errors.append(tr("validate", "Linksklick nicht erreichbar"))
     if sum(isinstance(a, HypershiftAction) for a in profile.standard.values()) > 1:
-        errors.append("Mehr als eine Hypershift-Taste")
+        errors.append(tr("validate", "Mehr als eine Hypershift-Taste"))
     if any(isinstance(a, HypershiftAction) for a in profile.hypershift.values()):
-        errors.append("Hypershift-Taste in der Hypershift-Ebene nicht erlaubt")
+        errors.append(tr("validate", "Hypershift-Taste in der Hypershift-Ebene nicht erlaubt"))
     if not profile.remap_top_buttons and any(
             isinstance(profile.standard.get(b), HypershiftAction)
             for b in (ButtonId.TOP_1, ButtonId.TOP_2)):
         # normal mode: the firmware owns the top buttons, the key would never be seen
-        errors.append("Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“")
+        errors.append(tr("validate", "Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“"))
     if macros is not None:
         for layer in (profile.standard, profile.hypershift):
             for a in layer.values():
                 if isinstance(a, MacroAction) and a.macro_id not in macros:
-                    msg = f"Makro fehlt: {a.macro_id}"
+                    msg = tr("validate", "Makro fehlt: {macro}", macro=a.macro_id)
                     if msg not in errors:
                         errors.append(msg)
     if profile.dpi_stages:
         if len(profile.dpi_stages) > MAX_STAGES:
-            errors.append(f"Maximal {MAX_STAGES} DPI-Stufen erlaubt")
+            errors.append(tr("validate", "Maximal {count} DPI-Stufen erlaubt", count=MAX_STAGES))
         if any(not DPI_MIN <= v <= DPI_MAX for s in profile.dpi_stages for v in s):
-            errors.append(f"DPI muss zwischen {DPI_MIN} und {DPI_MAX} liegen")
+            errors.append(tr("validate", "DPI muss zwischen {min} und {max} liegen",
+                             min=DPI_MIN, max=DPI_MAX))
         if not 1 <= profile.active_stage <= len(profile.dpi_stages):
-            errors.append("Aktive DPI-Stufe ungültig")
+            errors.append(tr("validate", "Aktive DPI-Stufe ungültig"))
     if profile.poll_rate is not None and profile.poll_rate not in POLL_RATES:
-        errors.append("Abtastrate muss 125, 500 oder 1000 Hz sein")
+        errors.append(tr("validate", "Abtastrate muss 125, 500 oder 1000 Hz sein"))
     for zone, lz in profile.lighting.items():
         if not 0 <= lz.brightness <= 255:
-            errors.append(f"Helligkeit ({zone}) muss zwischen 0 und 255 liegen")
+            errors.append(tr("validate", "Helligkeit ({zone}) muss zwischen 0 und 255 liegen", zone=zone))
         if any(not 0 <= c <= 255 for c in lz.color):
-            errors.append(f"Farbwerte ({zone}) müssen zwischen 0 und 255 liegen")
+            errors.append(tr("validate", "Farbwerte ({zone}) müssen zwischen 0 und 255 liegen", zone=zone))
     return errors
