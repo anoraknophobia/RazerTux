@@ -54,6 +54,7 @@ class DBusNextTransport(QObject):
         super().__init__()
         self._loop = asyncio.new_event_loop()
         self._bus: Any = None
+        self._lock: asyncio.Lock | None = None
         self._thread = threading.Thread(target=self._loop.run_forever, daemon=True,
                                         name="naga-dbus")
 
@@ -63,14 +64,26 @@ class DBusNextTransport(QObject):
             asyncio.run_coroutine_threadsafe(self._watch(), self._loop)
 
     def stop(self) -> None:
-        self._loop.call_soon_threadsafe(self._loop.stop)
+        async def _close() -> None:
+            if self._bus is not None:
+                self._bus.disconnect()
+            self._loop.stop()
+
+        if self._thread.is_alive():
+            asyncio.run_coroutine_threadsafe(_close(), self._loop)
+            self._thread.join(2)
+        if not self._loop.is_running():
+            self._loop.close()
 
     async def _connect(self) -> Any:
         from dbus_next import BusType
         from dbus_next.aio import MessageBus
-        if self._bus is None or not self._bus.connected:
-            self._bus = await MessageBus(bus_type=BusType.SESSION).connect()
-            self._bus.add_message_handler(self._on_message)
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        async with self._lock:  # no duplicate concurrent connects
+            if self._bus is None or not self._bus.connected:
+                self._bus = await MessageBus(bus_type=BusType.SESSION).connect()
+                self._bus.add_message_handler(self._on_message)
         return self._bus
 
     def _on_message(self, msg: Any) -> None:
@@ -101,8 +114,10 @@ class DBusNextTransport(QObject):
             reply = await asyncio.wait_for(bus.call(Message(
                 destination=BUS_NAME, path=OBJECT_PATH, interface=INTERFACE,
                 member=member, signature=signature, body=list(args))), CALL_TIMEOUT)
-        except (OSError, asyncio.TimeoutError, DBusError, EOFError) as e:
+        except DBusError as e:
             raise DaemonUnavailable(str(e)) from e
+        except Exception as e:  # no/invalid bus address, timeout, closed connection ...
+            raise DaemonUnavailable(f"{type(e).__name__}: {e}") from e
         if reply.message_type == MessageType.ERROR:
             if reply.error_name in ("org.freedesktop.DBus.Error.ServiceUnknown",
                                     "org.freedesktop.DBus.Error.NameHasNoOwner"):
@@ -148,7 +163,13 @@ class DaemonClient(QObject):
             self._set_available(False)
 
     def refresh(self) -> None:
-        self.status()
+        """Re-read state (e.g. after the daemon appeared) and publish it."""
+        status = self.status()
+        if status:
+            self.statusChanged.emit(status)
+            active = self.active_profile()
+            if active:
+                self.profileChanged.emit(active)
 
     def _call(self, member: str, signature: str = "", args: tuple = ()) -> list | None:
         """Result list, or None when the daemon is unreachable."""

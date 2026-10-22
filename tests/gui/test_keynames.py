@@ -35,3 +35,9 @@ def test_key_label_fallback_to_evdev_name():
 
 def test_combo_label():
     assert combo_label([E.KEY_LEFTCTRL, E.KEY_LEFTSHIFT, E.KEY_M], layout="de") == "Strg+Shift+M"
+
+
+def test_sharp_s_not_uppercased_and_dead_keys_readable():
+    assert key_label(E.KEY_MINUS, layout="de") == "ß"
+    assert key_label(E.KEY_GRAVE, layout="de") == "Zirkumflex"
+    assert key_label(E.KEY_EQUAL, layout="de") == "Akut"

@@ -9,11 +9,16 @@ from naga_config.config.store import ConfigStore
 from naga_config.daemon.main import default_config_dir
 
 
+def _tr(text: str) -> str:
+    from PySide6.QtCore import QCoreApplication
+    return QCoreApplication.translate("app", text)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="naga-config-gui",
-                                description="Konfiguration für die Razer Naga V2 Pro")
-    p.add_argument("--tray", action="store_true", help="nur Tray-Symbol starten (Fenster versteckt)")
-    p.add_argument("--config-dir", type=Path, default=None, help="Konfigurationsverzeichnis")
+                                description=_tr("Konfiguration für die Razer Naga V2 Pro"))
+    p.add_argument("--tray", action="store_true", help=_tr("nur Tray-Symbol starten (Fenster versteckt)"))
+    p.add_argument("--config-dir", type=Path, default=None, help=_tr("Konfigurationsverzeichnis"))
     return p.parse_args(argv)
 
 
@@ -27,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
 
     app = QApplication([sys.argv[0]])
     app.setApplicationName("naga-config")
-    app.setApplicationDisplayName("Naga-Konfiguration")
+    app.setApplicationDisplayName(_tr("Naga-Konfiguration"))
     app.setQuitOnLastWindowClosed(False)
     app.setWindowIcon(app_icon())
 

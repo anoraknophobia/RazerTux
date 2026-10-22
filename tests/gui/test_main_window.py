@@ -38,7 +38,7 @@ def test_dirty_tracking_and_title(env):
     w, *_ = env
     w.set_action(ButtonId.SIDE_1, KeyAction(E.KEY_A))
     assert w.is_dirty and w.windowTitle().endswith("*")
-    assert w.mouse_view.button_text(ButtonId.SIDE_1).endswith("Taste A")
+    assert w.mouse_view.button_text(ButtonId.SIDE_1).endswith("→  A")
     w.set_action(ButtonId.SIDE_1, KeyAction(E.KEY_A))
     w.profile.standard.pop(ButtonId.SIDE_1)
     w._update_dirty()
@@ -129,3 +129,36 @@ def test_battery_label(env):
     assert "80" in w.battery_label.text()
     w.client.statusChanged.emit({"connected": True, "battery": -1, "charging": False})
     assert "80" not in w.battery_label.text()
+
+
+def test_config_errors_banner_and_dismiss(env):
+    w, *_ = env
+    w.show()
+    assert not w.errors_banner.isVisible()
+    w.client.statusChanged.emit({"config_errors": ["profil x kaputt"], "openrazer_loaded": False})
+    assert w.errors_banner.isVisible() and "profil x kaputt" in w.errors_banner.label.text()
+    w.errors_dismiss.click()
+    assert not w.errors_banner.isVisible()
+    w.client.statusChanged.emit({"config_errors": ["profil x kaputt"]})
+    assert not w.errors_banner.isVisible()  # same error stays dismissed
+    w.client.statusChanged.emit({"config_errors": ["profil x kaputt", "neu"]})
+    assert w.errors_banner.isVisible()
+
+
+def test_store_errors_are_shown(env):
+    w, store, _ = env
+    w.show()
+    (store.root / "profiles" / "p2.json").write_text("{kaputt")
+    w.select_profile("p2", force=True)  # corrupt active profile falls back to default
+    assert w.errors_banner.isVisible() and "p2.json" in w.errors_banner.label.text()
+
+
+def test_openrazer_warning(env):
+    w, *_ = env
+    w.show()
+    assert not w.openrazer_banner.isVisible()
+    w.client.statusChanged.emit({"openrazer_loaded": True})
+    assert w.openrazer_banner.isVisible()
+    assert "OpenRazer-Treiber ist geladen" in w.openrazer_banner.label.text()
+    w.client.statusChanged.emit({"openrazer_loaded": False})
+    assert not w.openrazer_banner.isVisible()

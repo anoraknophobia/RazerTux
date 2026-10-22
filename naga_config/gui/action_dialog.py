@@ -1,7 +1,7 @@
 """Dialog to pick what a button does."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, Qt, Signal
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QLabel,
@@ -13,16 +13,25 @@ from naga_config.config.model import (
     HypershiftAction, KeyAction, Macro, MacroAction,
 )
 from naga_config.gui.keynames import MODIFIER_CODES, combo_label, key_label, keycode_from_qt
-from naga_config.gui.labels import BUTTON_NAMES, WHEEL_BUTTONS
+from naga_config.gui.labels import WHEEL_BUTTONS, button_name
 from naga_config.hw.buttons import ButtonId
 
 _TYPES = [
-    ("default", "Standard"), ("disabled", "Deaktiviert"), ("key", "Taste"),
-    ("combo", "Kombination"), ("macro", "Makro"), ("hypershift", "Hypershift-Taste"),
-    ("dpi_up", "DPI-Stufe hoch"), ("dpi_down", "DPI-Stufe runter"),
+    ("default", QT_TRANSLATE_NOOP("ActionDialog", "Standard")),
+    ("disabled", QT_TRANSLATE_NOOP("ActionDialog", "Deaktiviert")),
+    ("key", QT_TRANSLATE_NOOP("ActionDialog", "Taste")),
+    ("combo", QT_TRANSLATE_NOOP("ActionDialog", "Kombination")),
+    ("macro", QT_TRANSLATE_NOOP("ActionDialog", "Makro")),
+    ("hypershift", QT_TRANSLATE_NOOP("ActionDialog", "Hypershift-Taste")),
+    ("dpi_up", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe hoch")),
+    ("dpi_down", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe runter")),
 ]
-_MODES = [("once", "Einmal ausführen"), ("repeat_n", "n-mal wiederholen"),
-          ("while_held", "Solange gedrückt"), ("toggle", "Umschalten (an/aus)")]
+_MODES = [
+    ("once", QT_TRANSLATE_NOOP("ActionDialog", "Einmal ausführen")),
+    ("repeat_n", QT_TRANSLATE_NOOP("ActionDialog", "n-mal wiederholen")),
+    ("while_held", QT_TRANSLATE_NOOP("ActionDialog", "Solange gedrückt")),
+    ("toggle", QT_TRANSLATE_NOOP("ActionDialog", "Umschalten (an/aus)")),
+]
 
 
 class KeyCapture(QPushButton):
@@ -49,25 +58,25 @@ class KeyCapture(QPushButton):
         self._refresh()
 
     def clear_codes(self) -> None:
-        self.codes, self._held, self._done = [], set(), True
+        self.codes, self._held, self._pressed, self._done = [], set(), [], True
         self._refresh()
 
     def _refresh(self) -> None:
         if self.hasFocus() and not self._done:
-            self.setText("Jetzt Taste drücken …")
+            self.setText(self.tr("Jetzt Taste drücken …"))
         elif self.codes:
             self.setText(combo_label(self.codes))
         else:
-            self.setText("Drücken zum Aufnehmen")
+            self.setText(self.tr("Drücken zum Aufnehmen"))
         self.changed.emit()
 
     def press(self, code: int) -> None:
-        if self._done:  # new recording starts with the first press
-            self.codes, self._held, self._done = [], set(), False
+        if self._done:  # a new recording starts with the first press
+            self.codes, self._held, self._pressed, self._done = [], set(), [], False
         self._held.add(code)
         self._pressed.append(code)
         if code not in MODIFIER_CODES:
-            mods = [c for c in self._pressed if c in MODIFIER_CODES and c != code]
+            mods = [c for c in self._pressed if c in MODIFIER_CODES]
             self.codes = (mods if self.combo_mode else []) + [code]
             self._done = True
         else:
@@ -77,7 +86,8 @@ class KeyCapture(QPushButton):
     def release(self, code: int) -> None:
         self._held.discard(code)
         if not self._held and not self._done:  # only modifiers were pressed
-            self.codes = self.codes[:1] if not self.combo_mode else self.codes
+            if not self.combo_mode:
+                self.codes = self.codes[:1]
             self._done = True
             self._refresh()
 
@@ -98,7 +108,7 @@ class KeyCapture(QPushButton):
     def focusInEvent(self, e) -> None:
         super().focusInEvent(e)
         self._done = True
-        self.setText("Taste drücken …")
+        self.setText(self.tr("Taste drücken …"))
 
     def focusOutEvent(self, e) -> None:
         super().focusOutEvent(e)
@@ -109,14 +119,15 @@ class ActionDialog(QDialog):
     def __init__(self, parent: QWidget | None, current: Action, macros: dict[str, Macro],
                  *, button: ButtonId | None = None, layer: str = "standard"):
         super().__init__(parent)
-        self.setWindowTitle(f"Belegung: {BUTTON_NAMES[button]}" if button else "Belegung")
+        self.setWindowTitle(self.tr("Belegung: %1").replace("%1", button_name(button))
+                            if button else self.tr("Belegung"))
         self._macros = macros
         allow_hypershift = layer == "standard" and button not in WHEEL_BUTTONS
 
         self.type_combo = QComboBox()
         for key, text in _TYPES:
             if key != "hypershift" or allow_hypershift:
-                self.type_combo.addItem(text, key)
+                self.type_combo.addItem(self.tr(text), key)
         self.capture = KeyCapture()
         self.capture.changed.connect(self._update)
         self.macro_combo = QComboBox()
@@ -124,26 +135,26 @@ class ActionDialog(QDialog):
             self.macro_combo.addItem(m.name, mid)
         self.mode_combo = QComboBox()
         for key, text in _MODES:
-            self.mode_combo.addItem(text, key)
+            self.mode_combo.addItem(self.tr(text), key)
         self.count_spin = QSpinBox()
         self.count_spin.setRange(1, 999)
         self.hint = QLabel()
         self.hint.setWordWrap(True)
 
         form = QFormLayout()
-        form.addRow("Aktion:", self.type_combo)
+        form.addRow(self.tr("Aktion:"), self.type_combo)
         self._rows = {
-            "capture": (QLabel("Eingabe:"), self.capture),
-            "macro": (QLabel("Makro:"), self.macro_combo),
-            "mode": (QLabel("Modus:"), self.mode_combo),
-            "count": (QLabel("Anzahl:"), self.count_spin),
+            "capture": (QLabel(self.tr("Eingabe:")), self.capture),
+            "macro": (QLabel(self.tr("Makro:")), self.macro_combo),
+            "mode": (QLabel(self.tr("Modus:")), self.mode_combo),
+            "count": (QLabel(self.tr("Anzahl:")), self.count_spin),
         }
         for label, field in self._rows.values():
             form.addRow(label, field)
         self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
                                         | QDialogButtonBox.StandardButton.Cancel)
-        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Übernehmen")
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Abbrechen")
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(self.tr("Übernehmen"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(self.tr("Abbrechen"))
         self.ok_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
@@ -204,7 +215,7 @@ class ActionDialog(QDialog):
         for name, (label, field) in self._rows.items():
             label.setVisible(show[name])
             field.setVisible(show[name])
-        self.hint.setText("Noch keine Makros vorhanden (Reiter „Makros“)."
+        self.hint.setText(self.tr("Noch keine Makros vorhanden (Reiter „Makros“).")
                           if t == "macro" and not self._macros else "")
         self.ok_button.setEnabled(self.result_action() is not None)
 

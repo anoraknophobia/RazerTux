@@ -13,7 +13,7 @@ def L(a, button=ButtonId.SIDE_1, macros=None):
 
 
 def test_labels():
-    assert L(KeyAction(E.KEY_A)) == "Taste A"
+    assert L(KeyAction(E.KEY_A)) == "A"
     assert L(ComboAction([E.KEY_LEFTCTRL, E.KEY_LEFTSHIFT, E.KEY_M])) == "Strg+Shift+M"
     assert L(DefaultAction()) == "Standard"
     assert L(DisabledAction()) == "Aus"

@@ -15,6 +15,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from evdev import ecodes as E
+from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP
 from PySide6.QtGui import QKeyEvent
 
 MODIFIER_CODES = frozenset({
@@ -23,24 +24,59 @@ MODIFIER_CODES = frozenset({
 })
 
 _MODIFIER_NAMES = {
-    E.KEY_LEFTCTRL: "Strg", E.KEY_RIGHTCTRL: "Strg", E.KEY_LEFTSHIFT: "Shift",
-    E.KEY_RIGHTSHIFT: "Shift", E.KEY_LEFTALT: "Alt", E.KEY_RIGHTALT: "Alt Gr",
-    E.KEY_LEFTMETA: "Meta", E.KEY_RIGHTMETA: "Meta",
+    E.KEY_LEFTCTRL: QT_TRANSLATE_NOOP("keynames", "Strg"), E.KEY_RIGHTCTRL: QT_TRANSLATE_NOOP("keynames", "Strg"), E.KEY_LEFTSHIFT: QT_TRANSLATE_NOOP("keynames", "Shift"),
+    E.KEY_RIGHTSHIFT: QT_TRANSLATE_NOOP("keynames", "Shift"), E.KEY_LEFTALT: QT_TRANSLATE_NOOP("keynames", "Alt"), E.KEY_RIGHTALT: QT_TRANSLATE_NOOP("keynames", "Alt Gr"),
+    E.KEY_LEFTMETA: QT_TRANSLATE_NOOP("keynames", "Meta"), E.KEY_RIGHTMETA: QT_TRANSLATE_NOOP("keynames", "Meta"),
 }
 _SPECIAL_NAMES = {
-    E.KEY_ENTER: "Enter", E.KEY_ESC: "Esc", E.KEY_BACKSPACE: "Rücktaste",
-    E.KEY_TAB: "Tab", E.KEY_SPACE: "Leertaste", E.KEY_DELETE: "Entf",
-    E.KEY_INSERT: "Einfg", E.KEY_HOME: "Pos1", E.KEY_END: "Ende",
-    E.KEY_PAGEUP: "Bild hoch", E.KEY_PAGEDOWN: "Bild runter",
-    E.KEY_UP: "Hoch", E.KEY_DOWN: "Runter", E.KEY_LEFT: "Links", E.KEY_RIGHT: "Rechts",
-    E.KEY_CAPSLOCK: "Feststelltaste", E.KEY_SYSRQ: "Druck", E.KEY_SCROLLLOCK: "Rollen",
-    E.KEY_PAUSE: "Pause", E.KEY_NUMLOCK: "Num", E.KEY_COMPOSE: "Menü",
+    E.KEY_ENTER: QT_TRANSLATE_NOOP("keynames", "Enter"), E.KEY_ESC: QT_TRANSLATE_NOOP("keynames", "Esc"), E.KEY_BACKSPACE: QT_TRANSLATE_NOOP("keynames", "Rücktaste"),
+    E.KEY_TAB: QT_TRANSLATE_NOOP("keynames", "Tab"), E.KEY_SPACE: QT_TRANSLATE_NOOP("keynames", "Leertaste"), E.KEY_DELETE: QT_TRANSLATE_NOOP("keynames", "Entf"),
+    E.KEY_INSERT: QT_TRANSLATE_NOOP("keynames", "Einfg"), E.KEY_HOME: QT_TRANSLATE_NOOP("keynames", "Pos1"), E.KEY_END: QT_TRANSLATE_NOOP("keynames", "Ende"),
+    E.KEY_PAGEUP: QT_TRANSLATE_NOOP("keynames", "Bild hoch"), E.KEY_PAGEDOWN: QT_TRANSLATE_NOOP("keynames", "Bild runter"),
+    E.KEY_UP: QT_TRANSLATE_NOOP("keynames", "Hoch"), E.KEY_DOWN: QT_TRANSLATE_NOOP("keynames", "Runter"), E.KEY_LEFT: QT_TRANSLATE_NOOP("keynames", "Links"), E.KEY_RIGHT: QT_TRANSLATE_NOOP("keynames", "Rechts"),
+    E.KEY_CAPSLOCK: QT_TRANSLATE_NOOP("keynames", "Feststelltaste"), E.KEY_SYSRQ: QT_TRANSLATE_NOOP("keynames", "Druck"), E.KEY_SCROLLLOCK: QT_TRANSLATE_NOOP("keynames", "Rollen"),
+    E.KEY_PAUSE: QT_TRANSLATE_NOOP("keynames", "Pause"), E.KEY_NUMLOCK: QT_TRANSLATE_NOOP("keynames", "Num"), E.KEY_COMPOSE: QT_TRANSLATE_NOOP("keynames", "Menü"),
 }
 _BUTTON_NAMES = {
-    E.BTN_LEFT: "Linke Maustaste", E.BTN_RIGHT: "Rechte Maustaste",
-    E.BTN_MIDDLE: "Mittlere Maustaste", E.BTN_SIDE: "Maustaste Seite",
-    E.BTN_EXTRA: "Maustaste Extra",
+    E.BTN_LEFT: QT_TRANSLATE_NOOP("keynames", "Linke Maustaste"), E.BTN_RIGHT: QT_TRANSLATE_NOOP("keynames", "Rechte Maustaste"),
+    E.BTN_MIDDLE: QT_TRANSLATE_NOOP("keynames", "Mittlere Maustaste"), E.BTN_SIDE: QT_TRANSLATE_NOOP("keynames", "Maustaste Seite"),
+    E.BTN_EXTRA: QT_TRANSLATE_NOOP("keynames", "Maustaste Extra"),
 }
+
+
+def _tr(text: str) -> str:
+    return QCoreApplication.translate("keynames", text)
+
+
+_DEAD_KEYS = {
+    "circumflex": QT_TRANSLATE_NOOP("keynames", "Zirkumflex"),
+    "acute": QT_TRANSLATE_NOOP("keynames", "Akut"),
+    "grave": QT_TRANSLATE_NOOP("keynames", "Gravis"),
+    "tilde": QT_TRANSLATE_NOOP("keynames", "Tilde"),
+    "diaeresis": QT_TRANSLATE_NOOP("keynames", "Trema"),
+    "cedilla": QT_TRANSLATE_NOOP("keynames", "Cedille"),
+    "abovering": QT_TRANSLATE_NOOP("keynames", "Ring"),
+}
+_KP_NAMES = {
+    "End": QT_TRANSLATE_NOOP("keynames", "Ende"), "Home": QT_TRANSLATE_NOOP("keynames", "Pos1"),
+    "Prior": QT_TRANSLATE_NOOP("keynames", "Bild hoch"), "Next": QT_TRANSLATE_NOOP("keynames", "Bild runter"),
+    "Insert": QT_TRANSLATE_NOOP("keynames", "Einfg"), "Delete": QT_TRANSLATE_NOOP("keynames", "Entf"),
+    "Left": QT_TRANSLATE_NOOP("keynames", "Links"), "Right": QT_TRANSLATE_NOOP("keynames", "Rechts"),
+    "Up": QT_TRANSLATE_NOOP("keynames", "Hoch"), "Down": QT_TRANSLATE_NOOP("keynames", "Runter"),
+    "Begin": QT_TRANSLATE_NOOP("keynames", "Mitte"), "Add": "+", "Subtract": "-",
+    "Multiply": "*", "Divide": "/", "Decimal": ",", "Enter": "Enter",
+}
+
+
+def _sym_label(name: str) -> str:
+    """Readable name for a keysym that has no printable text."""
+    if name.startswith("dead_"):
+        base = name[5:]
+        return _tr(_DEAD_KEYS[base]) if base in _DEAD_KEYS else base.capitalize()
+    if name.startswith("KP_"):
+        base = name[3:]
+        return _tr("Num") + " " + (_tr(_KP_NAMES[base]) if base in _KP_NAMES else base)
+    return name
 
 
 def keycode_from_qt(event: QKeyEvent) -> int:
@@ -92,10 +128,11 @@ class _Xkb:
         if self._lib.xkb_state_key_get_utf8(self._state, code + 8, buf, 64) > 0:
             text = buf.value.decode("utf-8", "replace")
             if text.isprintable() and not text.isspace():
-                return text.upper() if len(text) == 1 else text
+                up = text.upper()
+                return up if len(text) == 1 and len(up) == 1 else text
         sym = self._lib.xkb_state_key_get_one_sym(self._state, code + 8)
         if sym and self._lib.xkb_keysym_get_name(sym, buf, 64) > 0:
-            return buf.value.decode("ascii", "replace")
+            return _sym_label(buf.value.decode("ascii", "replace"))
         return ""
 
 
@@ -112,18 +149,18 @@ def _evdev_name(code: int) -> str:
     if isinstance(name, list):
         name = name[0]
     if not name:
-        return f"Taste {code}"
+        return _tr("Taste %1").replace("%1", str(code))
     return name.split("_", 1)[-1].capitalize()
 
 
 def key_label(code: int, layout: str | None = None) -> str:
     """Layout-correct keycap name for an evdev code (never empty)."""
     if code in _MODIFIER_NAMES:
-        return _MODIFIER_NAMES[code]
+        return _tr(_MODIFIER_NAMES[code])
     if code in _BUTTON_NAMES:
-        return _BUTTON_NAMES[code]
+        return _tr(_BUTTON_NAMES[code])
     if code in _SPECIAL_NAMES:
-        return _SPECIAL_NAMES[code]
+        return _tr(_SPECIAL_NAMES[code])
     xkb = _xkb(layout or system_layout()) if 0 < code < 248 else None
     label = xkb.label(code) if xkb else ""
     return label or _evdev_name(code)

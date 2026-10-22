@@ -1,7 +1,7 @@
 """System tray icon: profile switch, battery, window toggle, restore."""
 from __future__ import annotations
 
-from PySide6.QtCore import QByteArray, QObject, Qt, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QByteArray, QCoreApplication, QObject, Qt, Signal
 from PySide6.QtGui import QAction, QActionGroup, QGuiApplication, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon, QWidget
@@ -9,8 +9,16 @@ from PySide6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon, QWidget
 from naga_config.gui.dbus_client import DaemonClient, DaemonError
 from naga_config.gui.mouse_view import themed_svg
 
-_FIELD_NAMES = {"dpi": "DPI-Stufen", "poll_rate": "Abtastrate", "lighting": "Beleuchtung",
-                "scroll_profile": "Mausrad-Profil"}
+_FIELD_NAMES = {
+    "dpi": QT_TRANSLATE_NOOP("TrayIcon", "DPI-Stufen"),
+    "poll_rate": QT_TRANSLATE_NOOP("TrayIcon", "Abtastrate"),
+    "lighting": QT_TRANSLATE_NOOP("TrayIcon", "Beleuchtung"),
+    "scroll_profile": QT_TRANSLATE_NOOP("TrayIcon", "Mausrad-Profil"),
+}
+
+
+def _tr(text: str) -> str:
+    return QCoreApplication.translate("TrayIcon", text)
 
 
 def app_icon() -> QIcon:
@@ -26,8 +34,8 @@ def app_icon() -> QIcon:
 def battery_text(status: dict) -> str:
     b = int(status.get("battery", -1)) if status else -1
     if b < 0:
-        return "Akku: unbekannt"
-    return f"Akku: {b} %" + (" (lädt)" if status.get("charging") else "")
+        return _tr("Akku: unbekannt")
+    return _tr("Akku: %1 %").replace("%1", str(b)) + (" " + _tr("(lädt)") if status.get("charging") else "")
 
 
 class TrayIcon(QSystemTrayIcon):
@@ -40,7 +48,7 @@ class TrayIcon(QSystemTrayIcon):
         super().__init__(app_icon(), parent)
         self.client = client
         self._dialog_parent = dialog_parent
-        self.setToolTip("Naga-Konfiguration")
+        self.setToolTip(self.tr("Naga-Konfiguration"))
         self.menu = QMenu()
         self.menu.aboutToShow.connect(self.rebuild_menu)
         self.setContextMenu(self.menu)
@@ -67,14 +75,14 @@ class TrayIcon(QSystemTrayIcon):
         m.clear()
         up = self.client.is_available
         if not up:
-            m.addAction("Dienst läuft nicht").setEnabled(False)
+            m.addAction(self.tr("Dienst läuft nicht")).setEnabled(False)
         else:
             active = self.client.active_profile()
             group = QActionGroup(m)
             group.setExclusive(True)
             profiles = self.client.list_profiles()
             names = dict(profiles)
-            m.addAction(f"Aktives Profil: {names.get(active, active)}").setEnabled(False)
+            m.addAction(self.tr("Aktives Profil: %1").replace("%1", names.get(active, active))).setEnabled(False)
             for pid, name in profiles:
                 a = m.addAction(name)
                 a.setCheckable(True)
@@ -84,29 +92,29 @@ class TrayIcon(QSystemTrayIcon):
             m.addSeparator()
             m.addAction(battery_text(self.client.status())).setEnabled(False)
         m.addSeparator()
-        m.addAction("Fenster öffnen").triggered.connect(lambda _=False: self.showWindowRequested.emit())
-        m.addAction("Originalzustand wiederherstellen").triggered.connect(lambda _=False: self.restore_original())
+        m.addAction(self.tr("Fenster öffnen")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
+        m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(lambda _=False: self.restore_original())
         m.addSeparator()
-        m.addAction("Beenden").triggered.connect(lambda _=False: self.quitRequested.emit())
+        m.addAction(self.tr("Beenden")).triggered.connect(lambda _=False: self.quitRequested.emit())
 
     def menu_texts(self) -> list[str]:
         return [a.text() for a in self.menu.actions() if not a.isSeparator()]
 
     def restore_original(self) -> None:
-        if not self._confirm("Originalzustand wiederherstellen",
-                             "Die gesicherten Originaleinstellungen werden auf die Maus zurückgeschrieben "
-                             "(DPI, Abtastrate, Beleuchtung). Fortfahren?"):
+        if not self._confirm(self.tr("Originalzustand wiederherstellen"),
+                             self.tr("Die gesicherten Originaleinstellungen werden auf die Maus zurückgeschrieben "
+                                     "(DPI, Abtastrate, Beleuchtung). Fortfahren?")):
             return
         try:
             failed = self.client.restore_original()
         except DaemonError as e:
-            self._info("Wiederherstellen fehlgeschlagen", str(e))
+            self._info(self.tr("Wiederherstellen fehlgeschlagen"), str(e))
             return
         if failed is None:
-            self._info("Wiederherstellen nicht möglich", "Der Dienst läuft nicht.")
+            self._info(self.tr("Wiederherstellen nicht möglich"), self.tr("Der Dienst läuft nicht."))
         elif failed:
-            names = ", ".join(_FIELD_NAMES.get(f, f) for f in failed)
-            self._info("Teilweise wiederhergestellt",
-                       f"Folgende Einstellungen konnten nicht wiederhergestellt werden:\n{names}")
+            names = ", ".join(_tr(_FIELD_NAMES[f]) if f in _FIELD_NAMES else f for f in failed)
+            self._info(self.tr("Teilweise wiederhergestellt"),
+                       self.tr("Folgende Einstellungen konnten nicht wiederhergestellt werden:") + f"\n{names}")
         else:
-            self._info("Wiederhergestellt", "Die Originaleinstellungen wurden zurückgeschrieben.")
+            self._info(self.tr("Wiederhergestellt"), self.tr("Die Originaleinstellungen wurden zurückgeschrieben."))

@@ -9,7 +9,7 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QGridLayout, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from naga_config.config.model import Action, DefaultAction, Macro
-from naga_config.gui.labels import BUTTON_NAMES, action_label
+from naga_config.gui.labels import action_label, button_name
 from naga_config.hw.buttons import ButtonId
 
 ASSETS = Path(__file__).parent / "assets"
@@ -109,9 +109,9 @@ class MouseView(QWidget):
             a = actions.get(b, DefaultAction())
             label = action_label(a, b, macros, layout)
             if b in SIDE_BUTTONS:
-                btn.setText(f"{BUTTON_NAMES[b]}  →  {label}")
+                btn.setText(f"{button_name(b)}  →  {label}")
             else:
-                btn.setText(f"←  {BUTTON_NAMES[b]}:  {label}")
+                btn.setText(f"←  {button_name(b)}:  {label}")
             font = btn.font()
             font.setBold(not isinstance(a, DefaultAction))
             btn.setFont(font)

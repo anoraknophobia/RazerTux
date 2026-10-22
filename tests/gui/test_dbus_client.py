@@ -63,3 +63,26 @@ def test_daemon_error_raises_daemon_error(qapp):
     else:
         raise AssertionError
     assert c.is_available  # an error reply means the daemon is there
+
+
+def test_refresh_publishes_status_and_active_profile(qapp):
+    t = FakeTransport()
+    c, _ = make(t)
+    got = []
+    c.statusChanged.connect(lambda s: got.append(("status", s["battery"])))
+    c.profileChanged.connect(lambda p: got.append(("profile", p)))
+    c.refresh()
+    assert got == [("status", 80), ("profile", "p2")]
+
+
+def test_real_transport_invalid_bus_address_is_unavailable(qapp, monkeypatch):
+    from naga_config.gui.dbus_client import DBusNextTransport
+    monkeypatch.setenv("DBUS_SESSION_BUS_ADDRESS", "bogus:nothing")
+    t = DBusNextTransport()
+    t.start()
+    c = DaemonClient(t)
+    try:
+        assert c.status() == {}
+        assert not c.is_available
+    finally:
+        t.stop()

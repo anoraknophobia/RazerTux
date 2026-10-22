@@ -104,3 +104,25 @@ def test_macro_without_macros_disabled(qapp):
     d = dlg(qapp)
     d.select_type("macro")
     assert d.result_action() is None
+
+
+def test_rerecord_does_not_leak_old_modifiers(qapp):
+    d = dlg(qapp)
+    d.select_type("combo")
+    d.capture.press(CTRL)
+    d.capture.press(E.KEY_Z)
+    assert d.result_action() == ComboAction([CTRL, E.KEY_Z])
+    d.capture.press(M)  # new recording, no release in between
+    assert d.result_action() == KeyAction(M)
+
+
+def test_rerecord_modifier_alone_after_combo(qapp):
+    d = dlg(qapp)
+    d.select_type("combo")
+    d.capture.press(CTRL)
+    d.capture.press(E.KEY_Z)
+    d.capture.release(E.KEY_Z)
+    d.capture.release(CTRL)
+    d.capture.press(SHIFT)
+    d.capture.release(SHIFT)
+    assert d.result_action() == KeyAction(SHIFT)
