@@ -132,6 +132,7 @@ class Daemon:
         self._stage_idx = 0
         # backup fields of persistent settings we changed on the mouse (R17)
         self._written: set[str] = set()
+        self._power_applied: dict[str, int] = {}  # skip rewriting unchanged values
         self._battery: BatteryMonitor | None = None
 
     # -- Hardware protocol for the D-Bus service ---------------------------
@@ -204,9 +205,10 @@ class Daemon:
         for field, value, fn in (("idle_time", settings.idle_time, self._naga.set_idle_time),
                                  ("low_battery_threshold", settings.low_battery_threshold,
                                   self._naga.set_low_battery_threshold)):
-            if value is None:
+            if value is None or self._power_applied.get(field) == value:
                 continue
             self._written.add(field)
+            self._power_applied[field] = value
             try:
                 fn(value)
             except Exception as e:
@@ -288,7 +290,8 @@ class Daemon:
         if self._naga is None:
             raise DBusError("io.github.nagaconfig.Error.NotConnected", "Maus nicht verbunden")
         failed = restore_backup(self._naga, backup)
-        self._written.clear()  # the mouse now holds the backup's values
+        self._written.clear()
+        self._power_applied = {}  # the mouse now holds the backup's values
         # DPI buttons should step through the restored onboard stages
         profile = Profile(id="", name="")
         self._reset_stages(profile)
@@ -317,6 +320,7 @@ class Daemon:
             logger.warning("Kann %s nicht öffnen: %s", path, e)
             return
         naga = self._naga = NagaV2Pro(self._transport)
+        self._power_applied = {}
         try:
             naga.set_device_mode(DRIVER_MODE)
         except _HW_ERRORS as e:

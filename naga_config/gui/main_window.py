@@ -2,38 +2,42 @@
 from __future__ import annotations
 
 import copy
-from pathlib import Path
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP, Qt
+from PySide6.QtCore import QT_TRANSLATE_NOOP, Qt, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
-    QButtonGroup, QComboBox, QFileDialog, QFrame, QHBoxLayout, QInputDialog, QLabel,
-    QMainWindow, QMessageBox, QPushButton, QTabWidget, QVBoxLayout, QWidget,
+    QComboBox, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
+    QTabWidget, QVBoxLayout, QWidget,
 )
 
 from naga_config.config.model import DefaultAction, Profile, default_profile, validate
-from naga_config.config.store import ConfigStore, new_profile_id
+from naga_config.config.store import ConfigStore
 from naga_config.gui.action_dialog import ActionDialog
+from naga_config.gui.buttons_tab import ButtonsTab
 from naga_config.gui.dbus_client import DaemonClient
+from naga_config.gui.labels import battery_text
+from naga_config.gui.lighting_tab import LightingTab
 from naga_config.gui.macro_tab import MacroTab, strip_macro
-from naga_config.gui.mouse_view import MouseView
+from naga_config.gui.performance_tab import PerformanceTab
+from naga_config.gui.power_tab import PowerTab
+from naga_config.gui.profile_actions import ProfileActions
 from naga_config.hw.buttons import ButtonId
 
 APP_TITLE = QT_TRANSLATE_NOOP("MainWindow", "Naga-Konfiguration")
-_PLACEHOLDERS = [
-    (QT_TRANSLATE_NOOP("MainWindow", "Leistung"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 9.")),
-    (QT_TRANSLATE_NOOP("MainWindow", "Beleuchtung"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 10.")),
-    (QT_TRANSLATE_NOOP("MainWindow", "Mausrad"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 10.")),
-]
+POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold")  # GUI-owned settings
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QMainWindow, ProfileActions):
+    themeRequested = Signal(str)  # "synapse" | "system"
+
     def __init__(self, store: ConfigStore, client: DaemonClient, parent: QWidget | None = None):
         super().__init__(parent)
         self.store, self.client = store, client
         self.hide_on_close = False  # set by the app when a tray icon is running
         self.layer = "standard"
         self.macros = store.load_macros()
+        self.settings = store.load_settings()
+        self._settings_baseline = self._power_dict()
         self.profile: Profile = default_profile()
         self._baseline: dict = {}
         self._macros_baseline: dict = self._macro_dicts()
@@ -70,16 +74,6 @@ class MainWindow(QMainWindow):
         self.activate_btn.clicked.connect(lambda _=False: self.activate_current())
         header.addWidget(self.activate_btn)
         header.addStretch(1)
-        self.layer_buttons = {}
-        group = QButtonGroup(self)
-        for key, text in (("standard", self.tr("Standard")), ("hypershift", self.tr("Hypershift"))):
-            b = QPushButton(text)
-            b.setCheckable(True)
-            b.setChecked(key == "standard")
-            b.clicked.connect(lambda _=False, k=key: self.set_layer(k))
-            group.addButton(b)
-            self.layer_buttons[key] = b
-            header.addWidget(b)
         self.battery_label = QLabel()
         header.addWidget(self.battery_label)
 
@@ -93,18 +87,29 @@ class MainWindow(QMainWindow):
         self.errors_dismiss.clicked.connect(lambda _=False: self._dismiss_errors())
         self.errors_banner.layout().addWidget(self.errors_dismiss)
 
-        self.mouse_view = MouseView()
-        self.mouse_view.bindingClicked.connect(self.edit_binding)
-        self.tabs = QTabWidget()
-        self.tabs.addTab(self.mouse_view, self.tr("Tasten"))
-        for name, text in _PLACEHOLDERS:
-            label = QLabel(self.tr(text))
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.tabs.addTab(label, self.tr(name))
+        self.buttons_tab = ButtonsTab()
+        self.buttons_tab.bindingClicked.connect(self.edit_binding)
+        self.buttons_tab.layerChanged.connect(self.set_layer)
+        self.mouse_view = self.buttons_tab.mouse_view
+        self.performance_tab, self.lighting_tab, self.power_tab = PerformanceTab(), LightingTab(), PowerTab()
+        for tab in (self.performance_tab, self.lighting_tab, self.power_tab):
+            tab.changed.connect(self._update_dirty)
+        wheel = QLabel(self.tr("Kommt in Schritt 11."))
+        wheel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.macro_tab = MacroTab(self.macros, self._all_profiles)
         self.macro_tab.changed.connect(self._refresh)
         self.macro_tab.macroDeleted.connect(self._on_macro_deleted)
-        self.tabs.addTab(self.macro_tab, self.tr("Makros"))
+        self.tabs = QTabWidget()
+        for widget, name in ((self.buttons_tab, self.tr("Tasten")), (self.performance_tab, self.tr("Leistung")),
+                             (wheel, self.tr("Mausrad")), (self.lighting_tab, self.tr("Beleuchtung")),
+                             (self.power_tab, self.tr("Energie")), (self.macro_tab, self.tr("Makros"))):
+            self.tabs.addTab(widget, name)
+        self.power_tab.load(self.settings)
+        view = self.menuBar().addMenu(self.tr("Ansicht"))
+        self.system_colors_action = view.addAction(self.tr("Systemfarben verwenden"))
+        self.system_colors_action.setCheckable(True)
+        self.system_colors_action.triggered.connect(
+            lambda on: self.themeRequested.emit("system" if on else "synapse"))
 
         self.save_btn = QPushButton(self.tr("Speichern"))
         self.save_btn.clicked.connect(lambda _=False: self.save())
@@ -154,7 +159,19 @@ class MainWindow(QMainWindow):
     # -- dirty tracking -------------------------------------------------------
     @property
     def is_dirty(self) -> bool:
-        return self.profile.to_dict() != self._baseline or self._macro_dicts() != self._macros_baseline
+        return (self.profile.to_dict() != self._baseline or self._macro_dicts() != self._macros_baseline
+                or self._power_dict() != self._settings_baseline)
+
+    def _power_dict(self) -> dict:
+        return {f: getattr(self.settings, f) for f in POWER_FIELDS}
+
+    def _reload_settings(self) -> None:
+        self.settings = self.store.load_settings()
+        self._settings_baseline = self._power_dict()
+        self.power_tab.load(self.settings)
+
+    def set_theme_checked(self, name: str) -> None:
+        self.system_colors_action.setChecked(name == "system")
 
     def _macro_dicts(self) -> dict:
         return {k: m.to_dict() for k, m in self.macros.items()}
@@ -187,6 +204,7 @@ class MainWindow(QMainWindow):
             return self.save()
         if answer == "discard":
             self._reload_macros()
+            self._reload_settings()
             return True
         return False
 
@@ -213,10 +231,13 @@ class MainWindow(QMainWindow):
         if self.profile_combo.findData(profile.id) < 0:
             self.reload_profile_list()
         self.profile_combo.setCurrentIndex(max(self.profile_combo.findData(profile.id), 0))
+        self.performance_tab.load(profile)
+        self.lighting_tab.load(profile)
         self._refresh()
 
     def revert(self) -> None:
         self._reload_macros()
+        self._reload_settings()
         self._show_profile(self.store.load_profile(self.profile.id))
 
     def _refresh(self) -> None:
@@ -228,7 +249,7 @@ class MainWindow(QMainWindow):
     # -- editing --------------------------------------------------------------
     def set_layer(self, layer: str) -> None:
         self.layer = layer
-        self.layer_buttons[layer].setChecked(True)
+        self.buttons_tab.set_layer(layer)
         self._refresh()
 
     def set_action(self, button: ButtonId, action) -> None:
@@ -259,6 +280,12 @@ class MainWindow(QMainWindow):
             if self._macro_dicts() != self._macros_baseline:
                 self.store.save_macros(self.macros)
                 self._macros_baseline = self._macro_dicts()
+            if self._power_dict() != self._settings_baseline:
+                on_disk = self.store.load_settings()  # keep active_profile/theme as they are now
+                for f in POWER_FIELDS:
+                    setattr(on_disk, f, getattr(self.settings, f))
+                self.store.save_settings(on_disk)
+                self._settings_baseline = self._power_dict()
             self.store.save_profile(self.profile)
         except OSError as e:
             self._warn(self.tr("Speichern fehlgeschlagen"),
@@ -297,82 +324,6 @@ class MainWindow(QMainWindow):
         if self._resolve_unsaved():
             self.client.activate_profile(self.profile.id)
 
-    # -- profile operations ---------------------------------------------------
-    def _ask_name(self, title: str, default: str = "") -> str | None:
-        name, ok = QInputDialog.getText(self, title, self.tr("Name des Profils:"), text=default)
-        return name.strip() if ok and name.strip() else None
-
-    def _add_profile(self, profile: Profile) -> None:
-        self.store.save_profile(profile)
-        self.reload_profile_list()
-        self._show_profile(profile)
-        self.client.reload()
-
-    def new_profile(self) -> None:
-        name = self._ask_name(self.tr("Neues Profil")) if self._resolve_unsaved() else None
-        if name:
-            self._add_profile(Profile(id=new_profile_id(name), name=name,
-                                      standard=default_profile().standard))
-
-    def duplicate_profile(self) -> None:
-        name = self._ask_name(self.tr("Profil duplizieren"),
-                                    self.tr("%1 (Kopie)").replace("%1", self.profile.name)) \
-            if self._resolve_unsaved() else None
-        if name:
-            copy_ = Profile.from_dict(self.profile.to_dict())
-            copy_.id, copy_.name = new_profile_id(name), name
-            self._add_profile(copy_)
-
-    def rename_profile(self) -> None:
-        name = self._ask_name(self.tr("Profil umbenennen"), self.profile.name)
-        if name:
-            self.profile.name = name
-            self.profile_combo.setItemText(self.profile_combo.currentIndex(), name)
-            self._update_dirty()
-
-    def delete_profile(self) -> None:
-        if len(self.store.list_profiles()) < 2:
-            self._warn(self.tr("Löschen nicht möglich"), self.tr("Das letzte Profil kann nicht gelöscht werden."))
-            return
-        if not self._confirm(self.tr("Profil löschen"),
-                             self.tr("Profil „%1“ wirklich löschen?").replace("%1", self.profile.name)):
-            return
-        self.store.delete_profile(self.profile.id)
-        self.reload_profile_list()
-        self.select_profile(self.profile_combo.itemData(0), force=True)
-        self.client.reload()
-
-    def export_profile(self) -> None:
-        if not self._resolve_unsaved():
-            return
-        path, _ = QFileDialog.getSaveFileName(self, self.tr("Profil exportieren"),
-                                              f"{self.profile.name}.json", self.tr("Profil (*.json)"))
-        if path:
-            try:
-                self.store.export_profile(self.profile.id, Path(path))
-            except (OSError, ValueError) as e:
-                self._warn(self.tr("Export fehlgeschlagen"),
-                           self.tr("Das Profil konnte nicht exportiert werden:") + f"\n{e}")
-
-    def import_profile(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, self.tr("Profil importieren"), "", self.tr("Profil (*.json)"))
-        if path:
-            self.import_profile_from(Path(path))
-
-    def import_profile_from(self, path: Path) -> None:
-        if not self._resolve_unsaved():
-            return
-        try:
-            profile = self.store.import_profile(path)
-        except Exception as e:  # corrupt JSON, wrong structure, unreadable file
-            self._warn(self.tr("Import fehlgeschlagen"),
-                       self.tr("Die Datei „%1“ ist kein gültiges Profil und wurde nicht importiert.")
-                       .replace("%1", path.name) + f"\n\n{e}")
-            return
-        self.reload_profile_list()
-        self._show_profile(profile)
-        self.client.reload()
-
     # -- daemon state ---------------------------------------------------------
     def _on_available(self, up: bool) -> None:
         self.banner.setVisible(not up)
@@ -398,14 +349,7 @@ class MainWindow(QMainWindow):
         self._daemon_errors = list(status.get("config_errors", [])) if status else []
         self.openrazer_banner.setVisible(bool(status and status.get("openrazer_loaded")))
         self._update_warnings()
-        battery = int(status.get("battery", -1)) if status else -1
-        if battery >= 0:
-            text = self.tr("Akku: %1 %").replace("%1", str(battery))
-            if status.get("charging"):
-                text += " " + self.tr("(lädt)")
-            self.battery_label.setText(text)
-        else:
-            self.battery_label.setText(self.tr("Akku: –") if status and status.get("connected") else "")
+        self.battery_label.setText(battery_text(status) if status and status.get("connected") else "")
 
     # -- closing --------------------------------------------------------------
     def request_close(self) -> bool:

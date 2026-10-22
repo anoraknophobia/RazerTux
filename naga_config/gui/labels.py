@@ -33,6 +33,19 @@ def button_name(b: ButtonId) -> str:
     return _tr("Taste %1").replace("%1", b.value.removeprefix("side_"))
 
 
+def battery_text(status: dict) -> str:
+    """Battery for header and tray: percent with charging mark, "Kabel" when wired."""
+    if status and not status.get("connected", True):
+        return _tr("Maus nicht verbunden")
+    if status and status.get("connection") == "wired":
+        return _tr("Kabel")
+    b = int(status.get("battery", -1)) if status else -1
+    if b < 0:
+        return _tr("Akku: –")
+    text = _tr("Akku: %1 %").replace("%1", str(b))
+    return text + " ⚡ " + _tr("lädt") if status.get("charging") else text
+
+
 WHEEL_BUTTONS = (ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT)
 
 

@@ -25,7 +25,8 @@ def test_menu_when_up(tray):
     assert "Aktives Profil: Zwei" in texts and "Standard" in texts
     assert "Akku: 80 %" in texts
     assert texts[-3:] == ["Fenster öffnen", "Originalzustand wiederherstellen", "Beenden"]
-    radios = {a.text(): a.isChecked() for a in tr.menu.actions() if a.isCheckable()}
+    radios = {a.text(): a.isChecked() for a in tr.menu.actions()
+              if a.isCheckable() and a.text() != "Systemfarben verwenden"}
     assert radios == {"Standard": False, "Zwei": True}
 
 
@@ -53,3 +54,28 @@ def test_restore_asks_first_and_reports_failed_fields(tray):
     tr.restore_original()
     assert any(c[0] == "RestoreOriginal" for c in t.calls)
     assert "DPI-Stufen" in tr.infos[-1][1]
+
+
+def test_battery_text_variants():
+    from naga_config.gui.labels import battery_text
+    assert battery_text({"connected": True, "battery": 80}) == "Akku: 80 %"
+    assert battery_text({"connected": True, "battery": 80, "charging": True,
+                         "connection": "wireless"}) == "Akku: 80 % ⚡ lädt"
+    assert battery_text({"connected": True, "battery": 100, "connection": "wired"}) == "Kabel"
+    assert battery_text({"connected": True, "battery": -1}) == "Akku: –"
+
+
+def test_system_colours_toggle(tray):
+    tr, t = tray
+    got = []
+    tr.themeRequested.connect(got.append)
+    tr.set_theme_checked("synapse")
+    tr.rebuild_menu()
+    action = next(a for a in tr.menu.actions() if a.text() == "Systemfarben verwenden")
+    assert action.isCheckable() and not action.isChecked()
+    action.trigger()
+    assert got == ["system"]
+    tr.set_theme_checked("system")
+    tr.rebuild_menu()
+    action = next(a for a in tr.menu.actions() if a.text() == "Systemfarben verwenden")
+    assert action.isChecked()

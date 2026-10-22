@@ -896,6 +896,7 @@ async def test_reload_applies_power_settings(tmp_path):
     d, t = await connected(tmp_path)
     d.service._store.save_settings(Settings(active_profile="default", idle_time=120))
     await d.service.reload()
+    await d.service.reload()  # unchanged values are not rewritten (no flash wear)
     assert power_writes(t) == [(0x03, bytes([0x00, 0x78]))]
     await d.shutdown()
 

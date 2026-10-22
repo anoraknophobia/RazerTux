@@ -162,3 +162,91 @@ def test_openrazer_warning(env):
     assert "OpenRazer-Treiber ist geladen" in w.openrazer_banner.label.text()
     w.client.statusChanged.emit({"openrazer_loaded": False})
     assert not w.openrazer_banner.isVisible()
+
+
+# -- Task 10: tabs, power settings, theme, battery ----------------------------------
+
+def tab_names(w):
+    return [w.tabs.tabText(i) for i in range(w.tabs.count())]
+
+
+def test_tab_order(env):
+    w, *_ = env
+    assert tab_names(w) == ["Tasten", "Leistung", "Mausrad", "Beleuchtung", "Energie", "Makros"]
+
+
+def test_performance_edit_marks_dirty_saves_and_reverts(env):
+    w, store, transport = env
+    assert w.performance_tab.profile is w.profile
+    w.performance_tab.set_dpi_box.setChecked(True)
+    w.performance_tab.poll_buttons[500].click()
+    assert w.is_dirty
+    assert w.save() is True
+    p = store.load_profile("p2")
+    assert p.dpi_stages == [(1800, 1800)] and p.active_stage == 1 and p.poll_rate == 500
+    w.performance_tab.poll_buttons[None].click()
+    assert w.is_dirty
+    w.revert()
+    assert w.profile.poll_rate == 500 and w.performance_tab.poll_buttons[500].isChecked()
+
+
+def test_lighting_tab_follows_profile_switch(env):
+    from naga_config.config.model import LightingZone
+    w, store, _ = env
+    store.save_profile(Profile(id="lit", name="Licht",
+                               lighting={"logo": LightingZone("wave", (0, 0, 0), 255)}))
+    w.reload_profile_list()
+    w.select_profile("lit")
+    assert w.lighting_tab.profile is w.profile and w.lighting_tab.enable_box.isChecked()
+    w.lighting_tab.brightness.setValue(50)
+    assert w.is_dirty and w.profile.lighting["logo"].brightness == 128
+    w.answer = "discard"
+    assert w.select_profile("p2")
+    assert not w.lighting_tab.enable_box.isChecked()
+
+
+def test_power_settings_dirty_and_saved_without_clobbering(env):
+    w, store, transport = env
+    w.power_tab.idle_box.setChecked(True)
+    assert w.is_dirty
+    # meanwhile the daemon switched profile and the theme was changed
+    store.save_settings(Settings(active_profile="default", theme="system"))
+    assert w.save() is True
+    s = store.load_settings()
+    assert (s.active_profile, s.theme, s.idle_time) == ("default", "system", 300)
+    assert ("Reload", ()) in transport.calls and not w.is_dirty
+    w.power_tab.warn_box.setChecked(False)
+    w.revert()
+    assert w.settings.low_battery_notify == 15 and w.power_tab.warn_box.isChecked()
+
+
+def test_battery_label_wired_and_charging(env):
+    w, *_ = env
+    w.client.statusChanged.emit({"connected": True, "battery": 100, "charging": True,
+                                 "connection": "wired"})
+    assert w.battery_label.text() == "Kabel"
+    w.client.statusChanged.emit({"connected": True, "battery": 42, "charging": True,
+                                 "connection": "wireless"})
+    assert "42 %" in w.battery_label.text() and "lädt" in w.battery_label.text()
+    w.client.statusChanged.emit({"connected": False, "battery": -1})
+    assert w.battery_label.text() == ""
+
+
+def test_theme_menu_action(env):
+    w, *_ = env
+    got = []
+    w.themeRequested.connect(got.append)
+    w.set_theme_checked("synapse")
+    assert not w.system_colors_action.isChecked()
+    w.system_colors_action.trigger()
+    assert got == ["system"]
+    w.set_theme_checked("system")
+    assert w.system_colors_action.isChecked()
+    w.system_colors_action.trigger()
+    assert got == ["system", "synapse"]
+
+
+def test_main_window_stays_small():
+    from pathlib import Path
+    import naga_config.gui.main_window as mw
+    assert len(Path(mw.__file__).read_text().splitlines()) <= 400

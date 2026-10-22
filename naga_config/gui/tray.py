@@ -7,6 +7,7 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon, QWidget
 
 from naga_config.gui.dbus_client import DaemonClient, DaemonError
+from naga_config.gui.labels import battery_text
 from naga_config.gui.mouse_view import themed_svg
 
 _FIELD_NAMES = {
@@ -31,23 +32,18 @@ def app_icon() -> QIcon:
     return QIcon(pm)
 
 
-def battery_text(status: dict) -> str:
-    b = int(status.get("battery", -1)) if status else -1
-    if b < 0:
-        return _tr("Akku: unbekannt")
-    return _tr("Akku: %1 %").replace("%1", str(b)) + (" " + _tr("(lädt)") if status.get("charging") else "")
-
-
 class TrayIcon(QSystemTrayIcon):
     toggleWindowRequested = Signal()
     showWindowRequested = Signal()
     quitRequested = Signal()
+    themeRequested = Signal(str)  # "synapse" | "system"
 
     def __init__(self, client: DaemonClient, parent: QObject | None = None,
                  dialog_parent: QWidget | None = None):
         super().__init__(app_icon(), parent)
         self.client = client
         self._dialog_parent = dialog_parent
+        self._theme = "synapse"
         self.setToolTip(self.tr("Naga-Konfiguration"))
         self.menu = QMenu()
         self.menu.aboutToShow.connect(self.rebuild_menu)
@@ -68,6 +64,10 @@ class TrayIcon(QSystemTrayIcon):
 
     def _info(self, title: str, text: str) -> None:
         QMessageBox.information(self._dialog_parent, title, text)
+
+    def set_theme_checked(self, name: str) -> None:
+        self._theme = name
+        self.rebuild_menu()
 
     # -- menu -----------------------------------------------------------------
     def rebuild_menu(self) -> None:
@@ -92,6 +92,10 @@ class TrayIcon(QSystemTrayIcon):
             m.addSeparator()
             m.addAction(battery_text(self.client.status())).setEnabled(False)
         m.addSeparator()
+        colours = m.addAction(self.tr("Systemfarben verwenden"))
+        colours.setCheckable(True)
+        colours.setChecked(self._theme == "system")
+        colours.triggered.connect(lambda on: self.themeRequested.emit("system" if on else "synapse"))
         m.addAction(self.tr("Fenster öffnen")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
         m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(lambda _=False: self.restore_original())
         m.addSeparator()

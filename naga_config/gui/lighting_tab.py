@@ -1,0 +1,206 @@
+"""Tab "Beleuchtung": brightness and effect per zone (Logo, Daumenfeld).
+
+The Naga V2 Pro has no scroll wheel LED: a "scroll" entry in a profile is kept
+as it is but never shown. Unchecked "Beleuchtung dieses Profils festlegen" means
+an empty `lighting` dict, i.e. the mouse keeps its own lighting."""
+from __future__ import annotations
+
+from dataclasses import replace
+
+from PySide6.QtCore import QT_TRANSLATE_NOOP, Qt, Signal
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import (
+    QCheckBox, QColorDialog, QComboBox, QGridLayout, QHBoxLayout, QLabel,
+    QPushButton, QSlider, QVBoxLayout, QWidget,
+)
+
+from naga_config.config.model import LightingZone, Profile
+from naga_config.gui.widgets import Card, description
+
+EFFECTS = [
+    ("off", QT_TRANSLATE_NOOP("LightingTab", "Aus")),
+    ("static", QT_TRANSLATE_NOOP("LightingTab", "Statisch")),
+    ("breath", QT_TRANSLATE_NOOP("LightingTab", "Atmen")),
+    ("spectrum", QT_TRANSLATE_NOOP("LightingTab", "Spektrum")),
+    ("wave", QT_TRANSLATE_NOOP("LightingTab", "Welle")),
+    ("reactive", QT_TRANSLATE_NOOP("LightingTab", "Reaktiv")),
+]
+COLOUR_EFFECTS = {"static", "breath", "reactive"}
+ZONES = [
+    ("all", QT_TRANSLATE_NOOP("LightingTab", "Alle Zonen")),
+    ("logo", QT_TRANSLATE_NOOP("LightingTab", "Logo")),
+    ("thumb", QT_TRANSLATE_NOOP("LightingTab", "Daumenfeld")),
+]
+DEVICE_ZONES = ("logo", "thumb")
+DEFAULT_ZONE = LightingZone("static", (68, 214, 44), 191)
+
+
+def to_percent(raw: int) -> int:
+    return round(raw * 100 / 255)
+
+
+def to_raw(percent: int) -> int:
+    return round(percent * 255 / 100)
+
+
+class LightingTab(QWidget):
+    changed = Signal()
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.profile: Profile | None = None
+        self._zones: dict[str, LightingZone] = {z: DEFAULT_ZONE for z in DEVICE_ZONES}
+        self._quiet = False
+
+        self.enable_box = QCheckBox(self.tr("Beleuchtung dieses Profils festlegen"))
+        self.enable_box.setToolTip(self.tr("Aus: Die Maus behält ihre Beleuchtung (nicht ändern)."))
+
+        bright = Card(self.tr("Helligkeit"))
+        self.brightness = QSlider(Qt.Orientation.Horizontal)
+        self.brightness.setRange(0, 100)
+        self.brightness_value = QLabel()
+        self.brightness_value.setObjectName("sliderValue")
+        self.brightness_value.setMinimumWidth(48)
+        row = QHBoxLayout()
+        row.addWidget(self.brightness_value)
+        row.addWidget(QLabel("0"))
+        row.addWidget(self.brightness, 1)
+        row.addWidget(QLabel("100"))
+        bright.add(row)
+
+        fx = Card(self.tr("Effekte"))
+        fx.add(description(self.tr("Der Effekt wird beim Aktivieren des Profils gesetzt und "
+                                   "beim Abstecken der Maus wieder vergessen.")))
+        self.all_same = QCheckBox(self.tr("Alle Zonen gleich"))
+        fx.add(self.all_same)
+        grid = QGridLayout()
+        self.zone_labels: dict[str, QLabel] = {}
+        self.effect_combos: dict[str, QComboBox] = {}
+        self.color_buttons: dict[str, QPushButton] = {}
+        for i, (key, text) in enumerate(ZONES):
+            label = QLabel(self.tr(text))
+            combo = QComboBox()
+            for eff, eff_text in EFFECTS:
+                combo.addItem(self.tr(eff_text), eff)
+            colour = QPushButton()
+            colour.setToolTip(self.tr("Farbe wählen"))
+            colour.setFixedSize(40, 24)
+            grid.addWidget(label, i, 0)
+            grid.addWidget(combo, i, 1)
+            grid.addWidget(colour, i, 2)
+            combo.currentIndexChanged.connect(lambda _i, k=key: self._on_effect(k))
+            colour.clicked.connect(lambda _=False, k=key: self._on_colour(k))
+            self.zone_labels[key], self.effect_combos[key], self.color_buttons[key] = label, combo, colour
+        grid.setColumnStretch(3, 1)
+        fx.add(grid)
+
+        self.cards = QWidget()
+        cards = QGridLayout(self.cards)
+        cards.setContentsMargins(0, 0, 0, 0)
+        cards.setSpacing(16)
+        cards.addWidget(bright, 0, 0, Qt.AlignmentFlag.AlignTop)
+        cards.addWidget(fx, 0, 1, Qt.AlignmentFlag.AlignTop)
+        cards.setColumnStretch(0, 1)
+        cards.setColumnStretch(1, 1)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(16, 16, 16, 16)
+        lay.addWidget(self.enable_box)
+        lay.addWidget(self.cards)
+        lay.addStretch(1)
+
+        self.enable_box.toggled.connect(self._on_enable)
+        self.all_same.toggled.connect(self._on_all_same)
+        self.brightness.valueChanged.connect(self._on_brightness)
+
+    # -- hooks (replaced in tests) ----------------------------------------------
+    def _pick_color(self, current: QColor) -> QColor | None:
+        c = QColorDialog.getColor(current, self, self.tr("Farbe wählen"))
+        return c if c.isValid() else None
+
+    # -- loading ---------------------------------------------------------------
+    def load(self, profile: Profile) -> None:
+        self._quiet = True
+        self.profile = profile
+        light = profile.lighting
+        first = next((light[z] for z in DEVICE_ZONES if z in light), DEFAULT_ZONE)
+        self._zones = {z: light.get(z, first) for z in DEVICE_ZONES}
+        logo, thumb = self._zones["logo"], self._zones["thumb"]
+        self.enable_box.setChecked(bool(light))
+        self.all_same.setChecked((logo.effect, logo.color) == (thumb.effect, thumb.color))
+        self.brightness.setValue(to_percent(max(z.brightness for z in self._zones.values())))
+        self._show()
+        self._quiet = False
+
+    def _show(self) -> None:
+        """Push self._zones into the widgets (no commits)."""
+        quiet, self._quiet = self._quiet, True
+        same = self.all_same.isChecked()
+        shown = {"all": self._zones["logo"], **self._zones}
+        for key, zone in shown.items():
+            visible = (key == "all") == same
+            self.effect_combos[key].setCurrentIndex(self.effect_combos[key].findData(zone.effect))
+            self.color_buttons[key].setStyleSheet(
+                "QPushButton { background: rgb(%d, %d, %d); border: 1px solid #888; }" % zone.color)
+            self.zone_labels[key].setVisible(visible)
+            self.effect_combos[key].setVisible(visible)
+            self.color_buttons[key].setVisible(visible and zone.effect in COLOUR_EFFECTS)
+        self.brightness_value.setText(f"{self.brightness.value()} %")
+        self.cards.setEnabled(self.enable_box.isChecked())
+        self._quiet = quiet
+
+    # -- edits -----------------------------------------------------------------
+    def set_effect(self, key: str, effect: str) -> None:
+        combo = self.effect_combos[key]
+        combo.setCurrentIndex(combo.findData(effect))
+
+    def _targets(self, key: str) -> tuple[str, ...]:
+        return DEVICE_ZONES if key == "all" else (key,)
+
+    def _on_effect(self, key: str) -> None:
+        if self._quiet:
+            return
+        effect = self.effect_combos[key].currentData()
+        for z in self._targets(key):
+            self._zones[z] = replace(self._zones[z], effect=effect)
+        self._commit()
+
+    def _on_colour(self, key: str) -> None:
+        r, g, b = self._zones["logo" if key == "all" else key].color
+        c = self._pick_color(QColor(r, g, b))
+        if c is None:
+            return
+        for z in self._targets(key):
+            self._zones[z] = replace(self._zones[z], color=(c.red(), c.green(), c.blue()))
+        self._commit()
+
+    def _on_brightness(self, percent: int) -> None:
+        if self._quiet:
+            return
+        for z in DEVICE_ZONES:
+            self._zones[z] = replace(self._zones[z], brightness=to_raw(percent))
+        self._commit()
+
+    def _on_all_same(self, on: bool) -> None:
+        if self._quiet:
+            return
+        if on:  # every zone takes the logo's effect and colour
+            logo = self._zones["logo"]
+            for z in DEVICE_ZONES:
+                self._zones[z] = replace(self._zones[z], effect=logo.effect, color=logo.color)
+        self._commit()
+
+    def _on_enable(self, _on: bool) -> None:
+        self._commit()
+
+    def _commit(self) -> None:
+        if self._quiet or self.profile is None:
+            return
+        if self.enable_box.isChecked():
+            scroll = self.profile.lighting.get("scroll")
+            self.profile.lighting = dict(self._zones)
+            if scroll is not None:
+                self.profile.lighting["scroll"] = scroll
+        else:
+            self.profile.lighting = {}
+        self._show()
+        self.changed.emit()

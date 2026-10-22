@@ -28,17 +28,25 @@ def main(argv: list[str] | None = None) -> int:
 
     from naga_config.gui.dbus_client import DaemonClient
     from naga_config.gui.main_window import MainWindow
+    from naga_config.gui.theme import ThemeController
     from naga_config.gui.tray import TrayIcon, app_icon
 
     app = QApplication([sys.argv[0]])
     app.setApplicationName("naga-config")
     app.setApplicationDisplayName(_tr("Naga-Konfiguration"))
     app.setQuitOnLastWindowClosed(False)
+    store = ConfigStore(args.config_dir or default_config_dir())
+    theme = ThemeController(app, store)
+    theme.apply()  # before any widget: the SVGs take their colours from the palette
     app.setWindowIcon(app_icon())
 
     client = DaemonClient()
-    window = MainWindow(ConfigStore(args.config_dir or default_config_dir()), client)
+    window = MainWindow(store, client)
     tray = TrayIcon(client, dialog_parent=window)
+    for view in (window, tray):
+        view.set_theme_checked(theme.name)
+        view.themeRequested.connect(theme.set_theme)
+        theme.changed.connect(view.set_theme_checked)
     have_tray = QSystemTrayIcon.isSystemTrayAvailable()
     window.hide_on_close = have_tray
 
