@@ -150,7 +150,9 @@ class Profile:
     `standard` maps buttons to actions. `hypershift` is the second layer
     (active while the Hypershift button is held); a button missing from it
     behaves like DefaultAction. Empty/None hardware fields (`dpi_stages`,
-    `poll_rate`, `lighting`, `scroll_profile`) mean "leave the mouse as is".
+    `poll_rate`, `lighting`) mean "leave the mouse as is".
+    `remap_top_buttons` False: the device stays in normal mode, the firmware handles
+    the top buttons (scroll stage / DPI stage) and their bindings are ignored.
     """
     id: str
     name: str
@@ -160,7 +162,7 @@ class Profile:
     active_stage: int = 0  # 1-based when dpi_stages is non-empty
     poll_rate: int | None = None
     lighting: dict[Zone, LightingZone] = field(default_factory=dict)
-    scroll_profile: int | None = None
+    remap_top_buttons: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -171,7 +173,7 @@ class Profile:
             "active_stage": self.active_stage,
             "poll_rate": self.poll_rate,
             "lighting": {z: lz.to_dict() for z, lz in self.lighting.items()},
-            "scroll_profile": self.scroll_profile,
+            "remap_top_buttons": self.remap_top_buttons,
         }
 
     @classmethod
@@ -184,38 +186,51 @@ class Profile:
             active_stage=d["active_stage"],
             poll_rate=d["poll_rate"],
             lighting={z: LightingZone.from_dict(lz) for z, lz in d["lighting"].items()},
-            scroll_profile=d["scroll_profile"],
+            remap_top_buttons=bool(d.get("remap_top_buttons", False)),
         )
 
 
 THEMES = ("synapse", "system")
 IDLE_MIN_S, IDLE_MAX_S = 60, 900
 LOW_POWER_MIN, LOW_POWER_MAX = 5, 25
+SCROLL_STAGES = 6  # firmware slots 1-6 (05 3a notifications); 6 = "Ultra-fine"
+
+
+def default_stage_names() -> dict[int, str]:
+    """Only slot 6 is verified on hardware; other slot -> preset names are unknown."""
+    return {6: "Ultra-fine"}
 
 
 @dataclass
 class Settings:
     """Global settings. `low_battery_notify` is the desktop warning level in percent
-    (0 = off). `idle_time` (seconds) and `low_battery_threshold` (percent, the mouse's
+    (0 = off). `scroll_stage_names` are user names for the firmware's scroll-wheel
+    stages (slot 1-6). `idle_time` (seconds) and `low_battery_threshold` (percent, the mouse's
     own low power mode) are written to the mouse; None = leave the mouse as is."""
     active_profile: str
     low_battery_notify: int = 15
     theme: str = "synapse"
     idle_time: int | None = None
     low_battery_threshold: int | None = None
+    scroll_stage_names: dict[int, str] = field(default_factory=default_stage_names)
 
     def to_dict(self) -> dict[str, Any]:
         return {"active_profile": self.active_profile,
                 "low_battery_notify": self.low_battery_notify,
                 "theme": self.theme,
                 "idle_time": self.idle_time,
-                "low_battery_threshold": self.low_battery_threshold}
+                "low_battery_threshold": self.low_battery_threshold,
+                "scroll_stage_names": {str(k): v for k, v in
+                                       sorted(self.scroll_stage_names.items())}}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
+        names = d.get("scroll_stage_names")
         return cls(d["active_profile"], d.get("low_battery_notify", 15),
                    d.get("theme", "synapse"), d.get("idle_time"),
-                   d.get("low_battery_threshold"))
+                   d.get("low_battery_threshold"),
+                   default_stage_names() if names is None
+                   else {int(k): str(v) for k, v in names.items()})
 
 
 def default_profile() -> Profile:

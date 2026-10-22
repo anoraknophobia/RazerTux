@@ -14,7 +14,6 @@ _FIELD_NAMES = {
     "dpi": QT_TRANSLATE_NOOP("TrayIcon", "DPI-Stufen"),
     "poll_rate": QT_TRANSLATE_NOOP("TrayIcon", "Abtastrate"),
     "lighting": QT_TRANSLATE_NOOP("TrayIcon", "Beleuchtung"),
-    "scroll_profile": QT_TRANSLATE_NOOP("TrayIcon", "Mausrad-Profil"),
 }
 
 

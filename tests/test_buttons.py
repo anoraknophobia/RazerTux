@@ -12,6 +12,7 @@ from naga_config.hw.buttons import (
     ButtonId,
     identify,
     identify_vendor,
+    parse_notification,
 )
 
 PROBE = Path(__file__).parent.parent / "tools" / "probe-2026-10-22.txt"
@@ -113,3 +114,28 @@ def test_vendor_unknown_or_empty():
     assert identify_vendor(bytes([0x04, 0x99] + [0] * 14)) is None
     assert identify_vendor(b"\x04") is None
     assert identify_vendor(b"") is None
+
+
+# -- vendor notifications (scroll stage / DPI, both device modes) ---------------
+
+@pytest.mark.parametrize("slot,preset", [(2, 0x81), (3, 0x82), (4, 0x84), (5, 0x85), (6, 0x86)])
+def test_parse_scroll_stage(slot, preset):
+    assert parse_notification(bytes([0x05, 0x3A, slot, preset]) + bytes(12)) == ("scroll_stage", slot)
+
+
+def test_parse_dpi():
+    assert parse_notification(bytes.fromhex("050209c409c4") + bytes(10)) == ("dpi", 2500)
+    assert parse_notification(bytes.fromhex("05020320 0640".replace(" ", ""))) == ("dpi", 800)
+
+
+@pytest.mark.parametrize("report", [
+    bytes([0x05, 0x31, 0xC1, 1, 1, 1]),  # periodic
+    bytes([0x05, 0x0E, 0, 0]),
+    bytes([0x04, 0x57]) + bytes(14),     # top button (driver mode)
+    bytes([0x04, 0x00]) + bytes(14),
+    bytes([0x05, 0x3A]),                 # truncated
+    bytes([0x05, 0x02, 0x09, 0xC4, 0x09]),
+    b"",
+])
+def test_parse_notification_ignores_other_reports(report):
+    assert parse_notification(report) is None

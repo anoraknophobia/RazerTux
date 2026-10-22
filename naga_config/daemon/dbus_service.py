@@ -28,9 +28,8 @@ _ERR = "io.github.nagaconfig.Error."
 
 class Hardware(Protocol):
     def hw_status(self) -> dict[str, Any]:
-        """connected (bool), connection (str), battery (int, -1 unknown), charging (bool)."""
-
-    def scroll_profile_supported(self) -> bool: ...
+        """connected (bool), connection (str), battery (int, -1 unknown), charging (bool),
+        scroll_stage (int 1-6, -1 unknown), dpi (int, -1 unknown)."""
 
 
 def openrazer_loaded() -> bool:
@@ -136,6 +135,8 @@ class NagaService(ServiceInterface):
             "connection": Variant("s", hw["connection"]),
             "battery": Variant("i", int(hw["battery"])),
             "charging": Variant("b", bool(hw["charging"])),
+            "scroll_stage": Variant("i", int(hw.get("scroll_stage", -1))),
+            "dpi": Variant("i", int(hw.get("dpi", -1))),
             "openrazer_loaded": Variant("b", bool(self._openrazer())),
             "config_errors": Variant("as", self.config_errors()),
         }
@@ -180,10 +181,6 @@ class NagaService(ServiceInterface):
     @method()
     def RestoreOriginal(self) -> 'as':
         return self.restore_original()
-
-    @method()
-    def ScrollProfileSupported(self) -> 'b':
-        return bool(self._hw.scroll_profile_supported())
 
     @signal()
     def ProfileChanged(self, profile_id) -> 's':

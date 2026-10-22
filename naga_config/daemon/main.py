@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
+import os
 import signal
 import sys
 from collections.abc import Callable, Coroutine
@@ -16,7 +18,7 @@ from typing import Any
 from naga_config.config.model import Profile, Settings, default_profile
 from naga_config.config.store import ConfigStore
 from naga_config.engine.mapper import Mapper
-from naga_config.hw.buttons import DRIVER_MODE, NORMAL_MODE
+from naga_config.hw.buttons import DRIVER_MODE, NORMAL_MODE, parse_notification
 from naga_config.backup import load_backup, restore_backup
 from naga_config.razer.naga_v2_pro import ZONE_LED, NagaV2Pro
 from naga_config.razer.transport import (
@@ -35,7 +37,8 @@ from .devices import DeviceWatcher, HidrawReader, InputRouter
 logger = logging.getLogger("naga_config.daemon")
 
 CONNECTION = {0x00A7: "wired", 0x00A8: "wireless"}
-_DISCONNECTED = {"connected": False, "connection": "", "battery": -1, "charging": False}
+_DISCONNECTED = {"connected": False, "connection": "", "battery": -1, "charging": False,
+                 "dpi": -1}
 _HW_ERRORS = (RazerError, OSError, ValueError, IndexError)
 
 
@@ -45,6 +48,29 @@ def default_config_dir() -> Path:
 
 def default_backup_path() -> Path:
     return default_config_dir() / "mouse-backup.json"
+
+
+def load_scroll_stage(path: Path) -> int:
+    """Last known scroll-wheel stage from state.json; -1 if unknown/unreadable."""
+    try:
+        stage = json.loads(Path(path).read_text(encoding="utf-8"))["scroll_stage"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return -1
+    return stage if isinstance(stage, int) else -1
+
+
+def save_scroll_stage(path: Path, stage: int) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps({"scroll_stage": stage}) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def device_mode_for(profile: Profile | None) -> int:
+    """Driver mode only when the profile remaps the top buttons; otherwise the
+    firmware keeps them (front: scroll stage, back: DPI stage)."""
+    return DRIVER_MODE if profile is not None and profile.remap_top_buttons else NORMAL_MODE
 
 
 def _stage_index(profile: Profile) -> int:
@@ -126,6 +152,9 @@ class Daemon:
         self._naga: NagaV2Pro | None = None
         self._vendor: Any = None
         self._hw = dict(_DISCONNECTED)
+        self._mode: int | None = None  # device mode we last set (None: unknown)
+        self._state_path = Path(store.root) / "state.json"
+        self._scroll_stage = load_scroll_stage(self._state_path)
         self._absent_zones: set[str] = set()  # LEDs the mouse reported no brightness for
         # DPI stepping state, in memory only (reset on connect / profile switch)
         self._stages: list[tuple[int, int]] = []
@@ -139,12 +168,7 @@ class Daemon:
     # -- Hardware protocol for the D-Bus service ---------------------------
 
     def hw_status(self) -> dict[str, Any]:
-        return dict(self._hw)
-
-    def scroll_profile_supported(self) -> bool:
-        # R16: 0x02/0x98 is suspected of altering wheel haptics; never probe the
-        # device until Task 11 has researched it.
-        return False
+        return {**self._hw, "scroll_stage": self._scroll_stage}
 
     # -- lifecycle -------------------------------------------------------------
 
@@ -234,8 +258,49 @@ class Daemon:
                     f" (fehlgeschlagen: {', '.join(failed)})" if failed else "")
         self._written.clear()
 
+    def _sync_mode(self, profile: Profile | None) -> None:
+        """Device mode follows the profile's remap_top_buttons (connect, switch, Reload)."""
+        mode = device_mode_for(profile)
+        if self._naga is None or mode == self._mode:
+            return
+        try:
+            self._naga.set_device_mode(mode)
+        except _HW_ERRORS as e:
+            self._mode = None
+            logger.warning("Gerätemodus %#04x nicht gesetzt: %s", mode, e)
+            return
+        self._mode = mode
+        logger.info("Gerätemodus: %s", "Treiber (obere Tasten frei belegbar)"
+                    if mode == DRIVER_MODE else "normal (obere Tasten ab Werk)")
+
+    async def _vendor_report(self, report: bytes) -> None:
+        """if01 hidraw: firmware notifications in both modes; top-button reports only
+        count in driver mode (in normal mode the firmware handles those buttons)."""
+        note = parse_notification(report)
+        if note is not None:
+            kind, value = note
+            if kind == "scroll_stage":
+                self._set_scroll_stage(value)
+            elif self._hw["dpi"] != value:
+                self._hw["dpi"] = value
+                self.service.notify_status()
+            return
+        if self._mode == DRIVER_MODE:
+            await self.router.vendor_report(report)
+
+    def _set_scroll_stage(self, stage: int) -> None:
+        if stage == self._scroll_stage:
+            return
+        self._scroll_stage = stage
+        try:
+            save_scroll_stage(self._state_path, stage)
+        except OSError as e:
+            logger.warning("Mausrad-Stufe nicht gespeichert (%s): %s", self._state_path, e)
+        self.service.notify_status()
+
     def _apply_if_connected(self, profile: Profile) -> None:
         if self._naga is not None:
+            self._sync_mode(profile)
             self._reset_stages(profile)
             self._apply(profile)  # NagaService._use logs exceptions
 
@@ -285,6 +350,8 @@ class Daemon:
             logger.warning("DPI %dx%d nicht gesetzt: %s", x, y, e)
             return
         self._stage_idx = idx
+        self._hw["dpi"] = x
+        self.service.notify_status()
         logger.info("DPI-Stufe %d: %dx%d", idx + 1, x, y)
 
     def _restore_backup(self, backup: dict) -> list[str]:
@@ -322,13 +389,11 @@ class Daemon:
             return
         naga = self._naga = NagaV2Pro(self._transport)
         self._power_applied = {}
-        try:
-            naga.set_device_mode(DRIVER_MODE)
-        except _HW_ERRORS as e:
-            logger.warning("Treibermodus nicht gesetzt, obere Tasten bleiben ab Werk: %s", e)
+        self._mode = None
+        self._sync_mode(self.service.active_profile)
         vendor_path = self._find_vendor()
         if vendor_path:
-            reader = self._hidraw_reader(vendor_path, self.router.vendor_report)
+            reader = self._hidraw_reader(vendor_path, self._vendor_report)
             try:
                 reader.start()
                 self._vendor = reader
@@ -338,10 +403,12 @@ class Daemon:
                               if _safe(lambda led=led: naga.brightness(led), None) is None}
         self._hw = {"connected": True, "connection": CONNECTION.get(product, ""),
                     "battery": _safe(naga.battery, -1),
-                    "charging": bool(_safe(naga.charging, False))}
+                    "charging": bool(_safe(naga.charging, False)), "dpi": -1}
         logger.info("Maus verbunden: %s", self._hw)
         self._warn_openrazer()
         self._apply_active()
+        dpi = _safe(naga.dpi, None)
+        self._hw["dpi"] = dpi[0] if dpi else -1
         self._apply_power(self.service.settings)
         if self._hw["connection"] == "wireless":
             self._battery = BatteryMonitor(
@@ -384,6 +451,7 @@ class Daemon:
                 close()
         was_connected = self._hw["connected"]
         self._transport = self._naga = None
+        self._mode = None
         self._hw = dict(_DISCONNECTED)
         if was_connected:
             self.service.notify_status()

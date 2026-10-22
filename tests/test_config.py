@@ -25,7 +25,7 @@ def full_profile():
     p.active_stage = 2
     p.poll_rate = 500
     p.lighting = {"logo": LightingZone("static", (1, 2, 3), 200)}
-    p.scroll_profile = 1
+    p.remap_top_buttons = True
     return p
 
 
@@ -33,7 +33,7 @@ def test_default_profile_leaves_device_untouched():
     p = default_profile()
     assert (p.id, p.name) == ("default", "Standard")
     assert p.dpi_stages == [] and p.active_stage == 0
-    assert p.poll_rate is None and p.lighting == {} and p.scroll_profile is None
+    assert p.poll_rate is None and p.lighting == {} and p.remap_top_buttons is False
     assert p.hypershift == {}
     assert p.standard[ButtonId.TOP_1] == DpiStageAction("up")
     assert p.standard[ButtonId.TOP_2] == DpiStageAction("cycle")  # R20
@@ -234,3 +234,30 @@ def test_dpi_cycle_action_roundtrip():
     p = default_profile()
     assert Profile.from_dict(json.loads(json.dumps(p.to_dict()))).standard[ButtonId.TOP_2] \
         == DpiStageAction("cycle")
+
+
+def test_old_profile_with_scroll_profile_loads_and_is_not_written(tmp_path):
+    d = default_profile().to_dict()
+    assert "scroll_profile" not in d and d["remap_top_buttons"] is False
+    d.pop("remap_top_buttons")
+    d["scroll_profile"] = 3  # written by older versions
+    store = ConfigStore(tmp_path)
+    (tmp_path / "profiles").mkdir()
+    (tmp_path / "profiles" / "default.json").write_text(json.dumps(d))
+    p = store.load_profile("default")
+    assert store.errors == [] and p.remap_top_buttons is False
+    assert not hasattr(p, "scroll_profile")
+    store.save_profile(p)
+    on_disk = json.loads((tmp_path / "profiles" / "default.json").read_text())
+    assert "scroll_profile" not in on_disk and on_disk["remap_top_buttons"] is False
+
+
+def test_settings_scroll_stage_names(tmp_path):
+    s = Settings("default")
+    assert s.scroll_stage_names == {6: "Ultra-fine"}
+    assert Settings("x").scroll_stage_names is not s.scroll_stage_names  # no shared default
+    s.scroll_stage_names = {1: "Fein", 6: "Ultra-fine"}
+    store = ConfigStore(tmp_path)
+    store.save_settings(s)
+    assert store.load_settings().scroll_stage_names == {1: "Fein", 6: "Ultra-fine"}
+    assert Settings.from_dict({"active_profile": "a"}).scroll_stage_names == {6: "Ultra-fine"}

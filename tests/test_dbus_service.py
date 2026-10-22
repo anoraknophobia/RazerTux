@@ -43,16 +43,13 @@ class FakeMapper:
 
 class FakeHw:
     def __init__(self, connected=True, connection="wired", battery=80, charging=False,
-                 scroll=True):
+                 scroll_stage=-1, dpi=-1):
         self.state = {"connected": connected, "connection": connection,
-                      "battery": battery, "charging": charging}
-        self.scroll = scroll
+                      "battery": battery, "charging": charging,
+                      "scroll_stage": scroll_stage, "dpi": dpi}
 
     def hw_status(self):
         return dict(self.state)
-
-    def scroll_profile_supported(self):
-        return self.scroll
 
 
 async def call(svc, member, *args):
@@ -125,19 +122,30 @@ async def test_get_status_connected(tmp_path):
     st = await call(svc, "GetStatus")
     assert {k: v.value for k, v in st.items()} == {
         "connected": True, "connection": "wired", "battery": 80, "charging": False,
-        "openrazer_loaded": False, "config_errors": [],
+        "scroll_stage": -1, "dpi": -1, "openrazer_loaded": False, "config_errors": [],
     }
     assert st["battery"].signature == "i" and st["config_errors"].signature == "as"
+    assert st["scroll_stage"].signature == "i" and st["dpi"].signature == "i"
+
+
+async def test_get_status_scroll_stage_and_dpi(tmp_path):
+    svc, *_ = make(tmp_path, hw=FakeHw(scroll_stage=6, dpi=2500))
+    st = await call(svc, "GetStatus")
+    assert (st["scroll_stage"].value, st["dpi"].value) == (6, 2500)
+
+
+def test_scroll_profile_method_removed(tmp_path):
+    svc, *_ = make(tmp_path)
+    assert "ScrollProfileSupported" not in {m.name for m in ServiceInterface._get_methods(svc)}
 
 
 async def test_get_status_disconnected(tmp_path):
-    hw = FakeHw(connected=False, connection="", battery=-1, charging=False, scroll=False)
+    hw = FakeHw(connected=False, connection="", battery=-1, charging=False)
     svc, *_ = make(tmp_path, hw=hw)
     st = await call(svc, "GetStatus")
     assert st["connected"].value is False
     assert st["connection"].value == ""
     assert st["battery"].value == -1
-    assert await call(svc, "ScrollProfileSupported") is False
 
 
 async def test_reload_switches_profile_and_reports_errors(tmp_path):
@@ -196,11 +204,6 @@ async def test_restore_original_returns_unrestored_fields(tmp_path):
     svc, *_ = make(tmp_path, restore=lambda b: ["poll_rate", "dpi"])
     (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
     assert await call(svc, "RestoreOriginal") == ["poll_rate", "dpi"]
-
-
-async def test_scroll_profile_supported(tmp_path):
-    svc, *_ = make(tmp_path)
-    assert await call(svc, "ScrollProfileSupported") is True
 
 
 async def test_notify_status_emits_signal(tmp_path):

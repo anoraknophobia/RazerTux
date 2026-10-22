@@ -98,7 +98,7 @@ def main(argv=None) -> int:
                 print(json.dumps(dev.snapshot(), indent=2))
             else:
                 snap = save_backup(dev, path)
-                missing = [k for k, v in snap.items() if v is None and k != "scroll_profile"]  # R16
+                missing = [k for k, v in snap.items() if v is None]
                 if missing:
                     print(
                         "Warnung: nicht lesbare Felder: " + ", ".join(missing),

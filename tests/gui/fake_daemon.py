@@ -17,7 +17,6 @@ class FakeTransport:
             "GetActiveProfile": ["p2"],
             "GetStatus": [{"connected": True, "battery": 80}],
             "RestoreOriginal": [["dpi"]],
-            "ScrollProfileSupported": [False],
             "Reload": [], "ActivateProfile": [],
         }[member]
 

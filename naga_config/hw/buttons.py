@@ -92,3 +92,18 @@ def identify_vendor(report: bytes) -> tuple[ButtonId | None, bool] | None:
         return (None, False)
     button = TOP_BUTTON_CODES.get(report[1])
     return (button, True) if button else None
+
+
+def parse_notification(report: bytes) -> tuple[str, int] | None:
+    """Decode a firmware notification on the if01 hidraw node (both device modes).
+
+    `05 3a <slot> <preset>`: scroll-wheel stage changed -> ("scroll_stage", slot);
+    `05 02 <x hi> <x lo> <y hi> <y lo>`: DPI changed -> ("dpi", x).
+    Anything else (05 31 periodic, 05 0e, top-button reports) -> None."""
+    if len(report) < 2 or report[0] != 0x05:
+        return None
+    if report[1] == 0x3A and len(report) >= 4:
+        return ("scroll_stage", report[2])
+    if report[1] == 0x02 and len(report) >= 6:
+        return ("dpi", (report[2] << 8) | report[3])
+    return None

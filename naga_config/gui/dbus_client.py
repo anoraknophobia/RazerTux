@@ -213,7 +213,3 @@ class DaemonClient(QObject):
         """Fields that could not be restored, or None if the daemon is away."""
         res = self._call("RestoreOriginal")
         return list(res[0]) if res else None
-
-    def scroll_profile_supported(self) -> bool:
-        res = self._call("ScrollProfileSupported")
-        return bool(res[0]) if res else False

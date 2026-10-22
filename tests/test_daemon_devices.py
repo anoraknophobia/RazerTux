@@ -382,16 +382,39 @@ def naga_transport():
     return t
 
 
+class FakeReader:
+    """Stands in for HidrawReader; tests feed reports through .report()."""
+
+    def __init__(self, path, on_report):
+        self.path, self.on_report = path, on_report
+        self.started = self.closed = False
+
+    def start(self):
+        self.started = True
+
+    async def close(self):
+        self.closed = True
+
+    async def report(self, data):
+        await self.on_report(bytes(data))
+
+
 def make_daemon(tmp_path, transport=None, find_control=lambda: "/dev/hidraw2",
-                applied=None, openrazer=False):
+                applied=None, openrazer=False, readers=None):
     t = transport or naga_transport()
     applied = applied if applied is not None else []
+    extra = {"find_vendor": lambda: None}
+    if readers is not None:
+        def reader(path, cb):
+            readers.append(FakeReader(path, cb))
+            return readers[-1]
+        extra = {"find_vendor": lambda: "/dev/hidraw4", "hidraw_reader": reader}
     d = Daemon(ConfigStore(tmp_path), RecOut(),
                transport_factory=lambda path: t,
-               find_control=find_control, find_vendor=lambda: None,
+               find_control=find_control,
                openrazer_loaded=lambda: openrazer, retry_delay=0,
                apply_device_settings=applied.append,
-               backup_path=tmp_path / "mouse-backup.json")
+               backup_path=tmp_path / "mouse-backup.json", **extra)
     return d, t
 
 
@@ -399,21 +422,20 @@ def modes(t):
     return [r.args[0] for r in t.requests if (r.cmd_class, r.cmd_id) == (0x00, 0x04)]
 
 
-async def test_daemon_connect_sets_driver_mode_and_status(tmp_path):
+async def test_daemon_connect_sets_normal_mode_and_status(tmp_path):
     d, t = make_daemon(tmp_path)
     await d.start()
     mouse = FakeDev("/dev/input/event18")
     d.on_added("mouse", mouse)
     await d.settle()
     assert mouse.grabbed
-    assert modes(t) == [DRIVER_MODE]
+    assert modes(t) == [NORMAL_MODE]  # default profile: firmware keeps the top buttons
     assert d.hw_status() == {"connected": True, "connection": "wired",
-                             "battery": 100, "charging": True}
-    n = len(t.sent)
-    assert d.scroll_profile_supported() is False  # R16: never probes the device
-    assert len(t.sent) == n and all(c != 0x02 for c, _ in t.sent)
+                             "battery": 100, "charging": True, "dpi": 800,
+                             "scroll_stage": -1}
+    assert all(c != 0x02 for c, _ in t.sent)  # never probes 0x02/0x98
     await d.shutdown()
-    assert modes(t) == [DRIVER_MODE, NORMAL_MODE]
+    assert modes(t) == [NORMAL_MODE, NORMAL_MODE]
     assert mouse.ungrabbed and mouse.closed and d.out.closed
 
 
@@ -424,8 +446,8 @@ async def test_daemon_wireless_and_battery_unavailable(tmp_path):
     d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
     await d.settle()
     assert d.hw_status() == {"connected": True, "connection": "wireless",
-                             "battery": -1, "charging": False}
-    assert d.scroll_profile_supported() is False
+                             "battery": -1, "charging": False, "dpi": -1,
+                             "scroll_stage": -1}
     await d.shutdown()
 
 
@@ -456,9 +478,10 @@ async def test_daemon_unplug_releases_and_disconnects(tmp_path):
     await d.settle()
     assert released
     assert d.hw_status() == {"connected": False, "connection": "",
-                             "battery": -1, "charging": False}
+                             "battery": -1, "charging": False, "dpi": -1,
+                             "scroll_stage": -1}
     await d.shutdown()
-    assert modes(t) == [DRIVER_MODE]  # no mode reset on an unplugged mouse
+    assert modes(t) == [NORMAL_MODE]  # no mode reset on an unplugged mouse
 
 
 async def test_daemon_start_loads_active_profile(tmp_path):
@@ -495,7 +518,7 @@ async def test_daemon_hotplug_readd(tmp_path):
     d.on_added("mouse", second)
     await d.settle()
     assert second.grabbed
-    assert modes(t) == [DRIVER_MODE, DRIVER_MODE]
+    assert modes(t) == [NORMAL_MODE, NORMAL_MODE]
     assert d.hw_status()["connected"] is True
     assert [p.id for p in applied] == ["default", "default"]
     await d.shutdown()
@@ -945,3 +968,88 @@ async def test_low_battery_not_repeated_after_reconnect(tmp_path):
     d._battery.poll()
     assert len(sent) == 1
     await d.shutdown()
+
+
+# -- Task 11: device mode follows the profile, scroll stage / DPI notifications ----
+
+def _remap_profile(pid="remap", on=True):
+    from naga_config.config.model import Profile
+    return Profile(id=pid, name=pid, remap_top_buttons=on)
+
+
+async def test_mode_follows_active_profile_on_connect_switch_and_reload(tmp_path):
+    from naga_config.config.model import Settings
+    store = ConfigStore(tmp_path)
+    store.save_profile(_remap_profile())
+    store.save_settings(Settings(active_profile="remap"))
+    d, t = make_daemon(tmp_path)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    assert modes(t) == [DRIVER_MODE]  # connect
+    await d.service.activate("default")
+    assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # switch
+    await d.service.reload()
+    assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # unchanged: nothing written
+    store.save_profile(_remap_profile("default"))
+    await d.service.reload()
+    assert modes(t) == [DRIVER_MODE, NORMAL_MODE, DRIVER_MODE]  # Reload
+    await d.shutdown()
+    assert modes(t)[-1] == NORMAL_MODE  # clean shutdown always ends in normal mode
+
+
+async def test_top_buttons_ignored_in_normal_mode(tmp_path):
+    readers = []
+    d, t = make_daemon(tmp_path, readers=readers)
+    calls = []
+
+    async def handle(button, value):
+        calls.append((button, value))
+    d.mapper.handle = handle
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    reader = readers[-1]
+    assert reader.started and reader.path == "/dev/hidraw4"
+    await reader.report([0x04, 0x57] + [0] * 14)
+    await reader.report([0x04, 0x00] + [0] * 14)
+    assert calls == []  # firmware handles the top buttons in normal mode
+    d.service._store.save_profile(_remap_profile("default"))
+    await d.service.reload()
+    await reader.report([0x04, 0x57] + [0] * 14)
+    await reader.report([0x04, 0x00] + [0] * 14)
+    assert calls == [(ButtonId.TOP_1, 1), (ButtonId.TOP_1, 0)]
+    await d.shutdown()
+
+
+@pytest.mark.parametrize("remap", [False, True])
+async def test_notifications_update_status_and_persist(tmp_path, remap):
+    readers = []
+    d, t = make_daemon(tmp_path, readers=readers)
+    if remap:
+        d.service._store.save_profile(_remap_profile("default"))
+    notified = []
+    orig = d.service.notify_status
+    d.service.notify_status = lambda: (notified.append(d.hw_status()), orig())
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    notified.clear()
+    await readers[-1].report([0x05, 0x3A, 0x06, 0x86] + [0] * 12)
+    assert d.hw_status()["scroll_stage"] == 6
+    assert [n["scroll_stage"] for n in notified] == [6]
+    assert json.loads((tmp_path / "state.json").read_text()) == {"scroll_stage": 6}
+    await readers[-1].report(bytes.fromhex("050209c409c4") + bytes(10))
+    assert d.hw_status()["dpi"] == 2500 and notified[-1]["dpi"] == 2500
+    await readers[-1].report([0x05, 0x31, 0xC1, 1, 1, 1])  # periodic: ignored
+    assert len(notified) == 2
+    await d.shutdown()
+    # known after a restart, even before the mouse connects
+    d2, _ = make_daemon(tmp_path)
+    assert d2.hw_status()["scroll_stage"] == 6
+
+
+async def test_corrupt_state_file_means_unknown_stage(tmp_path):
+    (tmp_path / "state.json").write_text("{kaputt")
+    d, _ = make_daemon(tmp_path)
+    assert d.hw_status()["scroll_stage"] == -1

@@ -40,4 +40,29 @@ Wert per `naga-config status` bzw. Sichtprüfung vergleichen. Ergebnis hier eint
 
 - Im Treibermodus (0x03) fühlt sich das Rad anders an; die Maus erwartet offenbar, dass der Host die Haptik setzt.
 - Nach Tests war die Haptik auch im Normalmodus und nach Abstecken verändert (vorher: sehr fein und knackig; jetzt: schwächer, gröber).
-  Verdacht: unbestätigter Befehl 0x02/0x98 (aus OpenRazer-PR #2741) schreibt statt zu lesen. Seitdem gesperrt (R16) bis Task 11.
+  Verdacht: unbestätigter Befehl 0x02/0x98 (aus OpenRazer-PR #2741) schreibt statt zu lesen. Seitdem gesperrt (R16) bis Task 11 – aufgeklärt, siehe „Mausrad-Stufen“ unten.
+
+## Mausrad-Stufen (Task 11, mit dem Nutzer am Gerät ermittelt)
+
+- **Normalmodus (0x00):** Die obere Taste **vorne** (TOP_1) schaltet in der Firmware die
+  Mausrad-Haptik-Stufe weiter, die **hintere** (TOP_2) die DPI-Stufe. Die Firmware meldet
+  das als Input-Report auf dem if01-hidraw-Knoten (derselbe, den der Vendor-Reader liest):
+  - Stufe gewechselt: `05 3a <slot> <preset>` – beobachtet `02 81`, `03 82`, `04 84`,
+    `05 85`, `06 86`. Slot 6 ist "Ultra-fine" (vom Nutzer bestätigt); die Zuordnung der
+    übrigen Slots zu Synapse-Namen ist unbekannt.
+  - DPI gewechselt: `05 02 <x hi> <x lo> <y hi> <y lo>` (z. B. `05 02 09 c4 09 c4` = 2500).
+  - Ignoriert: `05 31 …` (periodisch), `05 0e …`.
+- **Treibermodus (0x03):** TOP_1/TOP_2 senden `04 57` / `04 52` (Loslassen `04 00`), die
+  Firmware schaltet dann **keine** Stufen um. Die Rad-Haptik bleibt, wie sie ist (vom Nutzer
+  geprüft).
+- Ein Befehl zum Lesen oder Setzen des aktiven Slots ist nicht bekannt. `0x02/0x98` gibt nur
+  sein Argument zurück (harmlos, nutzlos); `NagaV2Pro.scroll_profile()` und die R16-Sperre
+  sind entfernt.
+- Synapse-Referenzwerte (Widerstand/Rasten): Ultra-fine 65/96, Standard 60/24,
+  Distinct 58/15, Adaptive 75/24, Smooth Scroll 0/32, Custom 50/90.
+
+Umsetzung: Der Gerätemodus folgt dem aktiven Profil (`remap_top_buttons`: an → Treibermodus,
+aus → Normalmodus; bei Verbinden, Profilwechsel und Reload), beim sauberen Beenden immer
+Normalmodus. Im Normalmodus ignoriert der Dienst die Belegungen von TOP_1/TOP_2. Der Dienst
+wertet `05 3a`/`05 02` in beiden Modi aus (Status `scroll_stage`, `dpi`) und merkt sich den
+letzten Slot in `~/.config/naga-config/state.json`.
