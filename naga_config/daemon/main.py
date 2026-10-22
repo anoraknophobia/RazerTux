@@ -11,7 +11,7 @@ import logging
 import os
 import signal
 import sys
-from collections.abc import Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from pathlib import Path
 from typing import Any
 
@@ -179,13 +179,16 @@ class Daemon:
         self._warn_openrazer()
         await self.service.reload()
 
-    def on_added(self, source: str, dev: Any) -> None:
-        self.router.add(source, dev)
-        if source == "mouse" and dev.path in self.router.paths:
+    def on_added(self, source: str, dev: Any) -> bool:
+        """False if the device could not be grabbed (the watcher retries)."""
+        if not self.router.add(source, dev):
+            return False
+        if source == "mouse":
             self._mice.pop(dev.path, None)
             self._mice[dev.path] = dev.info.product  # newest last
             self._mouse_path = dev.path
             self._spawn(self._connect(dev.info.product))
+        return True
 
     def on_removed(self, path: str) -> None:
         self._spawn(self._removed(path))
@@ -481,6 +484,26 @@ class Daemon:
             self.service.notify_status()
 
 
+async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,
+                      timeout: float = 60.0,
+                      sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> Any:
+    """Open the virtual output device. Right after login /dev/uinput may not be usable
+    yet (seat ACL not applied): retry every `interval` s for up to `timeout` s, then
+    re-raise the last OSError."""
+    waited = 0.0
+    while True:
+        try:
+            return factory()
+        except OSError as e:
+            if waited >= timeout:
+                raise
+            if waited == 0:
+                logger.warning("Kann /dev/uinput noch nicht öffnen (%s) – neuer Versuch alle "
+                               "%g s, höchstens %g s lang", e, interval, timeout)
+            await sleep(interval)
+            waited += interval
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="naga-configd",
                                  description="naga-config Dienst (Razer Naga V2 Pro)")
@@ -498,7 +521,7 @@ async def run(config_dir: Path) -> int:
     from .uinput_out import UinputOutput
 
     try:
-        out = UinputOutput()
+        out = await open_uinput(UinputOutput)
     except OSError as e:
         logger.error("Kann /dev/uinput nicht öffnen (udev-Regel installiert?): %s", e)
         return 1

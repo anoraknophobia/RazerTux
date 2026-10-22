@@ -1,12 +1,17 @@
 [Unit]
 Description=naga-config Daemon (Razer Naga V2 Pro)
 Documentation=file:///usr/share/doc/naga-config/README.md
+# Start with the desktop session: by then logind has applied the seat ACLs to
+# /dev/uinput and the mouse's input nodes (the daemon still retries briefly).
+After=graphical-session.target
+PartOf=graphical-session.target
 
 [Service]
 Type=dbus
 BusName=io.github.nagaconfig
 ExecStart=/usr/bin/naga-configd
 Restart=on-failure
+RestartSec=2
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target

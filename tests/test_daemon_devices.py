@@ -170,13 +170,87 @@ def test_watcher_udev_events_add_and_remove():
     assert removed == ["/dev/input/event18"]
 
 
+class Later:
+    """Collects call_later() callbacks; run() fires the pending ones."""
+
+    def __init__(self):
+        self.pending, self.delays = [], []
+
+    def __call__(self, delay, fn, *args):
+        self.delays.append(delay)
+        self.pending.append((fn, args))
+
+    def run(self):
+        pending, self.pending = self.pending, []
+        for fn, args in pending:
+            fn(*args)
+
+
 def test_watcher_open_failure_is_logged_not_raised(caplog):
     def boom(path):
         raise PermissionError(errno.EACCES, "denied")
+    later = Later()
     w = DeviceWatcher(lambda s, d: pytest.fail("added"), lambda p: None,
-                      list_devices=list, open_device=boom)
+                      list_devices=list, open_device=boom, call_later=later)
     w.handle_udev(UdevDev(_props("00", links=BY_ID + "event-mouse"), "add"))
+    while later.pending:
+        later.run()
+    assert later.delays == [1.0] * 5  # ACL not applied yet at login: retried, then given up
     assert "event18" in caplog.text
+
+
+def test_watcher_retries_open_until_acl_is_applied():
+    attempts = []
+
+    def open_device(path):
+        attempts.append(path)
+        if len(attempts) < 3:
+            raise PermissionError(errno.EACCES, "denied")
+        return FakeDev(path)
+    added = []
+    later = Later()
+    w = DeviceWatcher(lambda s, d: added.append((s, d.path)), lambda p: None,
+                      list_devices=list, open_device=open_device, call_later=later)
+    w.handle_udev(UdevDev(_props("00", links=BY_ID + "event-mouse"), "add"))
+    assert added == [] and len(later.pending) == 1
+    later.run()
+    later.run()
+    assert added == [("mouse", "/dev/input/event18")] and later.pending == []
+
+
+def test_watcher_does_not_retry_other_open_errors():
+    def gone(path):
+        raise FileNotFoundError(errno.ENOENT, "gone")
+    later = Later()
+    w = DeviceWatcher(lambda s, d: pytest.fail("added"), lambda p: None,
+                      list_devices=list, open_device=gone, call_later=later)
+    w.handle_udev(UdevDev(_props("00", links=BY_ID + "event-mouse"), "add"))
+    assert later.pending == []
+
+
+def test_watcher_retries_when_grab_fails():
+    results = [False, False, True]  # on_added: grab busy twice, then ok
+    added, opened = [], []
+
+    def on_added(source, dev):
+        added.append(dev.path)
+        return results[len(added) - 1]
+
+    def open_device(path):
+        opened.append(FakeDev(path))
+        return opened[-1]
+    later = Later()
+    w = DeviceWatcher(on_added, lambda p: None, list_devices=list,
+                      open_device=open_device, call_later=later)
+    p = _props("00", links=BY_ID + "event-mouse")
+    w.handle_udev(UdevDev(p, "add"))
+    later.run()
+    later.run()
+    assert added == ["/dev/input/event18"] * 3 and later.pending == []
+    removed = []
+    w._on_removed = removed.append
+    w.handle_udev(UdevDev(p, "remove"))
+    assert removed == ["/dev/input/event18"]  # known once the grab succeeded
 
 
 # -- router ------------------------------------------------------------------
@@ -265,8 +339,9 @@ async def test_router_grab_failure_skips_device(caplog):
     r = InputRouter(mapper, out)
     dev = FakeDev("/dev/input/event19")
     dev.grab = lambda: (_ for _ in ()).throw(OSError(errno.EBUSY, "busy"))
-    r.add("if02", dev)
+    assert r.add("if02", dev) is False
     assert r.paths == set() and dev.closed
+    assert r.add("if02", FakeDev("/dev/input/event20")) is True
     await r.close()
 
 
@@ -567,6 +642,17 @@ async def test_removing_inactive_mouse_node_keeps_connection(tmp_path):
     d.on_removed("/dev/input/event18")  # dongle pulled while the cable is in use
     await d.settle()
     assert d.hw_status()["connection"] == "wired" and len(n.opened) == opened
+    await d.shutdown()
+
+
+async def test_daemon_on_added_reports_grab_result(tmp_path):
+    d, _ = make_daemon(tmp_path)
+    await d.start()
+    busy = FakeDev("/dev/input/event18")
+    busy.grab = lambda: (_ for _ in ()).throw(OSError(errno.EBUSY, "busy"))
+    assert d.on_added("mouse", busy) is False
+    assert d.on_added("mouse", FakeDev("/dev/input/event18")) is True
+    await d.settle()
     await d.shutdown()
 
 
@@ -1175,3 +1261,37 @@ async def test_corrupt_state_file_means_unknown_stage(tmp_path):
     (tmp_path / "state.json").write_text("{kaputt")
     d, _ = make_daemon(tmp_path)
     assert d.hw_status()["scroll_stage"] == -1
+
+
+# -- login race: /dev/uinput ACL may not be there yet ------------------------------
+
+async def test_open_uinput_retries_until_available(caplog):
+    from naga_config.daemon.main import open_uinput
+    attempts, slept = [], []
+
+    def factory():
+        attempts.append(1)
+        if len(attempts) < 4:
+            raise PermissionError(errno.EACCES, "denied")
+        return "uinput"
+
+    async def sleep(s):
+        slept.append(s)
+    with caplog.at_level(logging.WARNING):
+        assert await open_uinput(factory, sleep=sleep) == "uinput"
+    assert slept == [2.0, 2.0, 2.0]
+    assert "uinput" in caplog.text
+
+
+async def test_open_uinput_gives_up_after_timeout():
+    from naga_config.daemon.main import open_uinput
+    slept = []
+
+    def factory():
+        raise PermissionError(errno.EACCES, "denied")
+
+    async def sleep(s):
+        slept.append(s)
+    with pytest.raises(OSError):
+        await open_uinput(factory, sleep=sleep)
+    assert sum(slept) == 60 and set(slept) == {2.0}

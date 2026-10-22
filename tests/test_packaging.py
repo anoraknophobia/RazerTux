@@ -32,6 +32,14 @@ def test_dbus_activation_and_unit():
     assert "ExecStart=/usr/bin/naga-configd" in u
 
 
+def test_unit_starts_with_the_graphical_session():
+    lines = _read("naga-configd.service").splitlines()
+    for line in ("After=graphical-session.target", "PartOf=graphical-session.target",
+                 "WantedBy=graphical-session.target", "Restart=on-failure", "RestartSec=2"):
+        assert line in lines
+    assert "WantedBy=default.target" not in lines
+
+
 def test_udev_rules():
     r = _read("70-naga-config.rules")
     assert 'idVendor}=="1532"' in r and "00a7|00a8" in r and "uinput" in r
@@ -68,3 +76,11 @@ def test_pyproject_license_is_spdx_expression():
     assert data["project"]["license"] == "GPL-2.0-or-later"  # PEP 639 string, no table
     # SPDX license strings need setuptools >= 77 (older versions warn or fail)
     assert "setuptools>=77" in data["build-system"]["requires"]
+
+
+def test_readme_has_no_manual_backup_step():
+    readme = (ROOT / "README.md").read_text()
+    steps = readme.split("## Erste Schritte")[1].split("## ")[0]
+    assert not re.search(r"^\d+\..*naga-config backup", steps, re.M)  # no numbered step
+    assert "automatisch" in steps and "optional" in steps
+    assert "lässt die Maus im Treibermodus, bis sie neu angesteckt wird" not in readme

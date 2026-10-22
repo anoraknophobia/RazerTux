@@ -25,8 +25,11 @@ makepkg -si
 systemctl --user enable --now naga-configd
 ```
 
-Der Dienst wird außerdem bei Bedarf per D-Bus gestartet. Das Tray-Symbol startet beim
-Anmelden automatisch (`/etc/xdg/autostart/naga-config-tray.desktop`).
+Der Dienst startet mit der grafischen Sitzung (`graphical-session.target`) und wird
+außerdem bei Bedarf per D-Bus gestartet. Wer ihn mit einer älteren Version schon aktiviert
+hatte, aktiviert ihn einmal neu: `systemctl --user reenable naga-configd`.
+Das Tray-Symbol startet beim Anmelden automatisch
+(`/etc/xdg/autostart/naga-config-tray.desktop`).
 Eine früher von Hand nach `/etc/udev/rules.d/` kopierte Regel `70-naga-config.rules`
 bitte entfernen; das Paket installiert sie nach `/usr/lib/udev/rules.d/`.
 

@@ -25,6 +25,9 @@ __all__ = ["VIRTUAL_NAME", "DeviceWatcher", "HidrawReader", "InputRouter",
 
 NAGA_VENDOR = "1532"
 NAGA_PIDS = {"00a7", "00a8"}
+# Opening right at login can fail until logind/udev applied the seat ACL (EACCES/EPERM),
+# or while another program still holds the grab (EBUSY): those are retried.
+_RETRY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EBUSY}
 # Wheel axes are produced by the mapper itself (WHEEL_* buttons), never forwarded.
 _WHEEL_AXES = {E.REL_WHEEL, E.REL_HWHEEL, E.REL_WHEEL_HI_RES, E.REL_HWHEEL_HI_RES}
 
@@ -67,15 +70,26 @@ def _list_input_devices():
 
 
 class DeviceWatcher:
-    """Reports Naga evdev nodes (initial scan + udev hotplug); never our uinput device."""
+    """Reports Naga evdev nodes (initial scan + udev hotplug); never our uinput device.
 
-    def __init__(self, on_added: Callable[[str, Any], None], on_removed: Callable[[str], None],
+    on_added(source, dev) may return False when it could not use the device (grab
+    failed); like a refused open (EACCES/EPERM/EBUSY) that is retried `retries` times,
+    `retry_delay` seconds apart."""
+
+    def __init__(self, on_added: Callable[[str, Any], bool | None],
+                 on_removed: Callable[[str], None],
                  *, list_devices: Callable[[], Iterable[Any]] = _list_input_devices,
-                 open_device: Callable[[str], Any] = InputDevice) -> None:
+                 open_device: Callable[[str], Any] = InputDevice,
+                 retries: int = 5, retry_delay: float = 1.0,
+                 call_later: Callable[..., Any] | None = None) -> None:
         self._on_added = on_added
         self._on_removed = on_removed
         self._list = list_devices
         self._open = open_device
+        self._retries = retries
+        self._retry_delay = retry_delay
+        self._call_later = call_later
+        self._stopped = False
         self._known: dict[str, str] = {}
         self._monitor: pyudev.Monitor | None = None
 
@@ -90,6 +104,7 @@ class DeviceWatcher:
         asyncio.get_running_loop().add_reader(self._monitor.fileno(), self._poll)
 
     def stop(self) -> None:
+        self._stopped = True  # pending retries become no-ops
         if self._monitor is not None:
             asyncio.get_running_loop().remove_reader(self._monitor.fileno())
             self._monitor = None
@@ -110,7 +125,17 @@ class DeviceWatcher:
         except Exception:
             logger.exception("Fehler bei udev-Ereignis")
 
-    def _add(self, udev_dev: Any) -> None:
+    def _retry(self, udev_dev: Any, attempt: int) -> bool:
+        """Schedule another _add; False once the retries are used up."""
+        if attempt >= self._retries:
+            return False
+        later = self._call_later or asyncio.get_running_loop().call_later
+        later(self._retry_delay, self._add, udev_dev, attempt + 1)
+        return True
+
+    def _add(self, udev_dev: Any, attempt: int = 0) -> None:
+        if self._stopped:
+            return
         source = classify(dict(udev_dev.properties))
         path = udev_dev.device_node
         if source is None or path in self._known:
@@ -118,7 +143,10 @@ class DeviceWatcher:
         try:
             dev = self._open(path)
         except OSError as e:
-            logger.warning("Kann %s nicht öffnen: %s", path, e)
+            if e.errno in _RETRY_ERRNOS and self._retry(udev_dev, attempt):
+                logger.info("Kann %s noch nicht öffnen (%s), neuer Versuch …", path, e)
+            else:
+                logger.warning("Kann %s nicht öffnen: %s", path, e)
             return
         if dev.name == VIRTUAL_NAME:
             dev.close()
@@ -126,9 +154,14 @@ class DeviceWatcher:
         self._known[path] = source
         logger.info("Naga-Gerät gefunden: %s (%s)", path, source)
         try:
-            self._on_added(source, dev)
+            ok = self._on_added(source, dev)
         except Exception:
             logger.exception("Fehler beim Hinzufügen von %s", path)
+            return
+        if ok is False:  # not grabbed (e.g. EBUSY): forget it, try again later
+            del self._known[path]
+            if not self._retry(udev_dev, attempt):
+                logger.warning("Gebe %s auf: nicht exklusiv nutzbar", path)
 
 
 class InputRouter:
@@ -145,7 +178,8 @@ class InputRouter:
     def paths(self) -> set[str]:
         return set(self._devs)
 
-    def add(self, source: str, dev: Any) -> None:
+    def add(self, source: str, dev: Any) -> bool:
+        """Grab and start reading; False if the grab failed (device closed)."""
         loop = asyncio.get_running_loop()
         stale = self._devs.pop(dev.path, None)
         if stale:
@@ -162,11 +196,12 @@ class InputRouter:
         try:
             dev.grab()
         except OSError as e:
-            logger.error("Kann %s nicht exklusiv öffnen (grab): %s", dev.path, e)
+            logger.warning("Kann %s nicht exklusiv öffnen (grab): %s", dev.path, e)
             dev.close()
-            return
+            return False
         task = loop.create_task(self._read(source, dev))
         self._devs[dev.path] = (dev, task)
+        return True
 
     async def remove(self, path: str) -> None:
         """Device unplugged: stop reading, forget it, release everything held."""
