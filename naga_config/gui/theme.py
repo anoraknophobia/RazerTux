@@ -63,6 +63,15 @@ QCheckBox::indicator, QRadioButton::indicator {{ width: 15px; height: 15px;
 QRadioButton::indicator {{ border-radius: 8px; }}
 QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {ACCENT};
               border-color: {ACCENT}; }}
+QFrame#stageRow, QFrame#valueTile {{ background: {FIELD}; border: 1px solid {FIELD};
+              border-radius: 3px; }}
+QFrame#stageRow[active="true"] {{ border-color: {ACCENT}; }}
+QFrame#stageRow QLineEdit {{ background: transparent; border: 1px solid transparent; }}
+QFrame#stageRow QLineEdit:focus {{ border-color: {ACCENT}; }}
+QLabel#stageSlot {{ color: {MUTED}; }}
+QLabel#stageMarker {{ color: {ACCENT}; }}
+QLabel#activeName {{ color: #ffffff; }}
+QLabel#tileValue {{ color: {TEXT}; font-size: 18pt; }}
 QScrollBar:vertical {{ background: {WINDOW}; width: 10px; }}
 QScrollBar::handle:vertical {{ background: #3a3a3a; border-radius: 4px; min-height: 24px; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; width: 0; }}

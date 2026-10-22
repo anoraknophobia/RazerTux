@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import copy
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP, Qt, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
@@ -21,10 +21,12 @@ from naga_config.gui.macro_tab import MacroTab, strip_macro
 from naga_config.gui.performance_tab import PerformanceTab
 from naga_config.gui.power_tab import PowerTab
 from naga_config.gui.profile_actions import ProfileActions
+from naga_config.gui.scroll_tab import ScrollTab
 from naga_config.hw.buttons import ButtonId
 
 APP_TITLE = QT_TRANSLATE_NOOP("MainWindow", "Naga-Konfiguration")
-POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold")  # GUI-owned settings
+POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # GUI-owned settings
+                "scroll_stage_names")
 
 
 class MainWindow(QMainWindow, ProfileActions):
@@ -74,7 +76,9 @@ class MainWindow(QMainWindow, ProfileActions):
         self.activate_btn.clicked.connect(lambda _=False: self.activate_current())
         header.addWidget(self.activate_btn)
         header.addStretch(1)
-        self.battery_label = QLabel()
+        self.dpi_label, self.battery_label = QLabel(), QLabel()
+        header.addWidget(self.dpi_label)
+        header.addSpacing(12)
         header.addWidget(self.battery_label)
 
         self.banner = self._make_banner(self.tr(
@@ -90,21 +94,22 @@ class MainWindow(QMainWindow, ProfileActions):
         self.buttons_tab = ButtonsTab()
         self.buttons_tab.bindingClicked.connect(self.edit_binding)
         self.buttons_tab.layerChanged.connect(self.set_layer)
+        self.buttons_tab.remapToggled.connect(self.set_remap)
         self.mouse_view = self.buttons_tab.mouse_view
         self.performance_tab, self.lighting_tab, self.power_tab = PerformanceTab(), LightingTab(), PowerTab()
-        for tab in (self.performance_tab, self.lighting_tab, self.power_tab):
+        self.scroll_tab = ScrollTab()
+        for tab in (self.performance_tab, self.lighting_tab, self.power_tab, self.scroll_tab):
             tab.changed.connect(self._update_dirty)
-        wheel = QLabel(self.tr("Kommt in Schritt 11."))
-        wheel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.macro_tab = MacroTab(self.macros, self._all_profiles)
         self.macro_tab.changed.connect(self._refresh)
         self.macro_tab.macroDeleted.connect(self._on_macro_deleted)
         self.tabs = QTabWidget()
         for widget, name in ((self.buttons_tab, self.tr("Tasten")), (self.performance_tab, self.tr("Leistung")),
-                             (wheel, self.tr("Mausrad")), (self.lighting_tab, self.tr("Beleuchtung")),
+                             (self.scroll_tab, self.tr("Mausrad")), (self.lighting_tab, self.tr("Beleuchtung")),
                              (self.power_tab, self.tr("Energie")), (self.macro_tab, self.tr("Makros"))):
             self.tabs.addTab(widget, name)
         self.power_tab.load(self.settings)
+        self.scroll_tab.load(self.settings)
         view = self.menuBar().addMenu(self.tr("Ansicht"))
         self.system_colors_action = view.addAction(self.tr("Systemfarben verwenden"))
         self.system_colors_action.setCheckable(True)
@@ -163,12 +168,13 @@ class MainWindow(QMainWindow, ProfileActions):
                 or self._power_dict() != self._settings_baseline)
 
     def _power_dict(self) -> dict:
-        return {f: getattr(self.settings, f) for f in POWER_FIELDS}
+        return copy.deepcopy({f: getattr(self.settings, f) for f in POWER_FIELDS})
 
     def _reload_settings(self) -> None:
         self.settings = self.store.load_settings()
         self._settings_baseline = self._power_dict()
         self.power_tab.load(self.settings)
+        self.scroll_tab.load(self.settings)
 
     def set_theme_checked(self, name: str) -> None:
         self.system_colors_action.setChecked(name == "system")
@@ -233,6 +239,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self.profile_combo.setCurrentIndex(max(self.profile_combo.findData(profile.id), 0))
         self.performance_tab.load(profile)
         self.lighting_tab.load(profile)
+        self.buttons_tab.set_remap(profile.remap_top_buttons)
         self._refresh()
 
     def revert(self) -> None:
@@ -242,7 +249,7 @@ class MainWindow(QMainWindow, ProfileActions):
 
     def _refresh(self) -> None:
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
-        self.mouse_view.set_bindings(layer, self.macros)
+        self.mouse_view.set_bindings(layer, self.macros, top_locked=not self.profile.remap_top_buttons)
         self._update_warnings()
         self._update_dirty()
 
@@ -250,6 +257,10 @@ class MainWindow(QMainWindow, ProfileActions):
     def set_layer(self, layer: str) -> None:
         self.layer = layer
         self.buttons_tab.set_layer(layer)
+        self._refresh()
+
+    def set_remap(self, on: bool) -> None:
+        self.profile.remap_top_buttons = on
         self._refresh()
 
     def set_action(self, button: ButtonId, action) -> None:
@@ -349,7 +360,11 @@ class MainWindow(QMainWindow, ProfileActions):
         self._daemon_errors = list(status.get("config_errors", [])) if status else []
         self.openrazer_banner.setVisible(bool(status and status.get("openrazer_loaded")))
         self._update_warnings()
-        self.battery_label.setText(battery_text(status) if status and status.get("connected") else "")
+        connected = bool(status and status.get("connected"))
+        self.battery_label.setText(battery_text(status) if connected else "")
+        dpi = int(status.get("dpi", -1)) if connected else -1
+        self.dpi_label.setText(self.tr("%1 DPI").replace("%1", str(dpi)) if dpi > 0 else "")
+        self.scroll_tab.set_status(status)
 
     # -- closing --------------------------------------------------------------
     def request_close(self) -> bool:

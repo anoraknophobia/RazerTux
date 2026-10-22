@@ -5,11 +5,13 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QButtonGroup, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
 from naga_config.gui.mouse_view import MouseView
+from naga_config.gui.widgets import ToggleSwitch
 
 
 class ButtonsTab(QWidget):
     bindingClicked = Signal(object)  # ButtonId
     layerChanged = Signal(str)
+    remapToggled = Signal(bool)  # "Obere Tasten frei belegen" (per profile)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -27,6 +29,12 @@ class ButtonsTab(QWidget):
             self.layer_buttons[key] = b
             row.addWidget(b)
         row.addStretch(1)
+        self.remap_toggle = ToggleSwitch(self.tr("Obere Tasten frei belegen"))
+        self.remap_toggle.setToolTip(self.tr(
+            "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der "
+            "hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen."))
+        self.remap_toggle.toggled.connect(self.remapToggled)
+        row.addWidget(self.remap_toggle)
         self.mouse_view = MouseView()
         self.mouse_view.bindingClicked.connect(self.bindingClicked)
         lay = QVBoxLayout(self)
@@ -36,3 +44,8 @@ class ButtonsTab(QWidget):
 
     def set_layer(self, layer: str) -> None:
         self.layer_buttons[layer].setChecked(True)
+
+    def set_remap(self, on: bool) -> None:
+        self.remap_toggle.blockSignals(True)
+        self.remap_toggle.setChecked(on)
+        self.remap_toggle.blockSignals(False)

@@ -250,3 +250,42 @@ def test_main_window_stays_small():
     from pathlib import Path
     import naga_config.gui.main_window as mw
     assert len(Path(mw.__file__).read_text().splitlines()) <= 400
+
+
+def test_top_buttons_locked_unless_remap(env):
+    w, store, _ = env
+    view = w.mouse_view
+    assert w.profile.remap_top_buttons is False
+    assert not w.buttons_tab.remap_toggle.isChecked()
+    assert view.button_text(ButtonId.TOP_1).endswith("Mausrad-Stufe weiter (Maus)")
+    assert view.button_text(ButtonId.TOP_2).endswith("DPI-Stufe weiter (Maus)")
+    assert not view._buttons[ButtonId.TOP_1].isEnabled()
+    assert not view._buttons[ButtonId.TOP_2].isEnabled()
+    assert view._buttons[ButtonId.SIDE_1].isEnabled()
+    w.buttons_tab.remap_toggle.click()
+    assert w.profile.remap_top_buttons is True and w.is_dirty
+    assert view._buttons[ButtonId.TOP_1].isEnabled()
+    assert "(Maus)" not in view.button_text(ButtonId.TOP_1)
+    assert w.save() is True
+    assert store.load_profile("p2").remap_top_buttons is True
+    w.select_profile("default")
+    assert not w.buttons_tab.remap_toggle.isChecked()
+    assert not view._buttons[ButtonId.TOP_1].isEnabled()
+
+
+def test_scroll_tab_status_and_names_saved(env):
+    w, store, transport = env
+    w.client.statusChanged.emit({"connected": True, "scroll_stage": 6, "dpi": 2500,
+                                 "connection": "wired"})
+    assert w.scroll_tab.active_name.text() == "Ultra-fine"
+    assert w.dpi_label.text() == "2500 DPI"
+    w.scroll_tab.rows[0].name_edit.setText("Fein")
+    w.scroll_tab.rows[0].name_edit.textEdited.emit("Fein")
+    assert w.is_dirty
+    assert w.save() is True
+    assert store.load_settings().scroll_stage_names == {1: "Fein", 6: "Ultra-fine"}
+    assert not w.is_dirty
+    w.client.statusChanged.emit({"connected": True, "dpi": -1})
+    assert w.dpi_label.text() == ""
+    w.client.statusChanged.emit({"connected": False, "dpi": 800})
+    assert w.dpi_label.text() == ""

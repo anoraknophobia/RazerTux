@@ -9,11 +9,12 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QGridLayout, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from naga_config.config.model import Action, DefaultAction, Macro
-from naga_config.gui.labels import action_label, button_name
+from naga_config.gui.labels import action_label, button_name, firmware_top_label
 from naga_config.hw.buttons import ButtonId
 
 ASSETS = Path(__file__).parent / "assets"
 SIDE_BUTTONS = [ButtonId(f"side_{n}") for n in range(1, 13)]
+TOP_BUTTONS = (ButtonId.TOP_1, ButtonId.TOP_2)
 OTHER_BUTTONS = [ButtonId.LEFT, ButtonId.RIGHT, ButtonId.MIDDLE, ButtonId.WHEEL_UP,
                  ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT,
                  ButtonId.TOP_1, ButtonId.TOP_2]
@@ -104,14 +105,20 @@ class MouseView(QWidget):
         return self._buttons[b].text()
 
     def set_bindings(self, actions: dict[ButtonId, Action], macros: dict[str, Macro],
-                     layout: str | None = None) -> None:
+                     layout: str | None = None, top_locked: bool = False) -> None:
+        """top_locked: the firmware owns the top buttons (normal device mode); their
+        labels show what the mouse does and are greyed out, not clickable."""
         for b, btn in self._buttons.items():
             a = actions.get(b, DefaultAction())
-            label = action_label(a, b, macros, layout)
+            locked = top_locked and b in TOP_BUTTONS
+            label = firmware_top_label(b) if locked else action_label(a, b, macros, layout)
+            btn.setEnabled(not locked)
+            btn.setToolTip(self.tr("Belegbar, wenn „Obere Tasten frei belegen“ an ist")
+                           if locked else "")
             if b in SIDE_BUTTONS:
                 btn.setText(f"{button_name(b)}  →  {label}")
             else:
                 btn.setText(f"←  {button_name(b)}:  {label}")
             font = btn.font()
-            font.setBold(not isinstance(a, DefaultAction))
+            font.setBold(not locked and not isinstance(a, DefaultAction))
             btn.setFont(font)

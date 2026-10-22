@@ -46,6 +46,17 @@ def battery_text(status: dict) -> str:
     return text + " ⚡ " + _tr("lädt") if status.get("charging") else text
 
 
+# Top buttons while "Obere Tasten frei belegen" is off: the firmware handles them.
+_FIRMWARE_TOP = {
+    ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Mausrad-Stufe weiter (Maus)"),
+    ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "DPI-Stufe weiter (Maus)"),
+}
+
+
+def firmware_top_label(button: ButtonId) -> str:
+    return _tr(_FIRMWARE_TOP[button])
+
+
 WHEEL_BUTTONS = (ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT)
 
 
