@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 220" width="140" height="220">
+  <!-- Draufsicht: Links/Rechts, Mausrad, zwei obere Tasten (vorn/hinten). Platzhalter wie bei der Seitenansicht. -->
+  <path d="M30 60 C30 20 52 8 70 8 C88 8 110 20 110 60 L114 150 C116 196 96 214 70 214 C44 214 24 196 26 150 Z"
+        fill="@BG@" stroke="@FG@" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M70 12 L70 84" stroke="@MUTE@" stroke-width="2"/>
+  <path d="M32 86 L108 86" stroke="@MUTE@" stroke-width="2"/>
+  <rect x="59" y="30" width="22" height="46" rx="10" fill="@ACC@" fill-opacity="0.25" stroke="@ACC@" stroke-width="2.5"/>
+  <path d="M62 44 H78 M62 53 H78 M62 62 H78" stroke="@ACC@" stroke-width="2"/>
+  <rect x="58" y="92" width="24" height="12" rx="5" fill="@BG@" stroke="@ACC@" stroke-width="2.5"/>
+  <rect x="58" y="112" width="24" height="12" rx="5" fill="@BG@" stroke="@ACC@" stroke-width="2.5"/>
+  <g font-family="sans-serif" font-size="9" fill="@MUTE@" text-anchor="middle">
+    <text x="45" y="70">L</text><text x="95" y="70">R</text>
+  </g>
+</svg>

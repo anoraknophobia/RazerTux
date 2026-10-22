@@ -1,0 +1,198 @@
+"""Client for the daemon's D-Bus API, exposed as a QObject with Qt signals.
+
+Transport note: PySide6 (6.12) QtDBus cannot demarshal the daemon's container
+replies (a(ss), a{sv}) - QDBusArgument reading is unusable from Python. The
+real transport therefore uses dbus-next on a private asyncio thread; results
+and signals reach the GUI thread through Qt signals, so the Qt event loop is
+never blocked by or entangled with asyncio. DaemonClient only needs the tiny
+Transport interface (call/start/callbacks), which tests replace with a fake.
+"""
+from __future__ import annotations
+
+import asyncio
+import threading
+from typing import Any
+
+from PySide6.QtCore import QObject, Signal
+
+BUS_NAME = "io.github.nagaconfig"
+OBJECT_PATH = "/io/github/nagaconfig"
+INTERFACE = "io.github.nagaconfig.Daemon"
+CALL_TIMEOUT = 5.0
+
+
+class DaemonUnavailable(Exception):
+    """The daemon is not on the bus."""
+
+
+class DaemonError(Exception):
+    """The daemon answered with a D-Bus error."""
+
+    def __init__(self, name: str, text: str):
+        super().__init__(text or name)
+        self.name = name
+
+
+def _plain(v: Any) -> Any:
+    """Strip dbus-next Variants."""
+    if hasattr(v, "signature") and hasattr(v, "value"):
+        return _plain(v.value)
+    if isinstance(v, dict):
+        return {k: _plain(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return type(v)(_plain(x) for x in v)
+    return v
+
+
+class DBusNextTransport(QObject):
+    """Transport over dbus-next on a background thread."""
+
+    signalReceived = Signal(str, object)
+    ownerChanged = Signal(bool)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._loop = asyncio.new_event_loop()
+        self._bus: Any = None
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True,
+                                        name="naga-dbus")
+
+    def start(self) -> None:
+        if not self._thread.is_alive():
+            self._thread.start()
+            asyncio.run_coroutine_threadsafe(self._watch(), self._loop)
+
+    def stop(self) -> None:
+        self._loop.call_soon_threadsafe(self._loop.stop)
+
+    async def _connect(self) -> Any:
+        from dbus_next import BusType
+        from dbus_next.aio import MessageBus
+        if self._bus is None or not self._bus.connected:
+            self._bus = await MessageBus(bus_type=BusType.SESSION).connect()
+            self._bus.add_message_handler(self._on_message)
+        return self._bus
+
+    def _on_message(self, msg: Any) -> None:
+        from dbus_next import MessageType
+        if msg.message_type != MessageType.SIGNAL:
+            return
+        if msg.interface == INTERFACE:
+            self.signalReceived.emit(msg.member, _plain(list(msg.body)))
+        elif msg.member == "NameOwnerChanged" and msg.body and msg.body[0] == BUS_NAME:
+            self.ownerChanged.emit(bool(msg.body[2]))
+
+    async def _watch(self) -> None:
+        from dbus_next import Message
+        try:
+            bus = await self._connect()
+            for rule in (f"type='signal',interface='{INTERFACE}'",
+                         f"type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='{BUS_NAME}'"):
+                await bus.call(Message(destination="org.freedesktop.DBus", path="/org/freedesktop/DBus",
+                                       interface="org.freedesktop.DBus", member="AddMatch",
+                                       signature="s", body=[rule]))
+        except Exception:  # no session bus: stays "unavailable"
+            pass
+
+    async def _call(self, member: str, signature: str, args: tuple) -> list:
+        from dbus_next import DBusError, Message, MessageType
+        try:
+            bus = await self._connect()
+            reply = await asyncio.wait_for(bus.call(Message(
+                destination=BUS_NAME, path=OBJECT_PATH, interface=INTERFACE,
+                member=member, signature=signature, body=list(args))), CALL_TIMEOUT)
+        except (OSError, asyncio.TimeoutError, DBusError, EOFError) as e:
+            raise DaemonUnavailable(str(e)) from e
+        if reply.message_type == MessageType.ERROR:
+            if reply.error_name in ("org.freedesktop.DBus.Error.ServiceUnknown",
+                                    "org.freedesktop.DBus.Error.NameHasNoOwner"):
+                raise DaemonUnavailable(reply.error_name)
+            raise DaemonError(reply.error_name, str(reply.body[0]) if reply.body else "")
+        return _plain(list(reply.body))
+
+    def call(self, member: str, signature: str = "", args: tuple = ()) -> list:
+        fut = asyncio.run_coroutine_threadsafe(self._call(member, signature, tuple(args)), self._loop)
+        try:
+            return fut.result(CALL_TIMEOUT + 1)
+        except TimeoutError as e:
+            raise DaemonUnavailable("Zeitüberschreitung") from e
+
+
+class DaemonClient(QObject):
+    profileChanged = Signal(str)
+    statusChanged = Signal(dict)
+    available = Signal(bool)
+
+    def __init__(self, transport: Any | None = None, parent: QObject | None = None):
+        super().__init__(parent)
+        self._t = transport if transport is not None else DBusNextTransport()
+        self._available: bool | None = None
+        if hasattr(self._t, "signalReceived"):
+            self._t.signalReceived.connect(self.handle_signal)
+            self._t.ownerChanged.connect(self._owner_changed)
+        self._t.start()
+
+    @property
+    def is_available(self) -> bool:
+        return bool(self._available)
+
+    def _set_available(self, up: bool) -> None:
+        if self._available is not up:
+            self._available = up
+            self.available.emit(up)
+
+    def _owner_changed(self, up: bool) -> None:
+        if up:
+            self.refresh()
+        else:
+            self._set_available(False)
+
+    def refresh(self) -> None:
+        self.status()
+
+    def _call(self, member: str, signature: str = "", args: tuple = ()) -> list | None:
+        """Result list, or None when the daemon is unreachable."""
+        try:
+            res = self._t.call(member, signature, args)
+        except DaemonUnavailable:
+            self._set_available(False)
+            return None
+        except DaemonError:
+            self._set_available(True)
+            raise
+        self._set_available(True)
+        return res
+
+    def handle_signal(self, member: str, body: list) -> None:
+        if member == "ProfileChanged" and body:
+            self.profileChanged.emit(str(body[0]))
+        elif member == "StatusChanged" and body:
+            self.statusChanged.emit(dict(body[0]))
+
+    # -- mirrors of the D-Bus methods; defaults when the daemon is away -------
+    def list_profiles(self) -> list[tuple[str, str]]:
+        res = self._call("ListProfiles")
+        return [tuple(p) for p in res[0]] if res else []
+
+    def active_profile(self) -> str:
+        res = self._call("GetActiveProfile")
+        return str(res[0]) if res else ""
+
+    def activate_profile(self, profile_id: str) -> bool:
+        return self._call("ActivateProfile", "s", (profile_id,)) is not None
+
+    def reload(self) -> bool:
+        return self._call("Reload") is not None
+
+    def status(self) -> dict:
+        res = self._call("GetStatus")
+        return dict(res[0]) if res else {}
+
+    def restore_original(self) -> list[str] | None:
+        """Fields that could not be restored, or None if the daemon is away."""
+        res = self._call("RestoreOriginal")
+        return list(res[0]) if res else None
+
+    def scroll_profile_supported(self) -> bool:
+        res = self._call("ScrollProfileSupported")
+        return bool(res[0]) if res else False
