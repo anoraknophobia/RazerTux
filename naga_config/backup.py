@@ -43,13 +43,19 @@ def save_backup(dev: NagaV2Pro, path: Path) -> dict:
 _RESTORE_ERRORS = (RazerError, OSError, ValueError, IndexError, KeyError, TypeError)
 
 
-def restore_backup(dev: NagaV2Pro, data: dict) -> list[str]:
+def restore_backup(dev: NagaV2Pro, data: dict, fields: set[str] | None = None) -> list[str]:
     """Write the backed-up values back with VARSTORE (they are what the mouse stored
     before we touched it). Never changes the device mode; effects were not backed up
     (not readable), only brightness. Returns the fields that could not be restored,
     in write order: poll_rate, dpi_stages, dpi (after the stages, which reset it),
-    brightness.<zone>, idle_time, low_battery_threshold."""
+    brightness.<zone>, idle_time, low_battery_threshold.
+
+    fields limits the restore to these names ("brightness" covers every zone);
+    None restores everything."""
     failed: list[str] = []
+
+    def wanted(name: str) -> bool:
+        return fields is None or name in fields
 
     def run(name: str, fn, *args, **kw) -> None:
         try:
@@ -60,6 +66,8 @@ def restore_backup(dev: NagaV2Pro, data: dict) -> list[str]:
 
     def need(name: str):
         """Backup value for a restorable field; records it as failed if absent."""
+        if not wanted(name):
+            return None
         value = data.get(name)
         if value is None:
             failed.append(name)
@@ -73,7 +81,7 @@ def restore_backup(dev: NagaV2Pro, data: dict) -> list[str]:
     if (v := need("dpi")) is not None:
         run("dpi", lambda: dev.set_dpi(v[0], v[1], store=VARSTORE))
     for zone, led in ZONE_LED.items():
-        level = (data.get("brightness") or {}).get(zone)
+        level = (data.get("brightness") or {}).get(zone) if wanted("brightness") else None
         if level is not None:  # None: LED not present / never readable
             run(f"brightness.{zone}", dev.set_brightness, led, level, store=VARSTORE)
     if (v := need("idle_time")) is not None:

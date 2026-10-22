@@ -25,6 +25,7 @@ _TYPES = [
     ("hypershift", QT_TRANSLATE_NOOP("ActionDialog", "Hypershift-Taste")),
     ("dpi_up", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe hoch")),
     ("dpi_down", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe runter")),
+    ("dpi_cycle", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe weiter")),
 ]
 _MODES = [
     ("once", QT_TRANSLATE_NOOP("ActionDialog", "Einmal ausführen")),
@@ -200,7 +201,7 @@ class ActionDialog(QDialog):
             case HypershiftAction():
                 self.select_type("hypershift")
             case DpiStageAction(direction):
-                self.select_type("dpi_up" if direction == "up" else "dpi_down")
+                self.select_type(f"dpi_{direction}")
             case _:
                 self.select_type("default")
 
@@ -232,6 +233,8 @@ class ActionDialog(QDialog):
                 return DpiStageAction("up")
             case "dpi_down":
                 return DpiStageAction("down")
+            case "dpi_cycle":
+                return DpiStageAction("cycle")
             case "key":
                 return KeyAction(self.capture.codes[0]) if self.capture.codes else None
             case "combo":

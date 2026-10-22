@@ -59,7 +59,8 @@ def test_simple_types(qapp):
     d = dlg(qapp)
     for t, expected in [("default", DefaultAction()), ("disabled", DisabledAction()),
                         ("hypershift", HypershiftAction()),
-                        ("dpi_up", DpiStageAction("up")), ("dpi_down", DpiStageAction("down"))]:
+                        ("dpi_up", DpiStageAction("up")), ("dpi_down", DpiStageAction("down")),
+                        ("dpi_cycle", DpiStageAction("cycle"))]:
         d.select_type(t)
         assert d.result_action() == expected
 
@@ -126,3 +127,9 @@ def test_rerecord_modifier_alone_after_combo(qapp):
     d.capture.press(SHIFT)
     d.capture.release(SHIFT)
     assert d.result_action() == KeyAction(SHIFT)
+
+
+def test_cycle_action_loads(qapp):
+    d = dlg(qapp, current=DpiStageAction("cycle"))
+    assert d.type_combo.currentData() == "dpi_cycle"
+    assert d.result_action() == DpiStageAction("cycle")

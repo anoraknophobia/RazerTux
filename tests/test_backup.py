@@ -203,3 +203,13 @@ def test_cli_restore_missing_backup_direct(monkeypatch, tmp_path, capsys):
 def test_dbus_restore_returns_none_without_bus(monkeypatch, tmp_path):
     monkeypatch.setenv("DBUS_SESSION_BUS_ADDRESS", f"unix:path={tmp_path}/nobus")
     assert cli._dbus_restore() is None
+
+
+def test_restore_backup_limited_to_fields():
+    from fake_transport import FakeTransport as FT
+    from naga_config.backup import restore_backup
+    t = FT.full()
+    data = {"poll_rate": 500, "dpi": [1800, 1800], "brightness": {"logo": 191},
+            "idle_time": 300}
+    assert restore_backup(NagaV2Pro(t), data, fields={"dpi", "dpi_stages"}) == ["dpi_stages"]
+    assert t.sent == [(0x04, 0x05)]

@@ -13,11 +13,11 @@ from collections.abc import Callable, Coroutine
 from pathlib import Path
 from typing import Any
 
-from naga_config.config.model import Profile, default_profile
+from naga_config.config.model import Profile, Settings, default_profile
 from naga_config.config.store import ConfigStore
 from naga_config.engine.mapper import Mapper
 from naga_config.hw.buttons import DRIVER_MODE, NORMAL_MODE
-from naga_config.backup import restore_backup
+from naga_config.backup import load_backup, restore_backup
 from naga_config.razer.naga_v2_pro import ZONE_LED, NagaV2Pro
 from naga_config.razer.transport import (
     HidrawTransport,
@@ -28,6 +28,7 @@ from naga_config.razer.transport import (
 
 from dbus_next import DBusError
 
+from .battery import BatteryMonitor, notify_desktop
 from .dbus_service import BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
 from .devices import DeviceWatcher, HidrawReader, InputRouter
 
@@ -40,6 +41,10 @@ _HW_ERRORS = (RazerError, OSError, ValueError, IndexError)
 
 def default_config_dir() -> Path:
     return Path.home() / ".config" / "naga-config"
+
+
+def default_backup_path() -> Path:
+    return default_config_dir() / "mouse-backup.json"
 
 
 def _stage_index(profile: Profile) -> int:
@@ -98,6 +103,8 @@ class Daemon:
                  apply_device_settings: Callable[[Profile], None] | None = None,
                  retry_delay: float = 0.2, backup_path: Path | None = None) -> None:
         self.out = out
+        self._backup_path = backup_path or default_backup_path()
+        self.notify: Callable[[str, str], None] | None = None  # desktop notification
         self._apply = apply_device_settings or self._apply_to_mouse
         self._openrazer = openrazer_loaded
         self._transport_factory = transport_factory
@@ -109,9 +116,10 @@ class Daemon:
         self.router = InputRouter(self.mapper, out)
         self.service = NagaService(store, self.mapper, self,
                                    apply_device_settings=self._apply_if_connected,
+                                   apply_settings=self._apply_power,
                                    restore=self._restore_backup,
                                    openrazer_loaded=openrazer_loaded,
-                                   backup_path=backup_path)
+                                   backup_path=self._backup_path)
         self._tasks: set[asyncio.Task] = set()
         self._mouse_path: str | None = None
         self._transport: Any = None
@@ -122,6 +130,9 @@ class Daemon:
         # DPI stepping state, in memory only (reset on connect / profile switch)
         self._stages: list[tuple[int, int]] = []
         self._stage_idx = 0
+        # backup fields of persistent settings we changed on the mouse (R17)
+        self._written: set[str] = set()
+        self._battery: BatteryMonitor | None = None
 
     # -- Hardware protocol for the D-Bus service ---------------------------
 
@@ -155,6 +166,7 @@ class Daemon:
 
     async def shutdown(self) -> None:
         await self.settle()
+        self._write_back()
         await self._disconnect(reset_mode=True)
         await self.router.close()
         self.out.close()
@@ -179,7 +191,45 @@ class Daemon:
 
     def _apply_to_mouse(self, profile: Profile) -> None:
         if self._naga is not None:
+            if profile.poll_rate is not None:
+                self._written.add("poll_rate")
+            if profile.dpi_stages:
+                self._written |= {"dpi_stages", "dpi"}
             apply_device_settings(self._naga, profile, self._absent_zones)
+
+    def _apply_power(self, settings: Settings) -> None:
+        """Idle time and the mouse's low power threshold (both persistent; None = keep)."""
+        if self._naga is None:
+            return
+        for field, value, fn in (("idle_time", settings.idle_time, self._naga.set_idle_time),
+                                 ("low_battery_threshold", settings.low_battery_threshold,
+                                  self._naga.set_low_battery_threshold)):
+            if value is None:
+                continue
+            self._written.add(field)
+            try:
+                fn(value)
+            except Exception as e:
+                logger.warning("%s nicht gesetzt: %s", field, e)
+
+    def _write_back(self) -> None:
+        """R17: persistent values we changed go back to the backup's (VARSTORE), so
+        other systems (Windows/Synapse) find the mouse as it was."""
+        if self._naga is None or not self._written:
+            return
+        fields = set(self._written)
+        if "dpi_stages" in fields:
+            fields.add("dpi")  # writing stages resets the current DPI
+        try:
+            backup = load_backup(self._backup_path)
+        except (OSError, ValueError) as e:
+            logger.warning("Keine lesbare Sicherung (%s), %s bleiben in der Maus: %s",
+                           self._backup_path, ", ".join(sorted(fields)), e)
+            return
+        failed = restore_backup(self._naga, backup, fields=fields)
+        logger.info("Originalwerte zurückgeschrieben: %s%s", ", ".join(sorted(fields - set(failed))),
+                    f" (fehlgeschlagen: {', '.join(failed)})" if failed else "")
+        self._written.clear()
 
     def _apply_if_connected(self, profile: Profile) -> None:
         if self._naga is not None:
@@ -212,15 +262,20 @@ class Daemon:
             self._stage_idx = min(max(active - 1, 0), len(stages) - 1)
 
     def _on_dpi_stage(self, direction: str) -> None:
-        """DPI up/down button: step through the stages, clamped at both ends."""
+        """DPI up/down button: step through the stages, clamped at both ends;
+        cycle: next stage, wrapping from the last to the first."""
         if self._naga is None or not self._stages:
             logger.info("DPI-Stufe %s: keine Stufen bekannt oder Maus nicht verbunden", direction)
             return
-        idx = min(max(self._stage_idx + (1 if direction == "up" else -1), 0),
-                  len(self._stages) - 1)
+        if direction == "cycle":
+            idx = (self._stage_idx + 1) % len(self._stages)
+        else:
+            idx = min(max(self._stage_idx + (1 if direction == "up" else -1), 0),
+                      len(self._stages) - 1)
         if idx == self._stage_idx:
             return
         x, y = self._stages[idx]
+        self._written.add("dpi")
         try:
             self._naga.set_dpi(x, y)
         except Exception as e:
@@ -233,6 +288,7 @@ class Daemon:
         if self._naga is None:
             raise DBusError("io.github.nagaconfig.Error.NotConnected", "Maus nicht verbunden")
         failed = restore_backup(self._naga, backup)
+        self._written.clear()  # the mouse now holds the backup's values
         # DPI buttons should step through the restored onboard stages
         profile = Profile(id="", name="")
         self._reset_stages(profile)
@@ -281,9 +337,34 @@ class Daemon:
         logger.info("Maus verbunden: %s", self._hw)
         self._warn_openrazer()
         self._apply_active()
+        self._apply_power(self.service.settings)
+        if self._hw["connection"] == "wireless":
+            self._battery = BatteryMonitor(
+                naga, 60, self._on_battery, connection=lambda: self._hw["connection"],
+                threshold=lambda: self.service.settings.low_battery_notify,
+                notify=self._low_battery)
+            self._battery.poll()
+            self._battery.start()
         self.service.notify_status()
 
+    def _on_battery(self, level: int, charging: bool) -> None:
+        if (self._hw["battery"], self._hw["charging"]) != (level, charging):
+            self._hw.update(battery=level, charging=charging)
+            self.service.notify_status()
+
+    def _low_battery(self, level: int) -> None:
+        logger.warning("Akku schwach: %d %%", level)
+        if self.notify is not None:
+            try:
+                self.notify("Naga V2 Pro: Akku schwach",
+                            f"Akkustand {level} % – bitte die Maus laden.")
+            except Exception:
+                logger.exception("Benachrichtigung nicht gesendet")
+
     async def _disconnect(self, reset_mode: bool) -> None:
+        if self._battery is not None:
+            await self._battery.stop()
+            self._battery = None
         if self._vendor is not None:
             await self._vendor.close()
             self._vendor = None
@@ -330,6 +411,15 @@ async def run(config_dir: Path) -> int:
     try:
         await daemon.start()
         bus = await MessageBus(bus_type=BusType.SESSION).connect()
+
+        def notify(summary: str, body: str, bus: Any = bus) -> None:
+            async def send() -> None:
+                try:
+                    await notify_desktop(bus, summary, body)
+                except Exception as e:  # no notification daemon running
+                    logger.warning("Benachrichtigung nicht gesendet: %s", e)
+            daemon._spawn(send())
+        daemon.notify = notify
         bus.export(OBJECT_PATH, daemon.service)
         reply = await bus.request_name(BUS_NAME, NameFlag.DO_NOT_QUEUE)
         if reply != RequestNameReply.PRIMARY_OWNER:

@@ -308,7 +308,8 @@ def test_every_flagged_set_command_uses_nostore_at_arg0():
 
 def test_commands_without_storage_flag_are_marked_persistent():
     assert set(PERSISTENT_COMMANDS) == {
-        "set_poll_rate", "set_idle_time", "set_low_battery_threshold"}
+        "set_poll_rate", "set_idle_time", "set_low_battery_threshold",
+        "set_dpi", "set_dpi_stages"}  # R17: NOSTORE not honoured for DPI
     assert all(PERSISTENT_COMMANDS.values())
     for name in PERSISTENT_COMMANDS:
         assert hasattr(NagaV2Pro, name)

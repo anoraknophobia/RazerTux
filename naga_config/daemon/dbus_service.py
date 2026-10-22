@@ -15,7 +15,7 @@ from dbus_next.service import method as _dbus_method
 from dbus_next.service import signal as _dbus_signal
 
 from naga_config.backup import load_backup
-from naga_config.config.model import Profile, validate
+from naga_config.config.model import Profile, Settings, validate
 from naga_config.config.store import ConfigStore
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ class NagaService(ServiceInterface):
 
     def __init__(self, store: ConfigStore, mapper: Any, hw: Hardware, *,
                  apply_device_settings: Callable[[Profile], None] = lambda p: None,
+                 apply_settings: Callable[[Settings], None] = lambda s: None,
                  restore: Callable[[dict], list[str] | None] | None = None,
                  openrazer_loaded: Callable[[], bool] = openrazer_loaded,
                  backup_path: Path | None = None) -> None:
@@ -66,6 +67,7 @@ class NagaService(ServiceInterface):
         self._mapper = mapper
         self._hw = hw
         self._apply = apply_device_settings
+        self._apply_settings = apply_settings
         self._restore = restore
         self._openrazer = openrazer_loaded
         self._backup_path = backup_path or (
@@ -78,6 +80,10 @@ class NagaService(ServiceInterface):
 
     # -- logic ---------------------------------------------------------------
 
+    @property
+    def settings(self) -> Settings:
+        return self._settings
+
     def list_profiles(self) -> list[list[str]]:
         return [[p.id, p.name] for p in self._store.list_profiles()]
 
@@ -87,6 +93,7 @@ class NagaService(ServiceInterface):
             raise DBusError(_ERR + "UnknownProfile", f"Unbekanntes Profil: {profile_id}")
         profile = self._store.load_profile(profile_id)
         await self._use(profile)
+        self._settings = self._store.load_settings()  # keep what the GUI saved meanwhile
         self._settings.active_profile = profile.id
         self._store.save_settings(self._settings)
         self.ProfileChanged(profile.id)
@@ -97,6 +104,10 @@ class NagaService(ServiceInterface):
         self._store.errors.clear()
         old = self.active_profile_id
         self._settings = self._store.load_settings()
+        try:
+            self._apply_settings(self._settings)
+        except Exception:
+            logger.exception("Energie-Einstellungen nicht angewendet")
         self._macros = self._store.load_macros()
         self._mapper.set_macros(self._macros)
         profile = self._store.load_profile(self._settings.active_profile)

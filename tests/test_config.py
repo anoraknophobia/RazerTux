@@ -36,7 +36,7 @@ def test_default_profile_leaves_device_untouched():
     assert p.poll_rate is None and p.lighting == {} and p.scroll_profile is None
     assert p.hypershift == {}
     assert p.standard[ButtonId.TOP_1] == DpiStageAction("up")
-    assert p.standard[ButtonId.TOP_2] == DpiStageAction("down")
+    assert p.standard[ButtonId.TOP_2] == DpiStageAction("cycle")  # R20
     assert set(p.standard) == set(ButtonId)
     assert p.standard[ButtonId.LEFT] == DefaultAction()
     assert validate(p) == []
@@ -219,3 +219,18 @@ def test_import_unsafe_id_regenerated(tmp_path, bad):
     f.write_text(json.dumps(d))
     imp = s.import_profile(f)
     assert imp.id != bad and s.load_profile(imp.id) == imp
+
+
+def test_settings_new_fields_roundtrip_and_defaults(tmp_path):
+    s = ConfigStore(tmp_path)
+    full = Settings("gaming", 20, theme="system", idle_time=600, low_battery_threshold=10)
+    s.save_settings(full)
+    assert s.load_settings() == full
+    old = Settings.from_dict({"active_profile": "x", "low_battery_notify": 15})
+    assert (old.theme, old.idle_time, old.low_battery_threshold) == ("synapse", None, None)
+
+
+def test_dpi_cycle_action_roundtrip():
+    p = default_profile()
+    assert Profile.from_dict(json.loads(json.dumps(p.to_dict()))).standard[ButtonId.TOP_2] \
+        == DpiStageAction("cycle")

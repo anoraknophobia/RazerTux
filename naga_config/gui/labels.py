@@ -59,5 +59,7 @@ def action_label(action: Action, button: ButtonId, macros: dict[str, Macro],
         case HypershiftAction():
             return _tr("Hypershift")
         case DpiStageAction(direction):
+            if direction == "cycle":
+                return _tr("DPI-Stufe weiter")
             return _tr("DPI hoch") if direction == "up" else _tr("DPI runter")
     return "?"

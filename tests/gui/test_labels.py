@@ -20,6 +20,7 @@ def test_labels():
     assert L(HypershiftAction()) == "Hypershift"
     assert L(DpiStageAction("up")) == "DPI hoch"
     assert L(DpiStageAction("down")) == "DPI runter"
+    assert L(DpiStageAction("cycle")) == "DPI-Stufe weiter"
 
 
 def test_macro_label_and_missing():

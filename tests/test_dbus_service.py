@@ -209,3 +209,21 @@ async def test_notify_status_emits_signal(tmp_path):
     member, body = bus.signals[-1]
     assert member == "StatusChanged"
     assert body[0]["connected"].value is True
+
+
+async def test_reload_applies_settings_hook(tmp_path):
+    got = []
+    svc, store, *_ = make(tmp_path, apply_settings=got.append)
+    store.save_settings(Settings(active_profile="default", idle_time=120))
+    await call(svc, "Reload")
+    assert got[-1].idle_time == 120
+
+
+async def test_activate_keeps_settings_saved_by_gui(tmp_path):
+    svc, store, *_ = make(tmp_path)
+    await svc.reload()
+    store.save_settings(Settings(active_profile="default", theme="system",
+                                 low_battery_notify=30))  # GUI saved meanwhile
+    await call(svc, "ActivateProfile", "game")
+    s = store.load_settings()
+    assert (s.active_profile, s.theme, s.low_battery_notify) == ("game", "system", 30)

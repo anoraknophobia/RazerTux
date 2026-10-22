@@ -52,7 +52,8 @@ class HypershiftAction:
 
 @dataclass(frozen=True)
 class DpiStageAction:
-    direction: Literal["up", "down"]
+    """up/down: next/previous stage, clamped; cycle: next stage, wraps to the first."""
+    direction: Literal["up", "down", "cycle"]
 
 
 Action = (DefaultAction | DisabledAction | KeyAction | ComboAction
@@ -187,24 +188,40 @@ class Profile:
         )
 
 
+THEMES = ("synapse", "system")
+IDLE_MIN_S, IDLE_MAX_S = 60, 900
+LOW_POWER_MIN, LOW_POWER_MAX = 5, 25
+
+
 @dataclass
 class Settings:
+    """Global settings. `low_battery_notify` is the desktop warning level in percent
+    (0 = off). `idle_time` (seconds) and `low_battery_threshold` (percent, the mouse's
+    own low power mode) are written to the mouse; None = leave the mouse as is."""
     active_profile: str
     low_battery_notify: int = 15
+    theme: str = "synapse"
+    idle_time: int | None = None
+    low_battery_threshold: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {"active_profile": self.active_profile,
-                "low_battery_notify": self.low_battery_notify}
+                "low_battery_notify": self.low_battery_notify,
+                "theme": self.theme,
+                "idle_time": self.idle_time,
+                "low_battery_threshold": self.low_battery_threshold}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
-        return cls(d["active_profile"], d.get("low_battery_notify", 15))
+        return cls(d["active_profile"], d.get("low_battery_notify", 15),
+                   d.get("theme", "synapse"), d.get("idle_time"),
+                   d.get("low_battery_threshold"))
 
 
 def default_profile() -> Profile:
     standard: dict[ButtonId, Action] = {b: DefaultAction() for b in ButtonId}
     standard[ButtonId.TOP_1] = DpiStageAction("up")
-    standard[ButtonId.TOP_2] = DpiStageAction("down")
+    standard[ButtonId.TOP_2] = DpiStageAction("cycle")
     return Profile(id="default", name="Standard", standard=standard)
 
 

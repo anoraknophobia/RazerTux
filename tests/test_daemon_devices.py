@@ -1,6 +1,8 @@
 """Daemon device handling with fakes: no /dev, no uinput, no session bus."""
 import asyncio
 import errno
+import json
+import logging
 import os
 from types import SimpleNamespace
 
@@ -388,7 +390,8 @@ def make_daemon(tmp_path, transport=None, find_control=lambda: "/dev/hidraw2",
                transport_factory=lambda path: t,
                find_control=find_control, find_vendor=lambda: None,
                openrazer_loaded=lambda: openrazer, retry_delay=0,
-               apply_device_settings=applied.append)
+               apply_device_settings=applied.append,
+               backup_path=tmp_path / "mouse-backup.json")
     return d, t
 
 
@@ -570,7 +573,6 @@ async def test_router_close_releases_before_ungrab():
 
 # -- Task 7: device settings, DPI stepping, restore ----------------------------
 
-import logging  # noqa: E402
 
 from naga_config.config.model import LightingZone, Profile  # noqa: E402
 from naga_config.daemon.main import apply_device_settings  # noqa: E402
@@ -641,17 +643,21 @@ def test_apply_bad_profile_value_is_logged_not_raised(caplog):
     assert (0x04, 0x06) in t.sent
 
 
-async def connected(tmp_path, profile=None, transport=None):
+async def connected(tmp_path, profile=None, transport=None, product=0x00A7, settings=None):
     t = transport or naga_transport()
     d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: t,
                find_control=lambda: "/dev/hidraw2", find_vendor=lambda: None,
-               openrazer_loaded=lambda: False, retry_delay=0)
+               openrazer_loaded=lambda: False, retry_delay=0,
+               backup_path=tmp_path / "mouse-backup.json")
+    if settings:
+        d.service._store.save_settings(settings)
+        d.service._settings = settings
     if profile:
         d.service._store.save_profile(profile)
         d.service._settings.active_profile = profile.id
         d.service._store.save_settings(d.service._settings)
     await d.start()
-    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    d.on_added("mouse", FakeDev("/dev/input/event18", product=product))
     await d.settle()
     return d, t
 
@@ -771,4 +777,154 @@ async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
     assert d._stages == [(400, 400), (500, 500)] and d._stage_idx == 0
     d._on_dpi_stage("up")
     assert dpi_writes(t)[-1] == 500
+    await d.shutdown()
+
+
+async def test_dpi_cycle_wraps_to_first_stage(tmp_path):
+    d, t = await connected(tmp_path, full_profile())  # active stage 2 of 800/1600/3200
+    base = len(dpi_writes(t))
+    d._on_dpi_stage("cycle")
+    d._on_dpi_stage("cycle")  # wraps
+    d._on_dpi_stage("cycle")
+    assert dpi_writes(t)[base:] == [3200, 800, 1600]
+    await d.shutdown()
+
+
+async def test_dpi_cycle_single_stage_writes_nothing(tmp_path):
+    d, t = await connected(tmp_path, full_profile(dpi_stages=[(900, 900)], active_stage=1))
+    base = len(dpi_writes(t))
+    d._on_dpi_stage("cycle")
+    assert dpi_writes(t)[base:] == []
+    await d.shutdown()
+
+
+# -- R17: write persistent values back on clean shutdown --------------------------
+
+BACKUP = {"poll_rate": 500, "dpi": [1800, 1800],
+          "dpi_stages": {"active": 1, "stages": [[2500, 2500]]},
+          "brightness": {"logo": 191, "scroll": None, "thumb": 191},
+          "idle_time": 300, "low_battery_threshold": 5}
+
+
+def write_backup(tmp_path):
+    (tmp_path / "mouse-backup.json").write_text(json.dumps(BACKUP))
+
+
+def since(t, n):
+    return [(r.cmd_class, r.cmd_id, bytes(r.args[:5])) for r in t.requests[n:]
+            if not r.cmd_id & 0x80 and (r.cmd_class, r.cmd_id) != (0x00, 0x04)]
+
+
+async def test_shutdown_writes_back_dpi_stages_and_poll_rate(tmp_path, caplog):
+    write_backup(tmp_path)
+    d, t = await connected(tmp_path, full_profile(lighting={}))
+    n = len(t.requests)
+    with caplog.at_level(logging.INFO):
+        await d.shutdown()
+    assert since(t, n) == [(0x00, 0x05, bytes([0x02])),                    # 500 Hz
+                           (0x04, 0x06, bytes([1, 1, 1, 0, 0x09])),        # VARSTORE, 2500
+                           (0x04, 0x05, bytes([1, 0x07, 0x08, 0x07, 0x08]))]  # VARSTORE 1800
+    assert modes(t)[-1] == NORMAL_MODE
+    assert "zurückgeschrieben" in caplog.text
+
+
+async def test_shutdown_after_dpi_stepping_writes_back_dpi(tmp_path):
+    write_backup(tmp_path)
+    d, t = await connected(tmp_path)  # default profile: nothing persistent written
+    d._on_dpi_stage("up")
+    n = len(t.requests)
+    await d.shutdown()
+    assert [w[:2] for w in since(t, n)] == [(0x04, 0x05)]
+
+
+async def test_shutdown_without_changes_writes_nothing(tmp_path):
+    write_backup(tmp_path)
+    d, t = await connected(tmp_path, full_profile(dpi_stages=[], poll_rate=None))
+    n = len(t.requests)
+    await d.shutdown()
+    assert since(t, n) == []
+
+
+async def test_shutdown_without_backup_logs_warning(tmp_path, caplog):
+    d, t = await connected(tmp_path, full_profile(lighting={}))
+    n = len(t.requests)
+    with caplog.at_level(logging.WARNING):
+        await d.shutdown()
+    assert since(t, n) == []
+    assert "Sicherung" in caplog.text
+
+
+async def test_restore_clears_pending_write_back(tmp_path):
+    write_backup(tmp_path)
+    d, t = await connected(tmp_path, full_profile(lighting={}))
+    d._restore_backup(BACKUP)
+    n = len(t.requests)
+    await d.shutdown()
+    assert since(t, n) == []
+
+
+def test_dpi_commands_are_persistent():
+    from naga_config.razer.naga_v2_pro import PERSISTENT_COMMANDS
+    assert PERSISTENT_COMMANDS["set_dpi"] and PERSISTENT_COMMANDS["set_dpi_stages"]
+
+
+# -- power settings and battery monitor ---------------------------------------------
+
+def power_writes(t):
+    return [(r.cmd_id, bytes(r.args[:2])) for r in t.requests
+            if (r.cmd_class, r.cmd_id) in ((0x07, 0x03), (0x07, 0x01))]
+
+
+async def test_power_settings_applied_on_connect_and_written_back(tmp_path):
+    from naga_config.config.model import Settings
+    write_backup(tmp_path)
+    s = Settings(active_profile="default", idle_time=600, low_battery_threshold=10)
+    d, t = await connected(tmp_path, settings=s)
+    assert power_writes(t) == [(0x03, bytes([0x02, 0x58])), (0x01, bytes([25]))]
+    await d.shutdown()
+    assert power_writes(t)[2:] == [(0x03, bytes([0x01, 0x2C])), (0x01, bytes([12]))]
+
+
+async def test_power_settings_none_never_touch_mouse(tmp_path):
+    d, t = await connected(tmp_path)
+    assert power_writes(t) == []
+    await d.shutdown()
+
+
+async def test_reload_applies_power_settings(tmp_path):
+    from naga_config.config.model import Settings
+    d, t = await connected(tmp_path)
+    d.service._store.save_settings(Settings(active_profile="default", idle_time=120))
+    await d.service.reload()
+    assert power_writes(t) == [(0x03, bytes([0x00, 0x78]))]
+    await d.shutdown()
+
+
+async def test_wireless_connect_starts_battery_monitor(tmp_path):
+    d, t = await connected(tmp_path, product=0x00A8)
+    assert d._battery is not None
+    statuses = []
+    d.service.notify_status = lambda: statuses.append(d.hw_status())
+    t.responses[(0x07, 0x80)] = bytes([0, 0x80])  # ~50 %
+    d._battery.poll()
+    assert statuses and statuses[-1]["battery"] == 50
+    await d.shutdown()
+    assert d._battery is None
+
+
+async def test_wired_connect_has_no_battery_monitor(tmp_path):
+    d, t = await connected(tmp_path)
+    assert d._battery is None
+    await d.shutdown()
+
+
+async def test_low_battery_sends_desktop_notification(tmp_path):
+    d, t = await connected(tmp_path, product=0x00A8)
+    sent = []
+    d.notify = lambda title, body: sent.append((title, body))
+    t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 % < default 15
+    t.responses[(0x07, 0x84)] = bytes([0, 0])   # not charging
+    d._battery.poll()
+    d._battery.poll()
+    assert len(sent) == 1 and "10" in sent[0][1]
     await d.shutdown()
