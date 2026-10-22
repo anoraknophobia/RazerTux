@@ -66,6 +66,10 @@ async def test_toggle_second_press_stops():
     n = len(out.log)
     await settle(10)
     assert len(out.log) == n
+    held = {}
+    for c, v in out.log:
+        held[c] = v
+    assert not any(held.values())
 
 
 async def test_repeat_press_while_once_running_ignored():
@@ -90,7 +94,7 @@ async def test_stop_mid_run_releases_held_keys():
     assert out.log == [(A, 1), (E.BTN_LEFT, 1)]
     p.button_up(K)
     await settle()
-    assert sorted(out.log[2:]) == sorted([(A, 0), (E.BTN_LEFT, 0)])
+    assert out.log[2:] == [(E.BTN_LEFT, 0), (A, 0)]  # reverse press order
     assert out.events[-1] == ("sync",)
 
 
@@ -121,3 +125,31 @@ async def test_exception_in_macro_logged_not_raised(caplog):
     # player still usable
     p.start(Macro("x", "x", []), "once", 1, K)
     await settle()
+
+
+async def test_empty_loop_sleeps_at_least_1ms_per_iteration():
+    out, sl = RecordingOutput(), FakeSleep()
+    p = MacroPlayer(out, sleep=sl)
+    p.start(Macro("e", "e", []), "toggle", 1, K)
+    await settle(30)
+    assert len(sl.calls) >= 3
+    assert all(c >= 0.001 for c in sl.calls)
+    await p.stop_all()
+
+
+async def test_delay_free_while_held_loop_sleeps():
+    out, sl = RecordingOutput(), FakeSleep()
+    p = MacroPlayer(out, sleep=sl)
+    p.start(Macro("e", "e", [KeyStep(A, True), KeyStep(A, False)]), "while_held", 1, K)
+    await settle(30)
+    assert sl.calls and all(c >= 0.001 for c in sl.calls)
+    await p.stop_all()
+
+
+async def test_while_held_quick_tap_plays_one_full_iteration():
+    out = RecordingOutput()
+    p = MacroPlayer(out, sleep=FakeSleep())
+    p.start(tap_macro(), "while_held", 1, K)
+    p.button_up(K)  # released before the task ever ran
+    await settle(30)
+    assert out.log == [(A, 1), (A, 0)]

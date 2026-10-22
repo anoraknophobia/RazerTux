@@ -61,10 +61,18 @@ class Mapper:
         self._macros = macros
 
     async def set_profile(self, profile: Profile) -> None:
-        await self.release_all()
-        self._profile = profile
+        tasks = self._reset()
+        self._profile = profile  # swapped before any await
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def release_all(self) -> None:
+        tasks = self._reset()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    def _reset(self) -> list[asyncio.Task]:
+        """Synchronously release outputs, reset state, stop macros."""
         if self._held:
             for code in reversed(self._held):
                 self._out.key(code, 0)
@@ -72,7 +80,7 @@ class Mapper:
         self._held.clear()
         self._active.clear()
         self._hs_buttons.clear()
-        await self._player.stop_all()
+        return self._player.stop_all_nowait()
 
     async def handle(self, button: ButtonId, value: int) -> None:
         """value: 1=down, 0=up, 2=repeat. Wheel buttons: any non-zero is one tick."""
@@ -160,6 +168,7 @@ class Mapper:
             codes = self._codes(button, action)
             for code in codes:
                 self._out.key(code, 1)
+            self._out.sync()
             for code in reversed(codes):
                 self._out.key(code, 0)
             self._out.sync()

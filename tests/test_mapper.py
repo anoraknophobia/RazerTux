@@ -172,6 +172,7 @@ async def test_wheel_bound_to_key_is_tap():
                     B.WHEEL_DOWN: ComboAction([E.KEY_LEFTCTRL, E.KEY_F6])})
     await m.handle(B.WHEEL_UP, 1)
     assert out.log == [(E.KEY_F5, 1), (E.KEY_F5, 0)]
+    assert out.events == [("key", E.KEY_F5, 1), ("sync",), ("key", E.KEY_F5, 0), ("sync",)]
     out.log.clear()
     await m.handle(B.WHEEL_DOWN, 1)
     assert out.log == [(E.KEY_LEFTCTRL, 1), (E.KEY_F6, 1), (E.KEY_F6, 0), (E.KEY_LEFTCTRL, 0)]
@@ -256,3 +257,26 @@ async def test_set_macros():
     await m.handle(B.SIDE_1, 1)
     await settle()
     assert out.log == [(E.KEY_A, 1), (E.KEY_A, 0)]
+
+
+async def test_press_during_set_profile_uses_new_profile_and_toggle_macro_stopped():
+    sl = GateSleep()
+    macro = Macro("m", "m", [KeyStep(E.KEY_A, True), DelayStep(500), KeyStep(E.KEY_A, False)])
+    m, out, _ = mk({B.SIDE_1: MacroAction("m", "toggle")}, macros={"m": macro}, sleep=sl)
+    await m.handle(B.SIDE_1, 1)
+    await settle()
+    new = Profile("q", "q", standard={B.SIDE_2: KeyAction(E.KEY_X),
+                                      B.SIDE_1: MacroAction("m", "toggle")})
+    task = asyncio.get_running_loop().create_task(m.set_profile(new))
+    await asyncio.sleep(0)  # set_profile is now suspended in its join
+    await m.handle(B.SIDE_2, 1)
+    assert (E.KEY_X, 1) in out.log
+    await m.handle(B.SIDE_1, 1)  # new toggle macro starts fresh, old one is gone
+    await task
+    sl.release()
+    await settle()
+    await m.release_all()
+    held = {}
+    for c, v in out.log:
+        held[c] = v
+    assert not any(held.values())

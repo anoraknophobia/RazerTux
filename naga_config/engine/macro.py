@@ -11,12 +11,16 @@ from naga_config.hw.buttons import ButtonId
 
 logger = logging.getLogger(__name__)
 
+MIN_LOOP_DELAY = 0.001  # seconds; keeps empty/delay-free loops from spinning
+
 
 class _Run:
     def __init__(self, mode: MacroMode) -> None:
         self.mode = mode
         self.pressed: list[int] = []  # codes this macro holds down
         self.task: asyncio.Task | None = None
+        self.started = False       # first step has begun
+        self.release_pending = False  # button released before start
 
 
 class MacroPlayer:
@@ -40,15 +44,23 @@ class MacroPlayer:
     def button_up(self, key: ButtonId) -> None:
         run = self._runs.get(key)
         if run is not None and run.mode == "while_held":
-            self._stop(key)
+            if run.started:
+                self._stop(key)
+            else:  # quick tap: play one full iteration, then stop
+                run.release_pending = True
 
-    async def stop_all(self) -> None:
+    def stop_all_nowait(self) -> list[asyncio.Task]:
+        """Stop every macro synchronously; returns the cancelled tasks to join."""
         tasks = []
         for key in list(self._runs):
             task = self._runs[key].task
             self._stop(key)
             if task is not None:
                 tasks.append(task)
+        return tasks
+
+    async def stop_all(self) -> None:
+        tasks = self.stop_all_nowait()
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -75,11 +87,16 @@ class MacroPlayer:
                    mode: MacroMode, count: int) -> None:
         try:
             if mode == "repeat_n":
-                for _ in range(max(count, 0)):
+                for i in range(max(count, 0)):
+                    if i:
+                        await self._sleep(MIN_LOOP_DELAY)
                     await self._play(run, macro)
             elif mode == "while_held" or mode == "toggle":
                 while True:
                     await self._play(run, macro)
+                    if run.release_pending:
+                        break
+                    await self._sleep(MIN_LOOP_DELAY)
             else:
                 await self._play(run, macro)
         except asyncio.CancelledError:
@@ -92,6 +109,7 @@ class MacroPlayer:
                 self._release(run)
 
     async def _play(self, run: _Run, macro: Macro) -> None:
+        run.started = True
         for step in macro.steps:
             if isinstance(step, DelayStep):
                 await self._sleep(step.ms / 1000)
