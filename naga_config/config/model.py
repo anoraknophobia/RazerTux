@@ -219,6 +219,8 @@ def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[s
         errors.append("Linksklick nicht erreichbar")
     if sum(isinstance(a, HypershiftAction) for a in profile.standard.values()) > 1:
         errors.append("Mehr als eine Hypershift-Taste")
+    if any(isinstance(a, HypershiftAction) for a in profile.hypershift.values()):
+        errors.append("Hypershift-Taste in der Hypershift-Ebene nicht erlaubt")
     if macros is not None:
         for layer in (profile.standard, profile.hypershift):
             for a in layer.values():

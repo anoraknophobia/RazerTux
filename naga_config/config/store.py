@@ -12,6 +12,10 @@ from typing import Any
 from .model import Macro, Profile, Settings, default_profile
 
 
+_SAFE_ID = re.compile(r"[a-z0-9-]+")
+_READ_ERRORS = (OSError, ValueError, KeyError, TypeError, AttributeError)
+
+
 def new_profile_id(name: str) -> str:
     """Filesystem-safe id: slug of the name plus a short random suffix."""
     ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
@@ -36,7 +40,7 @@ class ConfigStore:
         return self.root / "profiles"
 
     def _profile_path(self, profile_id: str) -> Path:
-        if not re.fullmatch(r"[a-z0-9-]+", profile_id):
+        if not _SAFE_ID.fullmatch(profile_id):
             raise ValueError(f"Ungültige Profil-ID: {profile_id!r}")
         return self._profiles_dir / f"{profile_id}.json"
 
@@ -52,7 +56,7 @@ class ConfigStore:
         if path.exists():
             try:
                 return Settings.from_dict(self._read(path))
-            except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+            except _READ_ERRORS as e:
                 self._error(path, e)
         return Settings(active_profile="default")
 
@@ -72,15 +76,27 @@ class ConfigStore:
             for path in sorted(self._profiles_dir.glob("*.json")):
                 try:
                     profiles.append(self._load_path(path))
-                except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+                except _READ_ERRORS as e:
                     self._error(path, e)
         return profiles or [default_profile()]
 
     def load_profile(self, profile_id: str) -> Profile:
-        path = self._profile_path(profile_id)
-        if not path.exists() and profile_id == "default":
+        """Load a profile; on a missing/corrupt file record an error and
+        return the default profile."""
+        try:
+            path = self._profile_path(profile_id)
+        except ValueError as e:
+            self.errors.append(f"Profil {profile_id!r} nicht lesbar: {e}")
             return default_profile()
-        return self._load_path(path)
+        if not path.exists():
+            if profile_id != "default":
+                self.errors.append(f"{path.name} fehlt, Standardprofil wird verwendet")
+            return default_profile()
+        try:
+            return self._load_path(path)
+        except _READ_ERRORS as e:
+            self._error(path, e)
+            return default_profile()
 
     def save_profile(self, p: Profile) -> None:
         _write_json(self._profile_path(p.id), p.to_dict())
@@ -95,7 +111,7 @@ class ConfigStore:
             return {}
         try:
             return {k: Macro.from_dict(v) for k, v in self._read(path).items()}
-        except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+        except _READ_ERRORS as e:
             self._error(path, e)
             return {}
 
@@ -104,11 +120,22 @@ class ConfigStore:
 
     # import / export
     def export_profile(self, profile_id: str, path: Path) -> None:
-        _write_json(Path(path), self.load_profile(profile_id).to_dict())
+        src = self._profile_path(profile_id)
+        if src.exists():
+            try:
+                profile = self._load_path(src)
+            except _READ_ERRORS as e:
+                raise ValueError(f"{src.name} ist beschädigt und kann nicht exportiert werden: {e}") from e
+        elif profile_id == "default":
+            profile = default_profile()
+        else:
+            raise ValueError(f"{src.name} fehlt und kann nicht exportiert werden")
+        _write_json(Path(path), profile.to_dict())
 
     def import_profile(self, path: Path) -> Profile:
         p = self._load_path(Path(path))
-        if self._profile_path(p.id).exists() or p.id == "default":
+        if (not _SAFE_ID.fullmatch(p.id) or p.id == "default"
+                or self._profile_path(p.id).exists()):
             p.id = new_profile_id(p.name)
         self.save_profile(p)
         return p

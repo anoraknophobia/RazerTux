@@ -176,3 +176,46 @@ def test_new_profile_id_is_filesystem_safe():
     assert a != b
     assert all(c in "abcdefghijklmnopqrstuvwxyz0123456789-" for c in a)
     assert new_profile_id("§§§")
+
+
+def test_hypershift_key_in_hypershift_layer_rejected():
+    p = default_profile()
+    p.hypershift[ButtonId.SIDE_1] = HypershiftAction()
+    assert "Hypershift-Taste in der Hypershift-Ebene nicht erlaubt" in validate(p)
+
+
+def test_load_profile_corrupt_returns_default_and_records(tmp_path):
+    (tmp_path / "profiles").mkdir()
+    (tmp_path / "profiles/kaputt.json").write_text("{x")
+    s = ConfigStore(tmp_path)
+    assert s.load_profile("kaputt").id == "default"
+    assert any("kaputt.json" in e for e in s.errors)
+
+
+def test_load_profile_missing_returns_default_and_records(tmp_path):
+    s = ConfigStore(tmp_path)
+    assert s.load_profile("weg").id == "default"
+    assert any("weg.json" in e for e in s.errors)
+    s2 = ConfigStore(tmp_path)
+    assert s2.load_profile("default").id == "default" and s2.errors == []
+
+
+def test_export_unreadable_profile_raises_valueerror(tmp_path):
+    (tmp_path / "profiles").mkdir()
+    (tmp_path / "profiles/kaputt.json").write_text("{x")
+    s = ConfigStore(tmp_path)
+    with pytest.raises(ValueError, match="kaputt.json"):
+        s.export_profile("kaputt", tmp_path / "o.json")
+    with pytest.raises(ValueError, match="weg.json"):
+        s.export_profile("weg", tmp_path / "o.json")
+
+
+@pytest.mark.parametrize("bad", ["../x", "Gaming", "a/b"])
+def test_import_unsafe_id_regenerated(tmp_path, bad):
+    s = ConfigStore(tmp_path)
+    d = full_profile().to_dict()
+    d["id"] = bad
+    f = tmp_path / "in.json"
+    f.write_text(json.dumps(d))
+    imp = s.import_profile(f)
+    assert imp.id != bad and s.load_profile(imp.id) == imp
