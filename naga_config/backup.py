@@ -5,6 +5,13 @@ from pathlib import Path
 from .razer.naga_v2_pro import NagaV2Pro
 
 
+CORE_FIELDS = ("firmware", "dpi", "poll_rate")
+
+
+class BackupError(Exception):
+    pass
+
+
 def load_backup(path: Path) -> dict:
     return json.loads(Path(path).read_text())
 
@@ -15,6 +22,10 @@ def save_backup(dev: NagaV2Pro, path: Path) -> dict:
     if path.exists():
         return load_backup(path)
     snap = dev.snapshot()
+    if all(snap.get(k) is None for k in CORE_FIELDS):
+        raise BackupError(
+            "Maus liefert keine Kernwerte (Firmware, DPI, Abfragerate); nichts gesichert"
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(path, "x") as f:  # exclusive: never clobber

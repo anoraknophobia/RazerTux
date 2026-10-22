@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from .backup import save_backup
+from .backup import BackupError, save_backup
 from .razer.naga_v2_pro import NagaV2Pro
 from .razer.transport import HidrawTransport, find_control_hidraw
 
@@ -43,9 +43,15 @@ def main(argv=None) -> int:
             if args.cmd == "status":
                 print(json.dumps(dev.snapshot(), indent=2))
             else:
-                save_backup(dev, path)
+                snap = save_backup(dev, path)
+                missing = [k for k, v in snap.items() if v is None]
+                if missing:
+                    print(
+                        "Warnung: nicht lesbare Felder: " + ", ".join(missing),
+                        file=sys.stderr,
+                    )
                 print(f"Sicherung geschrieben: {path}")
-    except (OSError, FileNotFoundError) as e:
+    except (OSError, BackupError) as e:
         print(f"Fehler: {e}", file=sys.stderr)
         return 1
     return 0
