@@ -172,7 +172,7 @@ def tab_names(w):
 
 def test_tab_order(env):
     w, *_ = env
-    assert tab_names(w) == ["Tasten", "Leistung", "Mausrad", "Beleuchtung", "Energie", "Makros"]
+    assert tab_names(w) == ["TASTEN", "LEISTUNG", "MAUSRAD", "BELEUCHTUNG", "ENERGIE", "MAKROS"]
 
 
 def test_performance_edit_marks_dirty_saves_and_reverts(env):
@@ -227,7 +227,8 @@ def test_battery_label_wired_and_charging(env):
     assert w.battery_label.text() == "Kabel"
     w.client.statusChanged.emit({"connected": True, "battery": 42, "charging": True,
                                  "connection": "wireless"})
-    assert "42 %" in w.battery_label.text() and "lädt" in w.battery_label.text()
+    assert w.battery_label.text() == "42 %" and w.battery_label.charging  # drawn bolt, no emoji
+    assert w.battery_label.level == 42 and "lädt" in w.battery_label.toolTip()
     w.client.statusChanged.emit({"connected": False, "battery": -1})
     assert w.battery_label.text() == ""
 

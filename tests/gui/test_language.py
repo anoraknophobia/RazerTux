@@ -38,7 +38,7 @@ def _window(store):
 
 
 def test_translator_answers_known_and_falls_back(qapp, english):
-    assert QCoreApplication.translate("MainWindow", "Tasten") == "Customize"
+    assert QCoreApplication.translate("MainWindow", "TASTEN") == "CUSTOMIZE"
     assert QCoreApplication.translate("MainWindow", "gibt es nicht") == "gibt es nicht"
     assert not english.isEmpty() and JsonTranslator("de").isEmpty()
 
@@ -47,7 +47,7 @@ def test_main_window_in_english(store, english):
     w = _window(store)
     try:
         assert [w.tabs.tabText(i) for i in range(w.tabs.count())] == [
-            "Customize", "Performance", "Scroll Wheel", "Lighting", "Power", "Macros"]
+            "CUSTOMIZE", "PERFORMANCE", "SCROLL WHEEL", "LIGHTING", "POWER", "MACROS"]
         titles = [c.title.text() for c in w.performance_tab.findChildren(Card)]
         assert "SENSITIVITY" in titles and "POLLING RATE" in titles
         assert w.menuBar().actions()[0].text() == "View"
@@ -133,6 +133,18 @@ def test_install_language_sets_both_layers(qapp, store):
     t = language.install_language(qapp, store)
     try:
         assert i18n.current_language() == "fr"
-        assert QCoreApplication.translate("MainWindow", "Tasten") != "Tasten"
+        assert QCoreApplication.translate("MainWindow", "TASTEN") != "TASTEN"
+    finally:
+        qapp.removeTranslator(t)
+
+
+@pytest.mark.parametrize("lang", ["en", "es", "fr"])
+def test_tab_titles_are_uppercase_in_every_language(qapp, lang):
+    t = JsonTranslator(lang)
+    qapp.installTranslator(t)
+    try:
+        for src in ("TASTEN", "LEISTUNG", "MAUSRAD", "BELEUCHTUNG", "ENERGIE", "MAKROS"):
+            text = QCoreApplication.translate("MainWindow", src)
+            assert text == text.upper(), (lang, text)
     finally:
         qapp.removeTranslator(t)

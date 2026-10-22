@@ -110,7 +110,7 @@ _PLACEHOLDER = re.compile(r"%\d+|%n|\{\w+\}")
 
 def test_extractor_sees_all_kinds_of_calls():
     found, noops, dynamic, _ = extract()
-    assert ("MainWindow", "Tasten") in found                     # self.tr in a class
+    assert ("MainWindow", "TASTEN") in found                     # self.tr in a class
     assert ("MainWindow", "Neues Profil") in found               # mixin -> MainWindow
     assert ("keynames", "Taste %1") in found                     # module _tr wrapper
     assert ("ActionDialog", "Kombination") in noops              # QT_TRANSLATE_NOOP table

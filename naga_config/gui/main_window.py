@@ -6,8 +6,8 @@ import copy
 from PySide6.QtCore import QT_TRANSLATE_NOOP, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
-    QComboBox, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
-    QTabWidget, QVBoxLayout, QWidget,
+    QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget, QVBoxLayout,
+    QWidget,
 )
 
 from naga_config.config.model import DefaultAction, Profile, default_profile, validate
@@ -15,8 +15,10 @@ from naga_config.config.store import ConfigStore
 from naga_config.gui.action_dialog import ActionDialog
 from naga_config.gui.buttons_tab import ButtonsTab
 from naga_config.gui.dbus_client import DaemonClient
-from naga_config.gui.language import add_language_menu, check_language
-from naga_config.gui.labels import battery_text
+from naga_config.gui.header import HeaderBar
+from naga_config.gui.language import (
+    add_language_menu, check_language, make_language_combo, select_language,
+)
 from naga_config.gui.lighting_tab import LightingTab
 from naga_config.gui.macro_tab import MacroTab, strip_macro
 from naga_config.gui.performance_tab import PerformanceTab
@@ -61,27 +63,13 @@ class MainWindow(QMainWindow, ProfileActions):
 
     # -- construction --------------------------------------------------------
     def _build(self) -> None:
-        self.profile_combo = QComboBox()
-        self.profile_combo.setMinimumWidth(180)
+        self.header = HeaderBar({
+            "new": self.new_profile, "rename": self.rename_profile, "duplicate": self.duplicate_profile,
+            "delete": self.delete_profile, "export": self.export_profile, "import": self.import_profile,
+            "activate": self.activate_current})
+        self.profile_combo, self.activate_btn = self.header.profile_combo, self.header.activate_btn
+        self.dpi_label, self.battery_label = self.header.dpi_label, self.header.battery_label
         self.profile_combo.activated.connect(lambda _i: self.select_profile(self.profile_combo.currentData()))
-        header = QHBoxLayout()
-        header.addWidget(QLabel(self.tr("Profil:")))
-        header.addWidget(self.profile_combo)
-        for text, slot in [(self.tr("Neu"), self.new_profile), (self.tr("Umbenennen"), self.rename_profile),
-                           (self.tr("Duplizieren"), self.duplicate_profile), (self.tr("Löschen"), self.delete_profile),
-                           (self.tr("Export …"), self.export_profile), (self.tr("Import …"), self.import_profile)]:
-            b = QPushButton(text)
-            b.clicked.connect(lambda _=False, s=slot: s())
-            header.addWidget(b)
-        self.activate_btn = QPushButton(self.tr("Aktivieren"))
-        self.activate_btn.setToolTip(self.tr("Dieses Profil für die Maus verwenden"))
-        self.activate_btn.clicked.connect(lambda _=False: self.activate_current())
-        header.addWidget(self.activate_btn)
-        header.addStretch(1)
-        self.dpi_label, self.battery_label = QLabel(), QLabel()
-        header.addWidget(self.dpi_label)
-        header.addSpacing(12)
-        header.addWidget(self.battery_label)
 
         self.banner = self._make_banner(self.tr(
             "Der Dienst (naga-configd) läuft nicht. Änderungen werden gespeichert, "
@@ -106,9 +94,9 @@ class MainWindow(QMainWindow, ProfileActions):
         self.macro_tab.changed.connect(self._refresh)
         self.macro_tab.macroDeleted.connect(self._on_macro_deleted)
         self.tabs = QTabWidget()
-        for widget, name in ((self.buttons_tab, self.tr("Tasten")), (self.performance_tab, self.tr("Leistung")),
-                             (self.scroll_tab, self.tr("Mausrad")), (self.lighting_tab, self.tr("Beleuchtung")),
-                             (self.power_tab, self.tr("Energie")), (self.macro_tab, self.tr("Makros"))):
+        for widget, name in ((self.buttons_tab, self.tr("TASTEN")), (self.performance_tab, self.tr("LEISTUNG")),
+                             (self.scroll_tab, self.tr("MAUSRAD")), (self.lighting_tab, self.tr("BELEUCHTUNG")),
+                             (self.power_tab, self.tr("ENERGIE")), (self.macro_tab, self.tr("MAKROS"))):
             self.tabs.addTab(widget, name)
         self.power_tab.load(self.settings)
         self.scroll_tab.load(self.settings)
@@ -123,20 +111,28 @@ class MainWindow(QMainWindow, ProfileActions):
         self.save_btn.clicked.connect(lambda _=False: self.save())
         self.revert_btn = QPushButton(self.tr("Verwerfen"))
         self.revert_btn.clicked.connect(lambda _=False: self.revert())
+        self.language_combo = make_language_combo(self.settings.language, self.languageRequested.emit)
         footer = QHBoxLayout()
+        footer.setContentsMargins(16, 8, 16, 12)
+        footer.addWidget(self.language_combo)
         footer.addStretch(1)
         footer.addWidget(self.revert_btn)
         footer.addWidget(self.save_btn)
 
         central = QWidget()
         lay = QVBoxLayout(central)
-        lay.addLayout(header)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+        lay.addWidget(self.header)
         for b in (self.banner, self.openrazer_banner, self.errors_banner):
             lay.addWidget(b)
-        lay.addWidget(self.tabs, 1)
+        body = QVBoxLayout()
+        body.setContentsMargins(16, 4, 16, 0)
+        body.addWidget(self.tabs)
+        lay.addLayout(body, 1)
         lay.addLayout(footer)
         self.setCentralWidget(central)
-        self.resize(1000, 760)
+        self.resize(1100, 800)
 
     def _make_banner(self, text: str, colour: str = "#b3261e") -> QFrame:
         frame = QFrame()
@@ -184,6 +180,7 @@ class MainWindow(QMainWindow, ProfileActions):
 
     def set_language_checked(self, name: str) -> None:
         check_language(self.language_menu, name)
+        select_language(self.language_combo, name)
 
     def _macro_dicts(self) -> dict:
         return {k: m.to_dict() for k, m in self.macros.items()}
@@ -366,10 +363,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self._daemon_errors = list(status.get("config_errors", [])) if status else []
         self.openrazer_banner.setVisible(bool(status and status.get("openrazer_loaded")))
         self._update_warnings()
-        connected = bool(status and status.get("connected"))
-        self.battery_label.setText(battery_text(status) if connected else "")
-        dpi = int(status.get("dpi", -1)) if connected else -1
-        self.dpi_label.setText(self.tr("%1 DPI").replace("%1", str(dpi)) if dpi > 0 else "")
+        self.header.set_status(status)
         self.scroll_tab.set_status(status)
 
     # -- closing --------------------------------------------------------------

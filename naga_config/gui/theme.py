@@ -12,7 +12,7 @@ WINDOW = "#111111"
 PANEL = "#1b1b1b"
 FIELD = "#232323"
 BORDER = "#2e2e2e"
-TEXT = "#d4d4d4"
+TEXT = "#cfcfcf"
 MUTED = "#8a8a8a"
 ACCENT = "#44D62C"
 ACCENT_DIM = "#1f4a17"
@@ -72,6 +72,22 @@ QLabel#stageSlot {{ color: {MUTED}; }}
 QLabel#stageMarker {{ color: {ACCENT}; }}
 QLabel#activeName {{ color: #ffffff; }}
 QLabel#tileValue {{ color: {TEXT}; font-size: 18pt; }}
+QWidget#header {{ background: {WINDOW}; border-bottom: 1px solid {BORDER}; }}
+QLabel#deviceTitle {{ color: {MUTED}; font-size: 11pt; letter-spacing: 1px; }}
+QLabel#mutedText {{ color: {MUTED}; }}
+QToolButton#dotsButton {{ color: {TEXT}; background: transparent; border: none; padding: 2px 6px;
+              font-weight: bold; }}
+QToolButton#dotsButton:hover {{ color: {ACCENT}; }}
+QToolButton#dotsButton::menu-indicator {{ image: none; width: 0; }}
+QFrame#pill {{ background: {PANEL}; border: 1px solid #3a3a3a; border-radius: 17px; }}
+QPushButton#pillButton {{ background: transparent; border: 1px solid transparent; border-radius: 14px;
+              padding: 5px 18px; color: {TEXT}; }}
+QPushButton#pillButton:hover:!checked {{ color: #ffffff; }}
+QPushButton#pillButton:checked {{ background: {ACCENT}; border-color: {ACCENT}; color: #000000; }}
+QPushButton#bindingLabel {{ color: {TEXT}; }}
+QPushButton#bindingLabel[hot="true"] {{ color: {ACCENT}; }}
+QPushButton#bindingLabel:disabled {{ color: #5a5a5a; }}
+QComboBox#languageCombo {{ color: {MUTED}; }}
 QScrollBar:vertical {{ background: {WINDOW}; width: 10px; }}
 QScrollBar::handle:vertical {{ background: #3a3a3a; border-radius: 4px; min-height: 24px; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; width: 0; }}

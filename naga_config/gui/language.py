@@ -11,7 +11,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QObject, QProcess, Signal
 from PySide6.QtGui import QActionGroup
-from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QMessageBox, QWidget
 
 from naga_config import i18n
 from naga_config.config.store import ConfigStore
@@ -46,6 +46,24 @@ def add_language_menu(parent: QMenu, current: str, pick: Callable[[str], None]) 
 def check_language(menu: QMenu, name: str) -> None:
     for a in menu.actions():
         a.setChecked(a.data() == name)
+
+
+def make_language_combo(current: str, pick: Callable[[str], None]) -> QComboBox:
+    """Compact language dropdown (window footer); same entries as the menu."""
+    combo = QComboBox()
+    combo.setObjectName("languageCombo")
+    combo.setToolTip(_tr("Sprache"))
+    for key, name in LANGUAGES:
+        combo.addItem(_tr(name) if key == "system" else name, key)
+    select_language(combo, current)
+    combo.activated.connect(lambda i: pick(combo.itemData(i)))
+    return combo
+
+
+def select_language(combo: QComboBox, name: str) -> None:
+    combo.blockSignals(True)
+    combo.setCurrentIndex(max(combo.findData(name), 0))
+    combo.blockSignals(False)
 
 
 def install_language(app: QApplication, store: ConfigStore) -> JsonTranslator:
