@@ -1,8 +1,9 @@
-"""Razer Naga V2 Pro: read commands plus device mode.
+"""Razer Naga V2 Pro: read commands, write commands and device mode.
 
 Byte layouts follow OpenRazer (driver/razerchromacommon.c, razermouse_driver.c)
 for USB_DEVICE_ID_RAZER_NAGA_V2_PRO_WIRED/WIRELESS: transaction id 0x1F everywhere.
 """
+from ..config.model import LightingZone
 from .report import build_report
 from .transport import RazerError, Transport
 
@@ -18,6 +19,29 @@ ZONE_LED = {"logo": LOGO, "scroll": SCROLL, "thumb": THUMB}
 
 # poll rate byte -> Hz (razer_attr_read_poll_rate, standard variant)
 _POLL_HZ = {0x01: 1000, 0x02: 500, 0x08: 125}
+
+
+# poll rate Hz -> byte (razer_chroma_misc_set_polling_rate)
+_POLL_BYTE = {hz: raw for raw, hz in _POLL_HZ.items()}
+
+# Defaults OpenRazer does not expose per call (documented, see docs/hardware-notes.md)
+WAVE_DIRECTION = 1  # 0x01 = right/left per firmware; OpenRazer accepts 0x00..0x02
+REACTIVE_SPEED = 2  # OpenRazer: 0x01 (fast) .. 0x04 (slow)
+_WAVE_SPEED = 0x28  # fixed in razer_chroma_extended_matrix_effect_wave
+
+# Set commands that have NO varstore/storage argument in their layout. Whether the
+# firmware keeps them across replug can therefore not be controlled: the daemon /
+# GUI should treat them as persistent and restore_backup() writes them back.
+PERSISTENT_COMMANDS = {
+    "set_poll_rate": True,             # class 0x00 id 0x05, 1 arg (rate byte)
+    "set_idle_time": True,             # class 0x07 id 0x03, 2 args (seconds BE16)
+    "set_low_battery_threshold": True,  # class 0x07 id 0x01, 1 arg (raw 0x0C..0x3F)
+}
+
+
+def _check_dpi(value: int) -> None:
+    if not isinstance(value, int) or not 100 <= value <= 30000:
+        raise ValueError(f"DPI {value!r} ausserhalb 100-30000")
 
 
 class NagaV2Pro:
@@ -88,6 +112,80 @@ class NagaV2Pro:
             return self._get(0x02, 0x98, bytes([VARSTORE]), 0x02)[1]
         except RazerError:
             return None
+
+    # -- write commands ----------------------------------------------------
+    # Every command with a storage argument takes store=NOSTORE by default (RAM
+    # only); restore_backup passes VARSTORE to write back what was stored.
+
+    def set_dpi(self, x: int, y: int, *, store: int = NOSTORE) -> None:
+        """razer_chroma_misc_set_dpi_xy: class 0x04 id 0x05 size 7."""
+        _check_dpi(x)
+        _check_dpi(y)
+        self._get(0x04, 0x05, bytes([store, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0]), 0x07)
+
+    def set_dpi_stages(self, active: int, stages: list[tuple[int, int]], *,
+                       store: int = NOSTORE) -> None:
+        """razer_chroma_misc_set_dpi_stages: class 0x04 id 0x06 size 0x26.
+        active is 1-based; 1-5 stages, 100-30000 in steps of 50."""
+        if not 1 <= len(stages) <= 5:
+            raise ValueError(f"1-5 DPI-Stufen erlaubt, nicht {len(stages)}")
+        if not 1 <= active <= len(stages):
+            raise ValueError(f"aktive Stufe {active} ausserhalb 1-{len(stages)}")
+        for x, y in stages:
+            for v in (x, y):
+                _check_dpi(v)
+                if v % 50:
+                    raise ValueError(f"DPI {v} ist kein Vielfaches von 50")
+        args = bytearray([store, active, len(stages)])
+        for i, (x, y) in enumerate(stages):
+            args += bytes([i, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])
+        self._get(0x04, 0x06, bytes(args), 0x26)
+
+    def set_poll_rate(self, hz: int) -> None:
+        """razer_chroma_misc_set_polling_rate: class 0x00 id 0x05 size 1 (no storage arg)."""
+        if hz not in _POLL_BYTE:
+            raise ValueError(f"Abfragerate {hz!r} nicht in {sorted(_POLL_BYTE)}")
+        self._get(0x00, 0x05, bytes([_POLL_BYTE[hz]]), 0x01)
+
+    def set_brightness(self, led: int, value: int, *, store: int = NOSTORE) -> None:
+        """razer_chroma_extended_matrix_brightness: class 0x0F id 0x04 size 3."""
+        if not isinstance(value, int) or not 0 <= value <= 255:
+            raise ValueError(f"Helligkeit {value!r} ausserhalb 0-255")
+        self._get(0x0F, 0x04, bytes([store, led, value]), 0x03)
+
+    def set_effect(self, led: int, zone: LightingZone, *, store: int = NOSTORE) -> None:
+        """razer_chroma_extended_matrix_effect_*: class 0x0F id 0x02 (OpenRazer's per-LED
+        path for this model). Wave and spectrum take no colour."""
+        eff, (r, g, b) = zone.effect, zone.color
+        head = bytes([store, led])
+        if eff == "off":
+            args = head + bytes([0x00, 0, 0, 0])
+        elif eff == "static":
+            args = head + bytes([0x01, 0, 0, 0x01, r, g, b])
+        elif eff == "breath":
+            args = head + bytes([0x02, 0x01, 0x00, 0x01, r, g, b])
+        elif eff == "spectrum":
+            args = head + bytes([0x03, 0, 0, 0])
+        elif eff == "wave":
+            args = head + bytes([0x04, WAVE_DIRECTION, _WAVE_SPEED, 0])
+        elif eff == "reactive":
+            args = head + bytes([0x05, 0, REACTIVE_SPEED, 0x01, r, g, b])
+        else:
+            raise ValueError(f"unbekannter Effekt {eff!r}")
+        self._get(0x0F, 0x02, args, len(args))
+
+    def set_idle_time(self, seconds: int) -> None:
+        """razer_chroma_misc_set_idle_time: class 0x07 id 0x03 size 2 (no storage arg)."""
+        if not isinstance(seconds, int) or not 60 <= seconds <= 900:
+            raise ValueError(f"Leerlaufzeit {seconds!r} ausserhalb 60-900 s")
+        self._get(0x07, 0x03, bytes([seconds >> 8, seconds & 0xFF]), 0x02)
+
+    def set_low_battery_threshold(self, percent: int) -> None:
+        """razer_chroma_misc_set_low_battery_threshold: class 0x07 id 0x01 size 1
+        (no storage arg). Raw 0x0C=5%, 0x26=15%, 0x3F=25%, i.e. raw = percent*255//100."""
+        if not isinstance(percent, int) or not 5 <= percent <= 25:
+            raise ValueError(f"Akku-Schwelle {percent!r} ausserhalb 5-25 %")
+        self._get(0x07, 0x01, bytes([percent * 255 // 100]), 0x01)
 
     def snapshot(self) -> dict:
         """All readable state; each field independently None on any error."""

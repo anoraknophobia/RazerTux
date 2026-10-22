@@ -110,3 +110,202 @@ def test_no_write_commands_sent_by_snapshot():
     NagaV2Pro(t).snapshot()
     assert t.sent
     assert all(cid & 0x80 for (_, cid) in t.sent)  # only get-IDs (bit 7)
+
+
+# -- write commands (layouts from OpenRazer razerchromacommon.c) --------------
+
+from naga_config.config.model import LightingZone
+from naga_config.razer.naga_v2_pro import (
+    NOSTORE,
+    PERSISTENT_COMMANDS,
+    REACTIVE_SPEED,
+    VARSTORE,
+    WAVE_DIRECTION,
+)
+
+
+def sent(fn, *a, **kw):
+    t = FakeTransport.full()
+    fn(NagaV2Pro(t), *a, **kw)
+    return t.requests
+
+
+def one(fn, *a, **kw):
+    reqs = sent(fn, *a, **kw)
+    assert len(reqs) == 1
+    return reqs[0]
+
+
+def test_set_dpi_layout():
+    r = one(lambda d: d.set_dpi(1800, 900))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x04, 0x05, 0x07)
+    assert r.args[:7] == bytes([NOSTORE, 0x07, 0x08, 0x03, 0x84, 0, 0])
+
+
+def test_set_dpi_varstore_and_range():
+    r = one(lambda d: d.set_dpi(800, 800, store=VARSTORE))
+    assert r.args[0] == VARSTORE
+    for bad in (99, 30001):
+        with pytest.raises(ValueError):
+            NagaV2Pro(FakeTransport.full()).set_dpi(bad, 800)
+
+
+def test_set_dpi_stages_layout():
+    r = one(lambda d: d.set_dpi_stages(2, [(800, 800), (1600, 3200)]))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x04, 0x06, 0x26)
+    assert r.args[:3] == bytes([NOSTORE, 2, 2])  # store, active (1-based), count
+    assert r.args[3:10] == bytes([0, 0x03, 0x20, 0x03, 0x20, 0, 0])
+    assert r.args[10:17] == bytes([1, 0x06, 0x40, 0x0C, 0x80, 0, 0])
+    assert r.args[17:] == bytes(len(r.args) - 17)
+
+
+def test_set_dpi_stages_five_ok_six_rejected():
+    one(lambda d: d.set_dpi_stages(5, [(800, 800)] * 5))
+    t = FakeTransport.full()
+    with pytest.raises(ValueError):
+        NagaV2Pro(t).set_dpi_stages(1, [(800, 800)] * 6)
+    assert t.sent == []
+
+
+@pytest.mark.parametrize("active,stages", [
+    (1, []), (0, [(800, 800)]), (2, [(800, 800)]),
+    (1, [(50, 50)]), (1, [(30050, 800)]), (1, [(810, 800)]),
+])
+def test_set_dpi_stages_invalid(active, stages):
+    t = FakeTransport.full()
+    with pytest.raises(ValueError):
+        NagaV2Pro(t).set_dpi_stages(active, stages)
+    assert t.sent == []
+
+
+def test_set_dpi_stages_varstore():
+    r = one(lambda d: d.set_dpi_stages(1, [(2500, 2500)], store=VARSTORE))
+    assert r.args[0] == VARSTORE
+
+
+@pytest.mark.parametrize("hz,raw", [(1000, 0x01), (500, 0x02), (125, 0x08)])
+def test_set_poll_rate_layout(hz, raw):
+    r = one(lambda d: d.set_poll_rate(hz))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x00, 0x05, 0x01)
+    assert r.args[0] == raw
+
+
+def test_set_poll_rate_invalid():
+    with pytest.raises(ValueError):
+        NagaV2Pro(FakeTransport.full()).set_poll_rate(250)
+
+
+def test_set_brightness_layout():
+    r = one(lambda d: d.set_brightness(LOGO, 191))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x0F, 0x04, 0x03)
+    assert r.args[:3] == bytes([NOSTORE, LOGO, 191])
+    assert one(lambda d: d.set_brightness(THUMB, 0, store=VARSTORE)).args[:3] == bytes(
+        [VARSTORE, THUMB, 0])
+    for bad in (-1, 256):
+        with pytest.raises(ValueError):
+            NagaV2Pro(FakeTransport.full()).set_brightness(LOGO, bad)
+
+
+def Z(effect, color=(1, 2, 3)):
+    return LightingZone(effect, color, 100)
+
+
+def test_effect_off():
+    r = one(lambda d: d.set_effect(LOGO, Z("off")))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x0F, 0x02, 0x06)
+    assert r.args[:6] == bytes([NOSTORE, LOGO, 0x00, 0, 0, 0])
+
+
+def test_effect_static():
+    r = one(lambda d: d.set_effect(THUMB, Z("static", (255, 0, 16))))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x0F, 0x02, 0x09)
+    assert r.args[:9] == bytes([NOSTORE, THUMB, 0x01, 0, 0, 0x01, 255, 0, 16])
+
+
+def test_effect_breath_single_colour():
+    r = one(lambda d: d.set_effect(LOGO, Z("breath", (9, 8, 7))))
+    assert r.size == 0x09
+    assert r.args[:9] == bytes([NOSTORE, LOGO, 0x02, 0x01, 0x00, 0x01, 9, 8, 7])
+
+
+def test_effect_spectrum_has_no_colour():
+    r = one(lambda d: d.set_effect(LOGO, Z("spectrum")))
+    assert r.size == 0x06
+    assert r.args[:6] == bytes([NOSTORE, LOGO, 0x03, 0, 0, 0])
+
+
+def test_effect_wave_has_no_colour_and_default_direction():
+    assert WAVE_DIRECTION == 1
+    r = one(lambda d: d.set_effect(LOGO, Z("wave")))
+    assert r.size == 0x06
+    assert r.args[:6] == bytes([NOSTORE, LOGO, 0x04, WAVE_DIRECTION, 0x28, 0])
+
+
+def test_effect_reactive_default_speed_and_colour():
+    assert REACTIVE_SPEED == 2
+    r = one(lambda d: d.set_effect(LOGO, Z("reactive", (4, 5, 6))))
+    assert r.size == 0x09
+    assert r.args[:9] == bytes([NOSTORE, LOGO, 0x05, 0, REACTIVE_SPEED, 0x01, 4, 5, 6])
+
+
+def test_effect_unknown_rejected_before_sending():
+    t = FakeTransport.full()
+    with pytest.raises(ValueError):
+        NagaV2Pro(t).set_effect(LOGO, Z("fireworks"))
+    assert t.sent == []
+
+
+def test_set_idle_time_layout_and_range():
+    r = one(lambda d: d.set_idle_time(300))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x07, 0x03, 0x02)
+    assert r.args[:2] == bytes([0x01, 0x2C])
+    for bad in (59, 901):
+        with pytest.raises(ValueError):
+            NagaV2Pro(FakeTransport.full()).set_idle_time(bad)
+
+
+@pytest.mark.parametrize("pct,raw", [(5, 0x0C), (15, 0x26), (25, 0x3F)])
+def test_set_low_battery_threshold_layout(pct, raw):
+    r = one(lambda d: d.set_low_battery_threshold(pct))
+    assert (r.cmd_class, r.cmd_id, r.size) == (0x07, 0x01, 0x01)
+    assert r.args[0] == raw
+
+
+def test_low_battery_threshold_roundtrip_and_range():
+    for pct in range(5, 26):
+        t = FakeTransport.full()
+        d = NagaV2Pro(t)
+        d.set_low_battery_threshold(pct)
+        t.responses[(0x07, 0x81)] = bytes([t.requests[0].args[0]])
+        assert d.low_battery_threshold() == pct
+    for bad in (4, 26):
+        with pytest.raises(ValueError):
+            NagaV2Pro(FakeTransport.full()).set_low_battery_threshold(bad)
+
+
+def test_every_flagged_set_command_uses_nostore_at_arg0():
+    d_t = FakeTransport.full()
+    d = NagaV2Pro(d_t)
+    d.set_dpi(800, 800)
+    d.set_dpi_stages(1, [(800, 800)])
+    d.set_brightness(LOGO, 1)
+    for eff in ("off", "static", "breath", "spectrum", "wave", "reactive"):
+        d.set_effect(LOGO, Z(eff))
+    assert len(d_t.requests) == 9
+    assert all(r.args[0] == NOSTORE for r in d_t.requests)
+
+
+def test_commands_without_storage_flag_are_marked_persistent():
+    assert set(PERSISTENT_COMMANDS) == {
+        "set_poll_rate", "set_idle_time", "set_low_battery_threshold"}
+    assert all(PERSISTENT_COMMANDS.values())
+    for name in PERSISTENT_COMMANDS:
+        assert hasattr(NagaV2Pro, name)
+
+
+def test_write_does_not_touch_device_mode():
+    t = FakeTransport.full()
+    d = NagaV2Pro(t)
+    d.set_poll_rate(500)
+    d.set_dpi(800, 800)
+    assert (0x00, 0x04) not in t.sent

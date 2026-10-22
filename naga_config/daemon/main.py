@@ -17,13 +17,16 @@ from naga_config.config.model import Profile, default_profile
 from naga_config.config.store import ConfigStore
 from naga_config.engine.mapper import Mapper
 from naga_config.hw.buttons import DRIVER_MODE, NORMAL_MODE
-from naga_config.razer.naga_v2_pro import NagaV2Pro
+from naga_config.backup import restore_backup
+from naga_config.razer.naga_v2_pro import ZONE_LED, NagaV2Pro
 from naga_config.razer.transport import (
     HidrawTransport,
     RazerError,
     find_control_hidraw,
     find_vendor_hidraw,
 )
+
+from dbus_next import DBusError
 
 from .dbus_service import BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
 from .devices import DeviceWatcher, HidrawReader, InputRouter
@@ -39,9 +42,40 @@ def default_config_dir() -> Path:
     return Path.home() / ".config" / "naga-config"
 
 
-def apply_device_settings(profile: Profile) -> None:
-    """Hook for per-profile device settings (DPI, poll rate, lighting).
-    TODO(Task 7): implement; no-op for now."""
+def _stage_index(profile: Profile) -> int:
+    """0-based index of the profile's active DPI stage (profile.active_stage is
+    1-based, 0/out of range clamps)."""
+    return min(max(profile.active_stage - 1, 0), len(profile.dpi_stages) - 1)
+
+
+def apply_device_settings(dev: NagaV2Pro, profile: Profile,
+                          absent_zones: frozenset[str] | set[str] = frozenset()) -> None:
+    """Write the profile's hardware settings to the mouse (all NOSTORE).
+
+    Fixed order: poll rate, DPI stages (+ current DPI = active stage), then per
+    lighting zone effect and brightness. Empty/None values never touch the mouse.
+    Zones in absent_zones (LED not present) are skipped. Every command is guarded
+    individually: a failure is logged and the next one still runs."""
+
+    def run(what: str, fn: Callable[..., Any], *args: Any) -> None:
+        try:
+            fn(*args)
+        except Exception as e:  # HW errors, but also ValueError from bad profile data
+            logger.warning("%s nicht gesetzt: %s", what, e)
+
+    if profile.poll_rate is not None:
+        run("Abfragerate", dev.set_poll_rate, profile.poll_rate)
+    if profile.dpi_stages:
+        idx = _stage_index(profile)
+        stages = [tuple(s) for s in profile.dpi_stages]
+        run("DPI-Stufen", dev.set_dpi_stages, idx + 1, stages)
+        run("DPI", dev.set_dpi, *stages[idx])
+    for zone, led in ZONE_LED.items():
+        cfg = profile.lighting.get(zone)
+        if cfg is None or zone in absent_zones:
+            continue
+        run(f"Licht {zone}", dev.set_effect, led, cfg)
+        run(f"Helligkeit {zone}", dev.set_brightness, led, cfg.brightness)
 
 
 def _safe(fn: Callable[[], Any], default: Any) -> Any:
@@ -61,10 +95,10 @@ class Daemon:
                  find_vendor: Callable[[], str | None] = find_vendor_hidraw,
                  hidraw_reader: Callable[..., Any] = HidrawReader,
                  openrazer_loaded: Callable[[], bool] = openrazer_loaded,
-                 apply_device_settings: Callable[[Profile], None] = apply_device_settings,
+                 apply_device_settings: Callable[[Profile], None] | None = None,
                  retry_delay: float = 0.2, backup_path: Path | None = None) -> None:
         self.out = out
-        self._apply = apply_device_settings
+        self._apply = apply_device_settings or self._apply_to_mouse
         self._openrazer = openrazer_loaded
         self._transport_factory = transport_factory
         self._find_control = find_control
@@ -75,6 +109,7 @@ class Daemon:
         self.router = InputRouter(self.mapper, out)
         self.service = NagaService(store, self.mapper, self,
                                    apply_device_settings=self._apply_if_connected,
+                                   restore=self._restore_backup,
                                    openrazer_loaded=openrazer_loaded,
                                    backup_path=backup_path)
         self._tasks: set[asyncio.Task] = set()
@@ -83,6 +118,10 @@ class Daemon:
         self._naga: NagaV2Pro | None = None
         self._vendor: Any = None
         self._hw = dict(_DISCONNECTED)
+        self._absent_zones: set[str] = set()  # LEDs the mouse reported no brightness for
+        # DPI stepping state, in memory only (reset on connect / profile switch)
+        self._stages: list[tuple[int, int]] = []
+        self._stage_idx = 0
 
     # -- Hardware protocol for the D-Bus service ---------------------------
 
@@ -138,8 +177,13 @@ class Daemon:
             logger.warning("OpenRazer-Treiber (razermouse) ist geladen und kann mit "
                            "naga-config kollidieren – bitte entladen oder deaktivieren")
 
+    def _apply_to_mouse(self, profile: Profile) -> None:
+        if self._naga is not None:
+            apply_device_settings(self._naga, profile, self._absent_zones)
+
     def _apply_if_connected(self, profile: Profile) -> None:
         if self._naga is not None:
+            self._reset_stages(profile)
             self._apply(profile)  # NagaService._use logs exceptions
 
     def _apply_active(self) -> None:
@@ -147,13 +191,48 @@ class Daemon:
         if profile is None:
             return
         try:
+            self._reset_stages(profile)
             self._apply(profile)
         except Exception:
             logger.exception("Geräteeinstellungen für %s nicht angewendet", profile.id)
 
+    def _reset_stages(self, profile: Profile) -> None:
+        """Stage list to step through: the profile's, else the mouse's onboard stages."""
+        if profile.dpi_stages:
+            self._stages = [tuple(s) for s in profile.dpi_stages]
+            self._stage_idx = _stage_index(profile)
+            return
+        self._stages, self._stage_idx = [], 0
+        if self._naga is None:
+            return
+        onboard = _safe(self._naga.dpi_stages, None)
+        if onboard and onboard[1]:
+            active, stages = onboard
+            self._stages = [tuple(s) for s in stages]
+            self._stage_idx = min(max(active - 1, 0), len(stages) - 1)
+
     def _on_dpi_stage(self, direction: str) -> None:
-        # TODO(Task 7): switch the mouse's DPI stage up/down.
-        logger.info("DPI-Stufe %s angefordert (noch nicht umgesetzt)", direction)
+        """DPI up/down button: step through the stages, clamped at both ends."""
+        if self._naga is None or not self._stages:
+            logger.info("DPI-Stufe %s: keine Stufen bekannt oder Maus nicht verbunden", direction)
+            return
+        idx = min(max(self._stage_idx + (1 if direction == "up" else -1), 0),
+                  len(self._stages) - 1)
+        if idx == self._stage_idx:
+            return
+        x, y = self._stages[idx]
+        try:
+            self._naga.set_dpi(x, y)
+        except Exception as e:
+            logger.warning("DPI %dx%d nicht gesetzt: %s", x, y, e)
+            return
+        self._stage_idx = idx
+        logger.info("DPI-Stufe %d: %dx%d", idx + 1, x, y)
+
+    def _restore_backup(self, backup: dict) -> list[str]:
+        if self._naga is None:
+            raise DBusError("io.github.nagaconfig.Error.NotConnected", "Maus nicht verbunden")
+        return restore_backup(self._naga, backup)
 
     async def _removed(self, path: str) -> None:
         await self.router.remove(path)
@@ -190,6 +269,8 @@ class Daemon:
                 self._vendor = reader
             except OSError as e:
                 logger.warning("Kann %s nicht lesen: %s", vendor_path, e)
+        self._absent_zones = {z for z, led in ZONE_LED.items()
+                              if _safe(lambda led=led: naga.brightness(led), None) is None}
         self._hw = {"connected": True, "connection": CONNECTION.get(product, ""),
                     "battery": _safe(naga.battery, -1),
                     "charging": bool(_safe(naga.charging, False))}

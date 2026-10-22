@@ -8,6 +8,11 @@ from naga_config.razer.report import (
 from naga_config.razer.transport import RazerError
 
 
+# set-command ids (class, id) echoed back by FakeTransport.full()
+WRITE_COMMANDS = [(0x04, 0x05), (0x04, 0x06), (0x00, 0x05), (0x0F, 0x02),
+                  (0x0F, 0x04), (0x07, 0x03), (0x07, 0x01)]
+
+
 class FakeTransport:
     def __init__(self, responses=None, default=None):
         """responses: {(cls, id): bytes | callable(request_args) -> bytes}.
@@ -46,5 +51,6 @@ class FakeTransport:
                 (0x07, 0x83): bytes([0x01, 0x2C]),
                 (0x07, 0x81): bytes([0x3F]),
                 (0x02, 0x98): bytes([1, 3]),
+                **{k: (lambda a: a) for k in WRITE_COMMANDS},
             }
         )

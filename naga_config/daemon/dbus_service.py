@@ -58,7 +58,7 @@ class NagaService(ServiceInterface):
 
     def __init__(self, store: ConfigStore, mapper: Any, hw: Hardware, *,
                  apply_device_settings: Callable[[Profile], None] = lambda p: None,
-                 restore: Callable[[dict], None] | None = None,
+                 restore: Callable[[dict], list[str] | None] | None = None,
                  openrazer_loaded: Callable[[], bool] = openrazer_loaded,
                  backup_path: Path | None = None) -> None:
         super().__init__(INTERFACE)
@@ -132,17 +132,17 @@ class NagaService(ServiceInterface):
     def notify_status(self) -> None:
         self.StatusChanged(self.status())
 
-    def restore_original(self) -> None:
+    def restore_original(self) -> list[str]:
+        """Write the backup back to the mouse; returns the fields that could not be restored."""
         try:
             backup = load_backup(self._backup_path)
         except (OSError, ValueError) as e:
             raise DBusError(_ERR + "NoBackup",
                             f"Keine lesbare Sicherung unter {self._backup_path}: {e}") from e
         if self._restore is None:
-            # TODO(Task 7): restore hook writes the backup back to the mouse.
             raise DBusError(_ERR + "NotImplemented",
                             "Wiederherstellen des Originalzustands ist noch nicht umgesetzt")
-        self._restore(backup)
+        return list(self._restore(backup) or [])
 
     # -- D-Bus ---------------------------------------------------------------
 
@@ -167,8 +167,8 @@ class NagaService(ServiceInterface):
         return self.status()
 
     @method()
-    def RestoreOriginal(self):
-        self.restore_original()
+    def RestoreOriginal(self) -> 'as':
+        return self.restore_original()
 
     @method()
     def ScrollProfileSupported(self) -> 'b':

@@ -188,8 +188,14 @@ async def test_restore_original_calls_hook(tmp_path):
     seen = []
     svc, *_ = make(tmp_path, restore=seen.append)
     (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
-    await call(svc, "RestoreOriginal")
+    assert await call(svc, "RestoreOriginal") == []
     assert seen == [{"dpi": [800, 800]}]
+
+
+async def test_restore_original_returns_unrestored_fields(tmp_path):
+    svc, *_ = make(tmp_path, restore=lambda b: ["poll_rate", "dpi"])
+    (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
+    assert await call(svc, "RestoreOriginal") == ["poll_rate", "dpi"]
 
 
 async def test_scroll_profile_supported(tmp_path):

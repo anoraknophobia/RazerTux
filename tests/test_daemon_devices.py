@@ -564,3 +564,196 @@ async def test_router_close_releases_before_ungrab():
     r.add("if02", dev)
     await r.close()
     assert order == ["release", "ungrab", "close"]
+
+
+# -- Task 7: device settings, DPI stepping, restore ----------------------------
+
+import logging  # noqa: E402
+
+from naga_config.config.model import LightingZone, Profile  # noqa: E402
+from naga_config.daemon.main import apply_device_settings  # noqa: E402
+from naga_config.razer.naga_v2_pro import LOGO, SCROLL, THUMB  # noqa: E402
+
+
+def writes(t):
+    """Set-requests in send order as (class, id, args-prefix-less) tuples."""
+    return [(r.cmd_class, r.cmd_id) for r in t.requests if not r.cmd_id & 0x80]
+
+
+def full_profile(**kw):
+    base = dict(id="p", name="P", poll_rate=1000,
+                dpi_stages=[(800, 800), (1600, 1600), (3200, 3200)], active_stage=2,
+                lighting={"thumb": LightingZone("static", (1, 2, 3), 50),
+                          "logo": LightingZone("spectrum", (0, 0, 0), 60),
+                          "scroll": LightingZone("off", (0, 0, 0), 70)})
+    base.update(kw)
+    return Profile(**base)
+
+
+def test_apply_order_poll_stages_dpi_then_zones_effect_before_brightness():
+    t = FakeTransport.full()
+    apply_device_settings(NagaV2Pro(t), full_profile())
+    assert writes(t) == [(0x00, 0x05), (0x04, 0x06), (0x04, 0x05),
+                         (0x0F, 0x02), (0x0F, 0x04),   # logo
+                         (0x0F, 0x02), (0x0F, 0x04),   # scroll
+                         (0x0F, 0x02), (0x0F, 0x04)]   # thumb
+    leds = [r.args[1] for r in t.requests if r.cmd_id in (0x02, 0x04) and r.cmd_class == 0x0F]
+    assert leds == [LOGO, LOGO, SCROLL, SCROLL, THUMB, THUMB]
+    stages = next(r for r in t.requests if (r.cmd_class, r.cmd_id) == (0x04, 0x06))
+    assert stages.args[:3] == bytes([0, 2, 3])  # NOSTORE, active 2
+    dpi = next(r for r in t.requests if (r.cmd_class, r.cmd_id) == (0x04, 0x05))
+    assert dpi.args[:5] == bytes([0, 0x06, 0x40, 0x06, 0x40])  # active stage 1600
+    assert all(r.args[0] == 0 for r in t.requests if (r.cmd_class, r.cmd_id) != (0x00, 0x05))
+
+
+def test_apply_empty_profile_never_touches_mouse():
+    t = FakeTransport.full()
+    apply_device_settings(NagaV2Pro(t), Profile(id="e", name="E"))
+    assert t.sent == []
+
+
+def test_apply_skips_absent_zone_and_missing_zones():
+    t = FakeTransport.full()
+    p = full_profile(lighting={"scroll": LightingZone("off", (0, 0, 0), 70),
+                               "logo": LightingZone("off", (0, 0, 0), 10)})
+    apply_device_settings(NagaV2Pro(t), p, {"scroll"})
+    leds = {r.args[1] for r in t.requests if r.cmd_class == 0x0F}
+    assert leds == {LOGO}
+
+
+def test_apply_each_command_guarded(caplog):
+    t = FakeTransport.full()
+    del t.responses[(0x00, 0x05)]
+    del t.responses[(0x04, 0x06)]
+    with caplog.at_level(logging.WARNING):
+        apply_device_settings(NagaV2Pro(t), full_profile())
+    assert (0x04, 0x05) in t.sent and (0x0F, 0x04) in t.sent
+    assert "Abfragerate" in caplog.text and "DPI-Stufen" in caplog.text
+
+
+def test_apply_bad_profile_value_is_logged_not_raised(caplog):
+    t = FakeTransport.full()
+    with caplog.at_level(logging.WARNING):
+        apply_device_settings(NagaV2Pro(t), full_profile(poll_rate=250))
+    assert "Abfragerate" in caplog.text
+    assert (0x04, 0x06) in t.sent
+
+
+async def connected(tmp_path, profile=None, transport=None):
+    t = transport or naga_transport()
+    d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: t,
+               find_control=lambda: "/dev/hidraw2", find_vendor=lambda: None,
+               openrazer_loaded=lambda: False, retry_delay=0)
+    if profile:
+        d.service._store.save_profile(profile)
+        d.service._settings.active_profile = profile.id
+        d.service._store.save_settings(d.service._settings)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    return d, t
+
+
+def dpi_writes(t):
+    return [(r.args[1] << 8 | r.args[2]) for r in t.requests
+            if (r.cmd_class, r.cmd_id) == (0x04, 0x05)]
+
+
+async def test_daemon_connect_applies_profile_to_mouse(tmp_path):
+    d, t = await connected(tmp_path, full_profile())
+    assert (0x04, 0x06) in t.sent and (0x0F, 0x04) in t.sent
+    await d.shutdown()
+
+
+async def test_daemon_skips_scroll_zone_when_mouse_reports_none(tmp_path):
+    t = naga_transport()
+    base = t.responses[(0x0F, 0x84)]
+
+    def brightness(a):
+        if a[1] == SCROLL:
+            raise OSError("no scroll led")
+        return base(a)
+    t.responses[(0x0F, 0x84)] = brightness
+    d, t = await connected(tmp_path, full_profile(), t)
+    leds = {r.args[1] for r in t.requests if (r.cmd_class, r.cmd_id) == (0x0F, 0x04)}
+    assert leds == {LOGO, THUMB}
+    await d.shutdown()
+
+
+async def test_dpi_stepping_clamps_without_wrap(tmp_path):
+    d, t = await connected(tmp_path, full_profile())  # active stage 2 of 800/1600/3200
+    base = len(dpi_writes(t))
+    d._on_dpi_stage("up")
+    d._on_dpi_stage("up")  # clamped at last
+    d._on_dpi_stage("down")
+    d._on_dpi_stage("down")
+    d._on_dpi_stage("down")  # clamped at first
+    assert dpi_writes(t)[base:] == [3200, 1600, 800]
+    last = [r for r in t.requests if (r.cmd_class, r.cmd_id) == (0x04, 0x05)][-1]
+    assert last.args[0] == 0  # NOSTORE
+    await d.shutdown()
+
+
+async def test_dpi_stepping_falls_back_to_onboard_stages(tmp_path):
+    d, t = await connected(tmp_path)  # default profile: no stages; onboard 800/1600/3200 active 2
+    assert (0x04, 0x05) not in t.sent  # connect itself writes no DPI
+    d._on_dpi_stage("up")
+    d._on_dpi_stage("up")
+    d._on_dpi_stage("down")
+    assert dpi_writes(t) == [3200, 1600]
+    assert (0x04, 0x06) not in t.sent  # stages themselves never rewritten
+    await d.shutdown()
+
+
+async def test_dpi_stage_index_resets_on_profile_switch(tmp_path):
+    other = Profile(id="o", name="O", dpi_stages=[(400, 400), (500, 500)], active_stage=1)
+    d, t = await connected(tmp_path, full_profile())
+    d.service._store.save_profile(other)
+    d._on_dpi_stage("up")
+    await d.service.activate("o")
+    n = len(dpi_writes(t))
+    d._on_dpi_stage("up")
+    assert dpi_writes(t)[n:] == [500]
+    await d.service.activate("p")
+    d._on_dpi_stage("down")  # reset to profile.active_stage (2) -> 800
+    assert dpi_writes(t)[-1] == 800
+    await d.shutdown()
+
+
+async def test_dpi_stepping_error_is_logged_and_index_kept(tmp_path, caplog):
+    d, t = await connected(tmp_path, full_profile())
+    ok = t.responses[(0x04, 0x05)]
+    t.responses[(0x04, 0x05)] = lambda a: (_ for _ in ()).throw(OSError("weg"))
+    with caplog.at_level(logging.WARNING):
+        d._on_dpi_stage("up")
+    assert "nicht gesetzt" in caplog.text
+    t.responses[(0x04, 0x05)] = ok
+    d._on_dpi_stage("up")  # still goes to stage 3, index was not advanced on failure
+    assert dpi_writes(t)[-1] == 3200
+    await d.shutdown()
+
+
+async def test_dpi_stepping_without_mouse_is_noop(tmp_path):
+    d = Daemon(ConfigStore(tmp_path), RecOut(), openrazer_loaded=lambda: False)
+    d._on_dpi_stage("up")  # must not raise
+
+
+async def test_daemon_restore_writes_backup_with_varstore_keeps_mode(tmp_path):
+    d, t = await connected(tmp_path)
+    modes_before = modes(t)
+    backup = {"poll_rate": 500, "dpi": [1800, 1800],
+              "dpi_stages": {"active": 1, "stages": [[2500, 2500]]},
+              "brightness": {"logo": 191, "scroll": None, "thumb": 191},
+              "idle_time": 300, "low_battery_threshold": 5}
+    assert d._restore_backup(backup) == []
+    assert modes(t) == modes_before
+    assert all(r.args[0] == 1 for r in t.requests
+               if (r.cmd_class, r.cmd_id) in ((0x04, 0x05), (0x04, 0x06), (0x0F, 0x04)))
+    await d.shutdown()
+
+
+async def test_daemon_restore_without_mouse_raises_dbus_error(tmp_path):
+    from dbus_next import DBusError
+    d = Daemon(ConfigStore(tmp_path), RecOut(), openrazer_loaded=lambda: False)
+    with pytest.raises(DBusError):
+        d._restore_backup({})
