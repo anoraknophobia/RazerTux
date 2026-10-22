@@ -16,11 +16,20 @@ _SAFE_ID = re.compile(r"[a-z0-9-]+")
 _READ_ERRORS = (OSError, ValueError, KeyError, TypeError, AttributeError)
 
 
-def new_profile_id(name: str) -> str:
-    """Filesystem-safe id: slug of the name plus a short random suffix."""
+def _slug_id(name: str, fallback: str) -> str:
     ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-")[:32].strip("-")
-    return f"{slug or 'profil'}-{secrets.token_hex(3)}"
+    return f"{slug or fallback}-{secrets.token_hex(3)}"
+
+
+def new_profile_id(name: str) -> str:
+    """Filesystem-safe id: slug of the name plus a short random suffix."""
+    return _slug_id(name, "profil")
+
+
+def new_macro_id(name: str) -> str:
+    """Macro id: slug of the name plus a short random suffix."""
+    return _slug_id(name, "makro")
 
 
 def _write_json(path: Path, data: Any) -> None:

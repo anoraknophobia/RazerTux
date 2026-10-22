@@ -15,6 +15,7 @@ from naga_config.config.model import DefaultAction, Profile, default_profile, va
 from naga_config.config.store import ConfigStore, new_profile_id
 from naga_config.gui.action_dialog import ActionDialog
 from naga_config.gui.dbus_client import DaemonClient
+from naga_config.gui.macro_tab import MacroTab, strip_macro
 from naga_config.gui.mouse_view import MouseView
 from naga_config.hw.buttons import ButtonId
 
@@ -23,7 +24,6 @@ _PLACEHOLDERS = [
     (QT_TRANSLATE_NOOP("MainWindow", "Leistung"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 9.")),
     (QT_TRANSLATE_NOOP("MainWindow", "Beleuchtung"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 10.")),
     (QT_TRANSLATE_NOOP("MainWindow", "Mausrad"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 10.")),
-    (QT_TRANSLATE_NOOP("MainWindow", "Makros"), QT_TRANSLATE_NOOP("MainWindow", "Kommt in Schritt 11.")),
 ]
 
 
@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         self.macros = store.load_macros()
         self.profile: Profile = default_profile()
         self._baseline: dict = {}
+        self._macros_baseline: dict = self._macro_dicts()
         self._active_id = ""
         self._daemon_errors: list[str] = []
         self._current_errors: list[str] = []
@@ -100,6 +101,10 @@ class MainWindow(QMainWindow):
             label = QLabel(self.tr(text))
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tabs.addTab(label, self.tr(name))
+        self.macro_tab = MacroTab(self.macros, self._all_profiles)
+        self.macro_tab.changed.connect(self._refresh)
+        self.macro_tab.macroDeleted.connect(self._on_macro_deleted)
+        self.tabs.addTab(self.macro_tab, self.tr("Makros"))
 
         self.save_btn = QPushButton(self.tr("Speichern"))
         self.save_btn.clicked.connect(lambda _=False: self.save())
@@ -149,7 +154,22 @@ class MainWindow(QMainWindow):
     # -- dirty tracking -------------------------------------------------------
     @property
     def is_dirty(self) -> bool:
-        return self.profile.to_dict() != self._baseline
+        return self.profile.to_dict() != self._baseline or self._macro_dicts() != self._macros_baseline
+
+    def _macro_dicts(self) -> dict:
+        return {k: m.to_dict() for k, m in self.macros.items()}
+
+    def _reload_macros(self) -> None:
+        """Replace the working copy (in place, the tab shares the dict) by the saved one."""
+        saved = self.store.load_macros()
+        self.macros.clear()
+        self.macros.update(saved)
+        self._macros_baseline = self._macro_dicts()
+        if hasattr(self, "macro_tab"):
+            self.macro_tab.refresh()
+
+    def _all_profiles(self) -> list[Profile]:
+        return [self.profile if p.id == self.profile.id else p for p in self.store.list_profiles()]
 
     def _update_dirty(self) -> None:
         dirty = self.is_dirty
@@ -165,7 +185,10 @@ class MainWindow(QMainWindow):
         answer = self._ask_unsaved()
         if answer == "save":
             return self.save()
-        return answer == "discard"
+        if answer == "discard":
+            self._reload_macros()
+            return True
+        return False
 
     # -- profile list / switching --------------------------------------------
     def reload_profile_list(self, select: str | None = None) -> None:
@@ -193,10 +216,10 @@ class MainWindow(QMainWindow):
         self._refresh()
 
     def revert(self) -> None:
+        self._reload_macros()
         self._show_profile(self.store.load_profile(self.profile.id))
 
     def _refresh(self) -> None:
-        self.macros = self.store.load_macros()
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
         self.mouse_view.set_bindings(layer, self.macros)
         self._update_warnings()
@@ -219,7 +242,6 @@ class MainWindow(QMainWindow):
 
     def edit_binding(self, button: ButtonId) -> None:
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
-        self.macros = self.store.load_macros()
         action = ActionDialog.pick(self, layer.get(button, DefaultAction()), self.macros,
                                    button=button, layer=self.layer)
         if action is not None:
@@ -227,12 +249,15 @@ class MainWindow(QMainWindow):
 
     # -- saving ---------------------------------------------------------------
     def save(self) -> bool:
-        errors = validate(self.profile, self.store.load_macros())
+        errors = validate(self.profile, self.macros)
         if errors:
             self._warn(self.tr("Speichern nicht möglich"),
                        self.tr("Das Profil enthält Fehler:") + "\n\n" + "\n".join(f"• {e}" for e in errors))
             return False
         try:
+            if self._macro_dicts() != self._macros_baseline:
+                self.store.save_macros(self.macros)
+                self._macros_baseline = self._macro_dicts()
             self.store.save_profile(self.profile)
         except OSError as e:
             self._warn(self.tr("Speichern fehlgeschlagen"),
@@ -243,6 +268,20 @@ class MainWindow(QMainWindow):
         self.reload_profile_list(select=self.profile.id)
         self._update_dirty()
         return True
+
+    def _on_macro_deleted(self, macro_id: str) -> None:
+        """Deleted macro: reset its bindings in every profile and persist everything."""
+        for p in self.store.list_profiles():  # on-disk state (the open profile too)
+            strip_macro(p, macro_id)
+            self.store.save_profile(p)
+        strip_macro(self.profile, macro_id)  # unsaved edits stay, only the binding goes
+        base = Profile.from_dict(self._baseline)
+        strip_macro(base, macro_id)
+        self._baseline = base.to_dict()
+        self.store.save_macros(self.macros)
+        self._macros_baseline = self._macro_dicts()
+        self.client.reload()
+        self._refresh()
 
     def activate_current(self) -> None:
         if self._resolve_unsaved():
