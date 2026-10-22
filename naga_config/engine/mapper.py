@@ -41,7 +41,8 @@ DEFAULT_OUTPUT: dict[ButtonId, int | tuple[int, int, int]] = {
     ButtonId.WHEEL_RIGHT: (E.REL_HWHEEL, E.REL_HWHEEL_HI_RES, 1),
 }
 _WHEEL = {ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT}
-_DEFAULT_DPI = {ButtonId.TOP_1: "up", ButtonId.TOP_2: "down"}
+# same as default_profile() (R20): front = DPI up, back = cycle through the stages
+_DEFAULT_DPI = {ButtonId.TOP_1: "up", ButtonId.TOP_2: "cycle"}
 
 
 class Mapper:
@@ -83,10 +84,11 @@ class Mapper:
         return self._player.stop_all_nowait()
 
     async def handle(self, button: ButtonId, value: int) -> None:
-        """value: 1=down, 0=up, 2=repeat. Wheel buttons: any non-zero is one tick."""
+        """value: 1=down, 0=up, 2=repeat. Wheel buttons: the raw REL value, whose
+        magnitude is the number of notches in this event (fast spins send 2, 3, …)."""
         if button in _WHEEL:
             if value:
-                self._press_wheel(button)
+                self._press_wheel(button, abs(value))
             return
         if value == 1:
             if button in self._active:
@@ -154,28 +156,33 @@ class Mapper:
                 self._held.pop(len(self._held) - 1 - self._held[::-1].index(code))
         self._out.sync()
 
-    def _press_wheel(self, button: ButtonId) -> None:
+    def _press_wheel(self, button: ButtonId, notches: int = 1) -> None:
+        """One wheel event of `notches` notches: the default scroll keeps them in one
+        frame; any binding acts once per notch."""
         action = self._profile.hypershift.get(button, DefaultAction()) \
             if self._hs_buttons else self._profile.standard.get(button, DefaultAction())
         if isinstance(action, (DisabledAction, HypershiftAction)):
             return
         if isinstance(action, DefaultAction):
             axis, hi_axis, sign = DEFAULT_OUTPUT[button]  # type: ignore[misc]
-            self._out.rel(axis, sign)
-            self._out.rel(hi_axis, sign * 120)
+            self._out.rel(axis, sign * notches)
+            self._out.rel(hi_axis, sign * 120 * notches)
             self._out.sync()
-        elif isinstance(action, (KeyAction, ComboAction)):
-            codes = self._codes(button, action)
-            for code in codes:
-                self._out.key(code, 1)
-            self._out.sync()
-            for code in reversed(codes):
-                self._out.key(code, 0)
-            self._out.sync()
-        elif isinstance(action, DpiStageAction):
-            self._on_dpi(action.direction)
-        elif isinstance(action, MacroAction):
-            self._start_macro(button, action, "toggle" if action.mode == "toggle" else "once")
+            return
+        for _ in range(notches):
+            if isinstance(action, (KeyAction, ComboAction)):
+                codes = self._codes(button, action)
+                for code in codes:
+                    self._out.key(code, 1)
+                self._out.sync()
+                for code in reversed(codes):
+                    self._out.key(code, 0)
+                self._out.sync()
+            elif isinstance(action, DpiStageAction):
+                self._on_dpi(action.direction)
+            elif isinstance(action, MacroAction):
+                self._start_macro(button, action,
+                                  "toggle" if action.mode == "toggle" else "once")
 
     def _start_macro(self, button: ButtonId, action: MacroAction, mode: MacroMode) -> None:
         macro = self._macros.get(action.macro_id)

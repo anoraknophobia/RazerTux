@@ -50,6 +50,8 @@ def test_wheel_and_tilt():
     assert identify("mouse", E.EV_REL, E.REL_WHEEL, -1) == ButtonId.WHEEL_DOWN
     assert identify("mouse", E.EV_REL, E.REL_HWHEEL, -1) == ButtonId.WHEEL_LEFT
     assert identify("mouse", E.EV_REL, E.REL_HWHEEL, 1) == ButtonId.WHEEL_RIGHT
+    assert identify("mouse", E.EV_REL, E.REL_WHEEL, 3) == ButtonId.WHEEL_UP
+    assert identify("mouse", E.EV_REL, E.REL_WHEEL, -2) == ButtonId.WHEEL_DOWN
 
 
 @pytest.mark.parametrize("code", [E.REL_WHEEL_HI_RES, E.REL_HWHEEL_HI_RES, E.REL_X, E.REL_Y])

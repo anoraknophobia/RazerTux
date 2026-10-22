@@ -196,6 +196,19 @@ async def test_router_grabs_and_maps_buttons():
     await r.close()
 
 
+async def test_router_passes_multi_notch_wheel_value_to_mapper():
+    mapper, out = FakeMapper(), RecordingOutput()
+    r = InputRouter(mapper, out)
+    dev = FakeDev("/dev/input/event18", [
+        ev(E.EV_REL, E.REL_WHEEL, -3), ev(E.EV_REL, E.REL_WHEEL_HI_RES, -360),
+        ev(E.EV_REL, E.REL_HWHEEL, 2), ev(E.EV_SYN, 0, 0)])
+    r.add("mouse", dev)
+    await settle(dev)
+    assert mapper.calls == [(ButtonId.WHEEL_DOWN, -3), (ButtonId.WHEEL_RIGHT, 2)]
+    assert out.events == []
+    await r.close()
+
+
 async def test_router_forwards_motion_and_skips_hi_res():
     mapper, out = FakeMapper(), RecordingOutput()
     r = InputRouter(mapper, out)

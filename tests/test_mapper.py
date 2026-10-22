@@ -147,7 +147,7 @@ async def test_default_top_buttons_call_dpi_callback_on_press_only():
     await m.handle(B.TOP_1, 0)
     await m.handle(B.TOP_2, 1)
     await m.handle(B.TOP_2, 0)
-    assert dpi == ["up", "down"]
+    assert dpi == ["up", "cycle"]  # same as default_profile() (R20)
     assert out.events == []
 
 
@@ -280,3 +280,41 @@ async def test_press_during_set_profile_uses_new_profile_and_toggle_macro_stoppe
     for c, v in out.log:
         held[c] = v
     assert not any(held.values())
+
+
+# -- multi-notch wheel events (one REL_WHEEL event can carry n notches) ----------
+
+@pytest.mark.parametrize("b,axis,value", [
+    (B.WHEEL_UP, E.REL_WHEEL, 2), (B.WHEEL_DOWN, E.REL_WHEEL, -3),
+    (B.WHEEL_LEFT, E.REL_HWHEEL, -2), (B.WHEEL_RIGHT, E.REL_HWHEEL, 3)])
+async def test_default_wheel_keeps_all_notches_in_one_frame(b, axis, value):
+    m, out, _ = mk()
+    await m.handle(b, value)
+    hi_axis = E.REL_WHEEL_HI_RES if axis == E.REL_WHEEL else E.REL_HWHEEL_HI_RES
+    assert out.events == [("rel", axis, value), ("rel", hi_axis, value * 120), ("sync",)]
+
+
+async def test_wheel_key_binding_taps_once_per_notch():
+    m, out, _ = mk({B.WHEEL_DOWN: KeyAction(E.KEY_F5)})
+    await m.handle(B.WHEEL_DOWN, -3)
+    assert out.log == [(E.KEY_F5, 1), (E.KEY_F5, 0)] * 3
+
+
+async def test_wheel_combo_binding_taps_once_per_notch():
+    m, out, _ = mk({B.WHEEL_UP: ComboAction([E.KEY_LEFTCTRL, E.KEY_F6])})
+    await m.handle(B.WHEEL_UP, 2)
+    assert out.log == [(E.KEY_LEFTCTRL, 1), (E.KEY_F6, 1),
+                       (E.KEY_F6, 0), (E.KEY_LEFTCTRL, 0)] * 2
+
+
+async def test_wheel_macro_toggle_counts_every_notch():
+    m, out, _ = mk({B.WHEEL_UP: MacroAction("m", "toggle")}, macros={"m": MACRO})
+    await m.handle(B.WHEEL_UP, 2)  # on + off in one event
+    await settle(10)
+    assert out.log == []
+
+
+async def test_wheel_dpi_binding_steps_once_per_notch():
+    m, out, dpi = mk({B.WHEEL_UP: DpiStageAction("up")})
+    await m.handle(B.WHEEL_UP, 2)
+    assert dpi == ["up", "up"]

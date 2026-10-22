@@ -31,4 +31,4 @@ def test_macro_label_and_missing():
 
 def test_top_default_shows_dpi():
     assert L(DefaultAction(), ButtonId.TOP_1) == "DPI hoch"
-    assert L(DefaultAction(), ButtonId.TOP_2) == "DPI runter"
+    assert L(DefaultAction(), ButtonId.TOP_2) == "DPI-Stufe weiter"  # = default_profile (R20)

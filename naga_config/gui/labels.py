@@ -67,7 +67,7 @@ def action_label(action: Action, button: ButtonId, macros: dict[str, Macro],
             if button == ButtonId.TOP_1:
                 return _tr("DPI hoch")
             if button == ButtonId.TOP_2:
-                return _tr("DPI runter")
+                return _tr("DPI-Stufe weiter")
             return _tr("Standard")
         case DisabledAction():
             return _tr("Aus")
