@@ -19,7 +19,7 @@ from naga_config.config.model import Profile, Settings, default_profile
 from naga_config.config.store import ConfigStore
 from naga_config.engine.mapper import Mapper
 from naga_config.hw.buttons import DRIVER_MODE, NORMAL_MODE, parse_notification
-from naga_config.backup import load_backup, restore_backup
+from naga_config.backup import BackupError, load_backup, restore_backup, save_backup
 from naga_config.razer.naga_v2_pro import ZONE_LED, NagaV2Pro
 from naga_config.razer.transport import (
     HidrawTransport,
@@ -122,8 +122,8 @@ class Daemon:
 
     def __init__(self, store: ConfigStore, out: Any, *,
                  transport_factory: Callable[[str], Any] = HidrawTransport,
-                 find_control: Callable[[], str | None] = find_control_hidraw,
-                 find_vendor: Callable[[], str | None] = find_vendor_hidraw,
+                 find_control: Callable[[tuple[int, ...]], str | None] = find_control_hidraw,
+                 find_vendor: Callable[[tuple[int, ...]], str | None] = find_vendor_hidraw,
                  hidraw_reader: Callable[..., Any] = HidrawReader,
                  openrazer_loaded: Callable[[], bool] = openrazer_loaded,
                  apply_device_settings: Callable[[Profile], None] | None = None,
@@ -147,7 +147,10 @@ class Daemon:
                                    openrazer_loaded=openrazer_loaded,
                                    backup_path=self._backup_path)
         self._tasks: set[asyncio.Task] = set()
-        self._mouse_path: str | None = None
+        self._mouse_path: str | None = None  # mouse node we talk to
+        # every grabbed mouse node -> USB product (charge cable and dongle can both
+        # be present; unplugging one falls back to the other)
+        self._mice: dict[str, int] = {}
         self._transport: Any = None
         self._naga: NagaV2Pro | None = None
         self._vendor: Any = None
@@ -179,6 +182,8 @@ class Daemon:
     def on_added(self, source: str, dev: Any) -> None:
         self.router.add(source, dev)
         if source == "mouse" and dev.path in self.router.paths:
+            self._mice.pop(dev.path, None)
+            self._mice[dev.path] = dev.info.product  # newest last
             self._mouse_path = dev.path
             self._spawn(self._connect(dev.info.product))
 
@@ -367,15 +372,21 @@ class Daemon:
 
     async def _removed(self, path: str) -> None:
         await self.router.remove(path)
+        self._mice.pop(path, None)
         if path == self._mouse_path:
             self._mouse_path = None
             await self._disconnect(reset_mode=False)  # unplug resets the mode itself
+            if self._mice:  # e.g. charge cable pulled, dongle still connected
+                self._mouse_path, product = list(self._mice.items())[-1]
+                logger.info("Wechsle auf %s (%s)", self._mouse_path,
+                            CONNECTION.get(product, f"{product:#06x}"))
+                await self._connect(product)
 
     async def _connect(self, product: int) -> None:
         await self._disconnect(reset_mode=False)
         path = None
         for _ in range(10):  # hidraw nodes may appear after the input nodes
-            path = self._find_control()
+            path = self._find_control((product,))  # the node we were told about
             if path:
                 break
             await asyncio.sleep(self._retry_delay)
@@ -388,10 +399,11 @@ class Daemon:
             logger.warning("Kann %s nicht öffnen: %s", path, e)
             return
         naga = self._naga = NagaV2Pro(self._transport)
+        self._ensure_backup(naga)  # before anything persistent is written
         self._power_applied = {}
         self._mode = None
         self._sync_mode(self.service.active_profile)
-        vendor_path = self._find_vendor()
+        vendor_path = self._find_vendor((product,))
         if vendor_path:
             reader = self._hidraw_reader(vendor_path, self._vendor_report)
             try:
@@ -418,6 +430,18 @@ class Daemon:
             self._battery.poll()
             self._battery.start()
         self.service.notify_status()
+
+    def _ensure_backup(self, naga: NagaV2Pro) -> None:
+        """One-time backup of the mouse's own values on the first connect (never
+        overwrites an existing one), so the R17 write-back and Restore have a source."""
+        if self._backup_path.exists():
+            return
+        try:
+            save_backup(naga, self._backup_path)
+        except (BackupError, OSError, ValueError) as e:
+            logger.warning("Sicherung %s nicht angelegt: %s", self._backup_path, e)
+            return
+        logger.info("Ausgangszustand der Maus gesichert: %s", self._backup_path)
 
     def _on_battery(self, level: int, charging: bool) -> None:
         if (self._hw["battery"], self._hw["charging"]) != (level, charging):

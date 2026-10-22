@@ -70,3 +70,31 @@ def test_find_control_hidraw_none(monkeypatch):
 
     monkeypatch.setattr(tr.pyudev, "Context", Ctx)
     assert tr.find_control_hidraw() is None
+
+
+def _udev_hidraw(node, pid, iface):
+    from types import SimpleNamespace
+
+    class Attrs(dict):
+        def asstring(self, k):
+            return self[k]
+    usb_if = SimpleNamespace(attributes=Attrs(bInterfaceNumber=iface))
+    usb_dev = SimpleNamespace(attributes=Attrs(idVendor="1532", idProduct=pid))
+    parents = {"usb_interface": usb_if, "usb_device": usb_dev}
+    return SimpleNamespace(device_node=node, find_parent=lambda sub, t: parents[t])
+
+
+def test_find_hidraw_honours_pid_filter(monkeypatch):
+    """Cable and dongle at once: each product's own node is found."""
+    devs = [_udev_hidraw("/dev/hidraw2", "00a7", "00"), _udev_hidraw("/dev/hidraw3", "00a7", "01"),
+            _udev_hidraw("/dev/hidraw7", "00a8", "00"), _udev_hidraw("/dev/hidraw8", "00a8", "01")]
+
+    class Ctx:
+        def list_devices(self, **kw):
+            return devs
+
+    monkeypatch.setattr(tr.pyudev, "Context", Ctx)
+    assert tr.find_control_hidraw((0x00A8,)) == "/dev/hidraw7"
+    assert tr.find_vendor_hidraw((0x00A8,)) == "/dev/hidraw8"
+    assert tr.find_control_hidraw((0x00A7,)) == "/dev/hidraw2"
+    assert tr.find_control_hidraw() == "/dev/hidraw2"

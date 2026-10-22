@@ -412,16 +412,16 @@ class FakeReader:
         await self.on_report(bytes(data))
 
 
-def make_daemon(tmp_path, transport=None, find_control=lambda: "/dev/hidraw2",
+def make_daemon(tmp_path, transport=None, find_control=lambda pids: "/dev/hidraw2",
                 applied=None, openrazer=False, readers=None):
     t = transport or naga_transport()
     applied = applied if applied is not None else []
-    extra = {"find_vendor": lambda: None}
+    extra = {"find_vendor": lambda pids: None}
     if readers is not None:
         def reader(path, cb):
             readers.append(FakeReader(path, cb))
             return readers[-1]
-        extra = {"find_vendor": lambda: "/dev/hidraw4", "hidraw_reader": reader}
+        extra = {"find_vendor": lambda pids: "/dev/hidraw4", "hidraw_reader": reader}
     d = Daemon(ConfigStore(tmp_path), RecOut(),
                transport_factory=lambda path: t,
                find_control=find_control,
@@ -465,7 +465,7 @@ async def test_daemon_wireless_and_battery_unavailable(tmp_path):
 
 
 async def test_daemon_no_control_hidraw_still_grabs(tmp_path):
-    d, t = make_daemon(tmp_path, find_control=lambda: None)
+    d, t = make_daemon(tmp_path, find_control=lambda pids: None)
     await d.start()
     mouse = FakeDev("/dev/input/event18")
     d.on_added("mouse", mouse)
@@ -495,6 +495,79 @@ async def test_daemon_unplug_releases_and_disconnects(tmp_path):
                              "scroll_stage": -1}
     await d.shutdown()
     assert modes(t) == [NORMAL_MODE]  # no mode reset on an unplugged mouse
+
+
+class TwoNodes:
+    """Charge cable (0x00A7) and dongle (0x00A8) at once: one hidraw/transport each."""
+    HIDRAW = {0x00A7: "/dev/hidraw2", 0x00A8: "/dev/hidraw7"}
+    VENDOR = {0x00A7: "/dev/hidraw3", 0x00A8: "/dev/hidraw8"}
+
+    def __init__(self):
+        self.control_calls, self.vendor_calls, self.opened = [], [], []
+
+    def find_control(self, pids):
+        self.control_calls.append(tuple(pids))
+        return self.HIDRAW[pids[0]] if len(pids) == 1 else "/dev/hidraw2"
+
+    def find_vendor(self, pids):
+        self.vendor_calls.append(tuple(pids))
+        return self.VENDOR[pids[0]] if len(pids) == 1 else "/dev/hidraw3"
+
+    def transport(self, path):
+        self.opened.append(path)
+        return naga_transport()
+
+
+def two_node_daemon(tmp_path):
+    n = TwoNodes()
+    readers = []
+
+    def reader(path, cb):
+        readers.append(FakeReader(path, cb))
+        return readers[-1]
+    d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=n.transport,
+               find_control=n.find_control, find_vendor=n.find_vendor,
+               hidraw_reader=reader, openrazer_loaded=lambda: False, retry_delay=0,
+               apply_device_settings=lambda p: None,
+               backup_path=tmp_path / "mouse-backup.json")
+    return d, n, readers
+
+
+async def test_unplugging_charge_cable_falls_back_to_dongle(tmp_path):
+    d, n, readers = two_node_daemon(tmp_path)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))  # dongle
+    await d.settle()
+    assert d.hw_status()["connection"] == "wireless"
+    assert n.control_calls[-1] == (0x00A8,) and n.opened[-1] == "/dev/hidraw7"
+    d.on_added("mouse", FakeDev("/dev/input/event22", product=0x00A7))  # cable plugged
+    await d.settle()
+    assert d.hw_status()["connection"] == "wired"
+    assert n.control_calls[-1] == (0x00A7,) and n.opened[-1] == "/dev/hidraw2"
+    assert n.vendor_calls[-1] == (0x00A7,) and readers[-1].path == "/dev/hidraw3"
+    d.on_removed("/dev/input/event22")  # cable unplugged, dongle still there
+    await d.settle()
+    status = d.hw_status()
+    assert status["connected"] is True and status["connection"] == "wireless"
+    assert n.control_calls[-1] == (0x00A8,) and n.opened[-1] == "/dev/hidraw7"
+    assert readers[-1].path == "/dev/hidraw8" and readers[-1].started
+    d.on_removed("/dev/input/event18")
+    await d.settle()
+    assert d.hw_status()["connected"] is False
+    await d.shutdown()
+
+
+async def test_removing_inactive_mouse_node_keeps_connection(tmp_path):
+    d, n, _ = two_node_daemon(tmp_path)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
+    d.on_added("mouse", FakeDev("/dev/input/event22", product=0x00A7))
+    await d.settle()
+    opened = len(n.opened)
+    d.on_removed("/dev/input/event18")  # dongle pulled while the cable is in use
+    await d.settle()
+    assert d.hw_status()["connection"] == "wired" and len(n.opened) == opened
+    await d.shutdown()
 
 
 async def test_daemon_start_loads_active_profile(tmp_path):
@@ -541,7 +614,7 @@ async def test_daemon_apply_hook_failure_is_logged(tmp_path, caplog):
     def boom(profile):
         raise RuntimeError("apply kaputt")
     d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: naga_transport(),
-               find_control=lambda: "/dev/hidraw2", find_vendor=lambda: None,
+               find_control=lambda pids: "/dev/hidraw2", find_vendor=lambda pids: None,
                openrazer_loaded=lambda: False, retry_delay=0, apply_device_settings=boom)
     await d.start()
     d.on_added("mouse", FakeDev("/dev/input/event18"))
@@ -682,7 +755,7 @@ def test_apply_bad_profile_value_is_logged_not_raised(caplog):
 async def connected(tmp_path, profile=None, transport=None, product=0x00A7, settings=None):
     t = transport or naga_transport()
     d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: t,
-               find_control=lambda: "/dev/hidraw2", find_vendor=lambda: None,
+               find_control=lambda pids: "/dev/hidraw2", find_vendor=lambda pids: None,
                openrazer_loaded=lambda: False, retry_delay=0,
                backup_path=tmp_path / "mouse-backup.json")
     if settings:
@@ -882,6 +955,7 @@ async def test_shutdown_without_changes_writes_nothing(tmp_path):
 
 
 async def test_shutdown_without_backup_logs_warning(tmp_path, caplog):
+    (tmp_path / "mouse-backup.json").mkdir()  # unreadable (and not auto-created)
     d, t = await connected(tmp_path, full_profile(lighting={}))
     n = len(t.requests)
     with caplog.at_level(logging.WARNING):
@@ -897,6 +971,41 @@ async def test_restore_clears_pending_write_back(tmp_path):
     n = len(t.requests)
     await d.shutdown()
     assert since(t, n) == []
+
+
+async def test_first_connect_creates_backup_before_applying(tmp_path):
+    t = naga_transport()
+    applied_at = []
+    d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: t,
+               find_control=lambda pids: "/dev/hidraw2", find_vendor=lambda pids: None,
+               openrazer_loaded=lambda: False, retry_delay=0,
+               apply_device_settings=lambda p: applied_at.append(
+                   (tmp_path / "mouse-backup.json").exists()),
+               backup_path=tmp_path / "mouse-backup.json")
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    assert applied_at == [True]  # snapshot taken before the profile touched the mouse
+    backup = json.loads((tmp_path / "mouse-backup.json").read_text())
+    assert backup["dpi"] == [800, 800] and backup["poll_rate"] == 1000
+    await d.shutdown()
+
+
+async def test_existing_backup_is_never_overwritten_on_connect(tmp_path):
+    write_backup(tmp_path)
+    d, t = await connected(tmp_path)
+    assert json.loads((tmp_path / "mouse-backup.json").read_text()) == BACKUP
+    await d.shutdown()
+
+
+async def test_backup_failure_on_connect_is_logged_not_fatal(tmp_path, caplog):
+    t = FakeTransport({(0x00, 0x04): lambda a: a[:2]})  # no readable core values
+    with caplog.at_level(logging.WARNING):
+        d, _ = await connected(tmp_path, transport=t)
+    assert not (tmp_path / "mouse-backup.json").exists()
+    assert d.hw_status()["connected"] is True
+    assert "Sicherung" in caplog.text
+    await d.shutdown()
 
 
 def test_dpi_commands_are_persistent():
