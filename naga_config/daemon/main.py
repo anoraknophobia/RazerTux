@@ -28,7 +28,7 @@ from naga_config.razer.transport import (
 
 from dbus_next import DBusError
 
-from .battery import BatteryMonitor, notify_desktop
+from .battery import BatteryMonitor, WarnState, notify_desktop
 from .dbus_service import BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
 from .devices import DeviceWatcher, HidrawReader, InputRouter
 
@@ -134,6 +134,7 @@ class Daemon:
         self._written: set[str] = set()
         self._power_applied: dict[str, int] = {}  # skip rewriting unchanged values
         self._battery: BatteryMonitor | None = None
+        self._battery_warn = WarnState()  # survives reconnects: one warning per discharge
 
     # -- Hardware protocol for the D-Bus service ---------------------------
 
@@ -346,7 +347,7 @@ class Daemon:
             self._battery = BatteryMonitor(
                 naga, 60, self._on_battery, connection=lambda: self._hw["connection"],
                 threshold=lambda: self.service.settings.low_battery_notify,
-                notify=self._low_battery)
+                notify=self._low_battery, state=self._battery_warn)
             self._battery.poll()
             self._battery.start()
         self.service.notify_status()

@@ -929,3 +929,19 @@ async def test_low_battery_sends_desktop_notification(tmp_path):
     d._battery.poll()
     assert len(sent) == 1 and "10" in sent[0][1]
     await d.shutdown()
+
+
+async def test_low_battery_not_repeated_after_reconnect(tmp_path):
+    d, t = await connected(tmp_path, product=0x00A8)
+    sent = []
+    d.notify = lambda title, body: sent.append(body)
+    t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
+    t.responses[(0x07, 0x84)] = bytes([0, 0])
+    d._battery.poll()
+    d.on_removed("/dev/input/event18")
+    await d.settle()
+    d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
+    await d.settle()
+    d._battery.poll()
+    assert len(sent) == 1
+    await d.shutdown()

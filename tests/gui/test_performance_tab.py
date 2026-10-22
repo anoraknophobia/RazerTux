@@ -90,14 +90,28 @@ def test_active_stage_radio_and_remove(tab):
     assert not tab.rows[0].remove_btn.isEnabled()
 
 
-def test_stages_toggle(tab):
-    p = staged()
+def test_stages_toggle_off_on_keeps_all_stages(tab):
+    p = staged(n=5, active=3)
     tab.load(p)
-    tab.stages_toggle.setChecked(False)  # keeps only the active stage
-    assert p.dpi_stages == [(1600, 1600)] and p.active_stage == 1
+    tab.stages_toggle.setChecked(False)  # profile gets only the active stage
+    assert p.dpi_stages == [(2400, 2400)] and p.active_stage == 1
     assert tab.rows[0].radio.isHidden() and tab.add_btn.isHidden()
-    tab.stages_toggle.setChecked(True)  # adds a second stage to step to
-    assert p.dpi_stages == [(1600, 1600), (3200, 3200)] and p.active_stage == 1
+    tab.rows[0].spin_x.setValue(2500)  # edited while single
+    tab.stages_toggle.setChecked(True)  # all five stages come back
+    assert p.dpi_stages == [(800, 800), (1600, 1600), (2500, 2500), (3200, 3200), (4000, 4000)]
+    assert p.active_stage == 3 and len(tab.rows) == 5
+
+
+def test_stages_toggle_on_from_single_adds_second_stage(tab):
+    p = staged(n=1, active=1)
+    tab.load(p)
+    tab.stages_toggle.setChecked(True)
+    assert p.dpi_stages == [(800, 800), (1600, 1600)] and p.active_stage == 1
+
+
+def test_round_half_up(tab):
+    from naga_config.gui.performance_tab import _round_dpi
+    assert (_round_dpi(125), _round_dpi(175), _round_dpi(124)) == (150, 200, 100)
 
 
 def test_poll_rate_buttons(tab):

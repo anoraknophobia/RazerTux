@@ -4,11 +4,19 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 REARM_MARGIN = 5  # warn again only after the level rose to threshold + 5
+
+
+@dataclass
+class WarnState:
+    """Whether the low battery warning may fire; owned by the daemon so that a
+    reconnect (new monitor) at low battery does not warn again."""
+    armed: bool = True
 
 
 class BatteryMonitor:
@@ -23,7 +31,8 @@ class BatteryMonitor:
                  on_change: Callable[[int, bool], None] | None = None, *,
                  connection: Callable[[], str] = lambda: "wireless",
                  threshold: Callable[[], int] = lambda: 15,
-                 notify: Callable[[int], None] | None = None) -> None:
+                 notify: Callable[[int], None] | None = None,
+                 state: WarnState | None = None) -> None:
         self.dev = dev
         self.interval_s = interval_s
         self._on_change = on_change or (lambda b, c: None)
@@ -31,7 +40,7 @@ class BatteryMonitor:
         self._threshold = threshold
         self._notify = notify or (lambda b: None)
         self._last: tuple[int, bool] | None = None
-        self._armed = True
+        self.state = state or WarnState()
         self._task: asyncio.Task | None = None
 
     def poll(self) -> None:
@@ -50,9 +59,9 @@ class BatteryMonitor:
         if threshold <= 0:
             return
         if level >= threshold + REARM_MARGIN:
-            self._armed = True
-        elif level < threshold and self._armed and not charging:
-            self._armed = False
+            self.state.armed = True
+        elif level < threshold and self.state.armed and not charging:
+            self.state.armed = False
             self._notify(level)
 
     def start(self) -> None:
@@ -67,11 +76,16 @@ class BatteryMonitor:
                 await task
             except asyncio.CancelledError:
                 pass
+            except Exception:  # never block the caller's cleanup (mode reset)
+                logger.exception("Akku-Abfrage beendet mit Fehler")
 
     async def _run(self) -> None:
         while True:
             await asyncio.sleep(self.interval_s)
-            self.poll()
+            try:
+                self.poll()
+            except Exception:  # callbacks (status signal, notification) must not end the loop
+                logger.exception("Akku-Abfrage fehlgeschlagen")
 
 
 async def notify_desktop(bus: Any, summary: str, body: str,

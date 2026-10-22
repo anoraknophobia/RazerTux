@@ -5,6 +5,8 @@ user edit. Unchecked "DPI dieses Profils festlegen" / "Nicht ändern" keep the
 profile's empty values, so the mouse keeps its own settings (R9)."""
 from __future__ import annotations
 
+import math
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup, QCheckBox, QGridLayout, QHBoxLayout, QLabel, QPushButton,
@@ -19,7 +21,7 @@ DEFAULT_DPI = 1800
 
 
 def _round_dpi(v: int) -> int:
-    return min(max(round(v / DPI_STEP) * DPI_STEP, DPI_MIN), DPI_MAX)
+    return min(max(math.floor(v / DPI_STEP + 0.5) * DPI_STEP, DPI_MIN), DPI_MAX)  # half up
 
 
 def _dpi_spin() -> QSpinBox:
@@ -93,6 +95,8 @@ class PerformanceTab(QWidget):
         self.profile: Profile | None = None
         self._quiet = False
         self.rows: list[StageRow] = []
+        # full stage list + active index while "Empfindlichkeitsstufen" is off
+        self._stashed: tuple[list[tuple[int, int]], int] | None = None
 
         sens = Card(self.tr("Empfindlichkeit"))
         sens.add(description(self.tr("Anzahl der Punkte pro Zoll (DPI), um die sich der Zeiger bewegt.")))
@@ -158,6 +162,7 @@ class PerformanceTab(QWidget):
     def load(self, profile: Profile) -> None:
         self._quiet = True
         self.profile = profile
+        self._stashed = None
         stages = [tuple(s) for s in profile.dpi_stages] or [(DEFAULT_DPI, DEFAULT_DPI)]
         self.set_dpi_box.setChecked(bool(profile.dpi_stages))
         self.stages_toggle.setChecked(len(stages) > 1)
@@ -234,7 +239,14 @@ class PerformanceTab(QWidget):
             return
         stages = [r.values() for r in self.rows]
         if not on:
+            self._stashed = (stages, self._active())
             self._rebuild([stages[self._active()]], 0)
+        elif self._stashed is not None:  # restore the stages hidden by "off"
+            full, active = self._stashed
+            full = list(full)
+            full[active] = stages[0]  # keep edits made to the single value
+            self._stashed = None
+            self._rebuild(full, active)
         elif len(stages) == 1:
             x, y = stages[0]
             self._rebuild([(x, y), (_round_dpi(x * 2), _round_dpi(y * 2))], 0)

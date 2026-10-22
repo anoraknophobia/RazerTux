@@ -107,3 +107,41 @@ async def test_notify_desktop_calls_freedesktop_notifications():
     assert msg.destination == "org.freedesktop.Notifications"
     assert msg.member == "Notify" and msg.signature == "susssasa{sv}i"
     assert msg.body[3:5] == ["Titel", "Text"]
+
+
+def test_warned_state_survives_new_monitor():
+    from naga_config.daemon.battery import WarnState
+    state = WarnState()
+    notes = []
+    for _ in range(2):  # dongle reconnect: new monitor, same state
+        dev = FakeDev(10)
+        BatteryMonitor(dev, on_change=None, state=state, notify=notes.append).poll()
+    assert notes == [10]
+
+
+async def test_run_survives_callback_errors_and_stop_never_raises(caplog):
+    mon, dev, _, _ = make()
+    mon.interval_s = 0.01
+    calls = []
+
+    def bad(b, c):
+        calls.append(b)
+        dev.level -= 1  # new value each poll -> callback every time
+        raise RuntimeError("kaputt")
+    mon._on_change = bad
+    mon.start()
+    await asyncio.sleep(0.05)
+    assert len(calls) >= 2  # loop kept running
+    await mon.stop()
+    assert "kaputt" in caplog.text
+
+
+async def test_stop_logs_unexpected_task_error(caplog):
+    mon, *_ = make()
+
+    async def boom():
+        raise RuntimeError("weg")
+    mon._task = asyncio.get_running_loop().create_task(boom())
+    await asyncio.sleep(0)
+    await mon.stop()  # must not raise
+    assert "weg" in caplog.text
