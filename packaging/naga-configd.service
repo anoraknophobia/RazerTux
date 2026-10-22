@@ -1,5 +1,6 @@
 [Unit]
 Description=naga-config Daemon (Razer Naga V2 Pro)
+Documentation=file:///usr/share/doc/naga-config/README.md
 
 [Service]
 Type=dbus

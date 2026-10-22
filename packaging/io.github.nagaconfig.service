@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.nagaconfig
+Exec=/usr/bin/naga-configd
+SystemdService=naga-configd.service
