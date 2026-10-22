@@ -4,7 +4,7 @@ import pytest
 from evdev import ecodes as E
 from fake_output import FakeSleep, GateSleep, RecordingOutput
 
-from naga_config.config.model import (
+from razertux.config.model import (
     ComboAction,
     DefaultAction,
     DisabledAction,
@@ -17,8 +17,8 @@ from naga_config.config.model import (
     MacroAction,
     Profile,
 )
-from naga_config.engine.mapper import Mapper
-from naga_config.hw.buttons import ButtonId as B
+from razertux.engine.mapper import Mapper
+from razertux.hw.buttons import ButtonId as B
 
 
 def mk(std=None, hs=None, macros=None, sleep=None):

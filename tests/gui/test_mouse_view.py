@@ -8,14 +8,14 @@ from PySide6.QtGui import QColor, QFocusEvent, QMouseEvent, QPalette
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
-from naga_config.config.model import Settings, default_profile
-from naga_config.config.store import ConfigStore
-from naga_config.gui import language, mouse_scene
-from naga_config.gui.dbus_client import DaemonClient
-from naga_config.gui.main_window import MainWindow
-from naga_config.gui.mouse_view import OTHER_BUTTONS, SIDE_BUTTONS, MouseView, element_of
-from naga_config.gui.theme import dark_palette
-from naga_config.hw.buttons import ButtonId
+from razertux.config.model import Settings, default_profile
+from razertux.config.store import ConfigStore
+from razertux.gui import language, mouse_scene
+from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.main_window import MainWindow
+from razertux.gui.mouse_view import OTHER_BUTTONS, SIDE_BUTTONS, MouseView, element_of
+from razertux.gui.theme import dark_palette
+from razertux.hw.buttons import ButtonId
 
 ALL = [*SIDE_BUTTONS, *OTHER_BUTTONS]
 
@@ -179,7 +179,7 @@ def window(qapp, store):
 
 
 def test_click_on_key_opens_the_action_dialog(window, monkeypatch):
-    from naga_config.gui import main_window
+    from razertux.gui import main_window
     seen = []
     monkeypatch.setattr(main_window.ActionDialog, "pick",
                         staticmethod(lambda parent, action, macros, button, layer: seen.append(button)))

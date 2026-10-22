@@ -1,6 +1,6 @@
 import pytest
 
-from naga_config import i18n
+from razertux import i18n
 
 
 @pytest.fixture(autouse=True)

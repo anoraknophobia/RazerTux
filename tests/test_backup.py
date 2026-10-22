@@ -2,9 +2,9 @@ import json
 
 from fake_transport import FakeTransport
 
-from naga_config import cli
-from naga_config.backup import load_backup, save_backup
-from naga_config.razer.naga_v2_pro import NagaV2Pro
+from razertux import cli
+from razertux.backup import load_backup, save_backup
+from razertux.razer.naga_v2_pro import NagaV2Pro
 
 
 def test_backup_never_overwrites(tmp_path):
@@ -61,7 +61,7 @@ def test_cli_default_backup_path(monkeypatch, tmp_path):
 
 def test_backup_refuses_when_core_fields_missing(tmp_path):
     import pytest
-    from naga_config.backup import BackupError
+    from razertux.backup import BackupError
     p = tmp_path / "b.json"
     with pytest.raises(BackupError):
         save_backup(NagaV2Pro(FakeTransport(default=5)), p)
@@ -96,7 +96,7 @@ REAL = {
 
 
 def test_restore_writes_everything_with_varstore_and_skips_mode():
-    from naga_config.backup import restore_backup
+    from razertux.backup import restore_backup
     t = FakeTransport.full()
     assert restore_backup(NagaV2Pro(t), REAL) == []
     by = {(r.cmd_class, r.cmd_id): r for r in t.requests}
@@ -116,7 +116,7 @@ def test_restore_writes_everything_with_varstore_and_skips_mode():
 
 
 def test_restore_reports_failed_and_missing_fields():
-    from naga_config.backup import restore_backup
+    from razertux.backup import restore_backup
     t = FakeTransport.full()
     del t.responses[(0x00, 0x05)]  # poll rate rejected
     data = dict(REAL, idle_time=None, low_battery_threshold=7000)
@@ -126,7 +126,7 @@ def test_restore_reports_failed_and_missing_fields():
 
 
 def test_restore_oserror_is_reported_not_raised():
-    from naga_config.backup import restore_backup
+    from razertux.backup import restore_backup
     t = FakeTransport.full()
     def boom(_):
         raise OSError("io")
@@ -135,7 +135,7 @@ def test_restore_oserror_is_reported_not_raised():
 
 
 def test_restore_empty_backup_reports_all_restorable_fields():
-    from naga_config.backup import restore_backup
+    from razertux.backup import restore_backup
     t = FakeTransport.full()
     assert restore_backup(NagaV2Pro(t), {}) == [
         "poll_rate", "dpi_stages", "dpi", "idle_time", "low_battery_threshold"]
@@ -207,7 +207,7 @@ def test_dbus_restore_returns_none_without_bus(monkeypatch, tmp_path):
 
 def test_restore_backup_limited_to_fields():
     from fake_transport import FakeTransport as FT
-    from naga_config.backup import restore_backup
+    from razertux.backup import restore_backup
     t = FT.full()
     data = {"poll_rate": 500, "dpi": [1800, 1800], "brightness": {"logo": 191},
             "idle_time": 300}

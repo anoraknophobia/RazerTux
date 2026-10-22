@@ -88,8 +88,8 @@ def test_readme_has_no_manual_backup_step():
 
 def test_translations_are_packaged():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    assert data["tool"]["setuptools"]["package-data"]["naga_config.i18n"] == ["*.json"]
+    assert data["tool"]["setuptools"]["package-data"]["razertux.i18n"] == ["*.json"]
     for lang in ("en", "es", "fr"):
-        assert (ROOT / "naga_config" / "i18n" / f"{lang}.json").is_file()
+        assert (ROOT / "razertux" / "i18n" / f"{lang}.json").is_file()
     # the PKGBUILD copies the whole package directory, catalogs included
-    assert 'cp -r "$startdir/../naga_config"' in _read("PKGBUILD")
+    assert 'cp -r "$startdir/../razertux"' in _read("PKGBUILD")

@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from naga_config import i18n
-from naga_config.config import ConfigStore, DisabledAction, Settings, default_profile, validate
-from naga_config.hw.buttons import ButtonId
+from razertux import i18n
+from razertux.config import ConfigStore, DisabledAction, Settings, default_profile, validate
+from razertux.hw.buttons import ButtonId
 
 ROOT = Path(__file__).resolve().parent.parent
-PKG = ROOT / "naga_config"
+PKG = ROOT / "razertux"
 LANGS = ("en", "es", "fr")
 # self.tr() in a mixin runs with the context of the class it is mixed into
 MIXIN_CONTEXT = {"ProfileActions": "MainWindow"}

@@ -15,17 +15,17 @@ dependencies = ["evdev", "pyudev", "dbus-next", "PySide6"]
 test = ["pytest", "pytest-asyncio"]
 
 [project.scripts]
-naga-config = "naga_config.cli:main"
-naga-configd = "naga_config.daemon.main:main"
-naga-config-gui = "naga_config.gui.app:main"
+naga-config = "razertux.cli:main"
+naga-configd = "razertux.daemon.main:main"
+naga-config-gui = "razertux.gui.app:main"
 
 [tool.setuptools.packages.find]
-include = ["naga_config*"]
+include = ["razertux*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.setuptools.package-data]
-"naga_config.gui" = ["assets/*.svg"]
-"naga_config.i18n" = ["*.json"]
+"razertux.gui" = ["assets/*.svg"]
+"razertux.i18n" = ["*.json"]

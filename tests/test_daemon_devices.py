@@ -11,9 +11,9 @@ from evdev import ecodes as E
 from fake_output import RecordingOutput
 from fake_transport import FakeTransport
 
-from naga_config.config.store import ConfigStore
-from naga_config.daemon import devices as dv
-from naga_config.daemon.devices import (
+from razertux.config.store import ConfigStore
+from razertux.daemon import devices as dv
+from razertux.daemon.devices import (
     VIRTUAL_NAME,
     DeviceWatcher,
     HidrawReader,
@@ -21,11 +21,11 @@ from naga_config.daemon.devices import (
     classify,
     source_from_links,
 )
-from naga_config.daemon.main import Daemon, build_parser
-from naga_config.daemon.uinput_out import UinputOutput, capabilities
-from naga_config.hw.buttons import DRIVER_MODE, NORMAL_MODE, ButtonId
-from naga_config.razer import transport as tr
-from naga_config.razer.naga_v2_pro import NagaV2Pro
+from razertux.daemon.main import Daemon, build_parser
+from razertux.daemon.uinput_out import UinputOutput, capabilities
+from razertux.hw.buttons import DRIVER_MODE, NORMAL_MODE, ButtonId
+from razertux.razer import transport as tr
+from razertux.razer.naga_v2_pro import NagaV2Pro
 
 BY_ID = "/dev/input/by-id/usb-Razer_Razer_Naga_V2_Pro-"
 
@@ -657,7 +657,7 @@ async def test_daemon_on_added_reports_grab_result(tmp_path):
 
 
 async def test_daemon_start_loads_active_profile(tmp_path):
-    from naga_config.config.model import KeyAction, Profile, Settings
+    from razertux.config.model import KeyAction, Profile, Settings
     store = ConfigStore(tmp_path)
     store.save_profile(Profile(id="game", name="Spiel",
                                standard={ButtonId.SIDE_1: KeyAction(E.KEY_A)}))
@@ -711,7 +711,7 @@ async def test_daemon_apply_hook_failure_is_logged(tmp_path, caplog):
 
 
 async def test_daemon_activate_applies_when_connected(tmp_path):
-    from naga_config.config.model import Profile
+    from razertux.config.model import Profile
     applied = []
     d, _ = make_daemon(tmp_path, applied=applied)
     d.service._store.save_profile(Profile(id="game", name="Spiel"))
@@ -769,9 +769,9 @@ async def test_router_close_releases_before_ungrab():
 # -- Task 7: device settings, DPI stepping, restore ----------------------------
 
 
-from naga_config.config.model import LightingZone, Profile  # noqa: E402
-from naga_config.daemon.main import apply_device_settings  # noqa: E402
-from naga_config.razer.naga_v2_pro import LOGO, SCROLL, THUMB  # noqa: E402
+from razertux.config.model import LightingZone, Profile  # noqa: E402
+from razertux.daemon.main import apply_device_settings  # noqa: E402
+from razertux.razer.naga_v2_pro import LOGO, SCROLL, THUMB  # noqa: E402
 
 
 def writes(t):
@@ -1095,7 +1095,7 @@ async def test_backup_failure_on_connect_is_logged_not_fatal(tmp_path, caplog):
 
 
 def test_dpi_commands_are_persistent():
-    from naga_config.razer.naga_v2_pro import PERSISTENT_COMMANDS
+    from razertux.razer.naga_v2_pro import PERSISTENT_COMMANDS
     assert PERSISTENT_COMMANDS["set_dpi"] and PERSISTENT_COMMANDS["set_dpi_stages"]
 
 
@@ -1107,7 +1107,7 @@ def power_writes(t):
 
 
 async def test_power_settings_applied_on_connect_and_written_back(tmp_path):
-    from naga_config.config.model import Settings
+    from razertux.config.model import Settings
     write_backup(tmp_path)
     s = Settings(active_profile="default", idle_time=600, low_battery_threshold=10)
     d, t = await connected(tmp_path, settings=s)
@@ -1123,7 +1123,7 @@ async def test_power_settings_none_never_touch_mouse(tmp_path):
 
 
 async def test_reload_applies_power_settings(tmp_path):
-    from naga_config.config.model import Settings
+    from razertux.config.model import Settings
     d, t = await connected(tmp_path)
     d.service._store.save_settings(Settings(active_profile="default", idle_time=120))
     await d.service.reload()
@@ -1181,12 +1181,12 @@ async def test_low_battery_not_repeated_after_reconnect(tmp_path):
 # -- Task 11: device mode follows the profile, scroll stage / DPI notifications ----
 
 def _remap_profile(pid="remap", on=True):
-    from naga_config.config.model import Profile
+    from razertux.config.model import Profile
     return Profile(id=pid, name=pid, remap_top_buttons=on)
 
 
 async def test_mode_follows_active_profile_on_connect_switch_and_reload(tmp_path):
-    from naga_config.config.model import Settings
+    from razertux.config.model import Settings
     store = ConfigStore(tmp_path)
     store.save_profile(_remap_profile())
     store.save_settings(Settings(active_profile="remap"))
@@ -1266,7 +1266,7 @@ async def test_corrupt_state_file_means_unknown_stage(tmp_path):
 # -- login race: /dev/uinput ACL may not be there yet ------------------------------
 
 async def test_open_uinput_retries_until_available(caplog):
-    from naga_config.daemon.main import open_uinput
+    from razertux.daemon.main import open_uinput
     attempts, slept = [], []
 
     def factory():
@@ -1284,7 +1284,7 @@ async def test_open_uinput_retries_until_available(caplog):
 
 
 async def test_open_uinput_gives_up_after_timeout():
-    from naga_config.daemon.main import open_uinput
+    from razertux.daemon.main import open_uinput
     slept = []
 
     def factory():
@@ -1300,7 +1300,7 @@ async def test_open_uinput_gives_up_after_timeout():
 # -- wireless wake-up: the mouse drops volatile settings while asleep --------------
 
 async def test_wake_up_after_failed_polls_reapplies_mode_and_profile(tmp_path):
-    from naga_config.config.model import Settings
+    from razertux.config.model import Settings
     store = ConfigStore(tmp_path)
     store.save_profile(_remap_profile())
     store.save_settings(Settings(active_profile="remap"))
@@ -1323,7 +1323,7 @@ async def test_wake_up_after_failed_polls_reapplies_mode_and_profile(tmp_path):
 
 
 async def test_device_mode_mismatch_on_poll_reapplies(tmp_path):
-    from naga_config.config.model import Settings
+    from razertux.config.model import Settings
     store = ConfigStore(tmp_path)
     store.save_profile(_remap_profile())
     store.save_settings(Settings(active_profile="remap"))

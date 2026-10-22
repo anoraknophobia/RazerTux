@@ -1,8 +1,8 @@
 """Read-only hardware smoke test: print firmware version response (class 0x00, id 0x81)."""
 import sys
 
-from naga_config.razer.report import build_report
-from naga_config.razer.transport import HidrawTransport, find_control_hidraw
+from razertux.razer.report import build_report
+from razertux.razer.transport import HidrawTransport, find_control_hidraw
 
 
 def main() -> int:

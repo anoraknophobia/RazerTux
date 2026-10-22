@@ -1,11 +1,11 @@
 """Fake Transport for tests: canned responses keyed by (class, id), logs requests."""
-from naga_config.razer.report import (
+from razertux.razer.report import (
     STATUS_OK,
     STATUS_UNSUPPORTED,
     RazerResponse,
     parse_report,
 )
-from naga_config.razer.transport import RazerError
+from razertux.razer.transport import RazerError
 
 
 # set-command ids (class, id) echoed back by FakeTransport.full()

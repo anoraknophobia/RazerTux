@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from evdev import ecodes as E
 
-from naga_config.hw.buttons import (
+from razertux.hw.buttons import (
     DRIVER_MODE,
     NAGA_DEVICE_SUFFIXES,
     NORMAL_MODE,

@@ -1,8 +1,8 @@
 import pytest
 from fake_transport import FakeTransport
 
-from naga_config.razer.naga_v2_pro import LOGO, SCROLL, THUMB, ZONE_LED, NagaV2Pro
-from naga_config.razer.report import STATUS_UNSUPPORTED
+from razertux.razer.naga_v2_pro import LOGO, SCROLL, THUMB, ZONE_LED, NagaV2Pro
+from razertux.razer.report import STATUS_UNSUPPORTED
 
 
 def test_dpi_parses_big_endian():
@@ -110,8 +110,8 @@ def test_no_write_commands_sent_by_snapshot():
 
 # -- write commands (layouts from OpenRazer razerchromacommon.c) --------------
 
-from naga_config.config.model import LightingZone
-from naga_config.razer.naga_v2_pro import (
+from razertux.config.model import LightingZone
+from razertux.razer.naga_v2_pro import (
     NOSTORE,
     PERSISTENT_COMMANDS,
     REACTIVE_SPEED,

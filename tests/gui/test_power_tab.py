@@ -1,7 +1,7 @@
 import pytest
 
-from naga_config.config.model import Settings
-from naga_config.gui.power_tab import PowerTab
+from razertux.config.model import Settings
+from razertux.gui.power_tab import PowerTab
 
 
 @pytest.fixture

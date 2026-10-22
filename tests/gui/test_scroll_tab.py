@@ -1,7 +1,7 @@
 import pytest
 
-from naga_config.config.model import Settings
-from naga_config.gui.scroll_tab import SYNAPSE_PRESETS, ScrollTab
+from razertux.config.model import Settings
+from razertux.gui.scroll_tab import SYNAPSE_PRESETS, ScrollTab
 
 
 @pytest.fixture

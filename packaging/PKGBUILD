@@ -16,7 +16,7 @@ prepare() {
   # Saubere Kopie des Checkouts, damit build/ und egg-info nicht im Repo landen
   rm -rf "$srcdir/$pkgname"
   mkdir -p "$srcdir/$pkgname"
-  cp -r "$startdir/../naga_config" "$startdir/../pyproject.toml" \
+  cp -r "$startdir/../razertux" "$startdir/../pyproject.toml" \
         "$startdir/../README.md" "$startdir/../LICENSE" "$srcdir/$pkgname/"
   find "$srcdir/$pkgname" -name __pycache__ -prune -exec rm -rf {} +
 }

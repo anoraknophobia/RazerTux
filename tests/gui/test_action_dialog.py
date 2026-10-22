@@ -1,11 +1,11 @@
 from evdev import ecodes as E
 
-from naga_config.config.model import (
+from razertux.config.model import (
     ComboAction, DefaultAction, DisabledAction, DpiStageAction, HypershiftAction,
     KeyAction, Macro, MacroAction,
 )
-from naga_config.gui.action_dialog import ActionDialog
-from naga_config.hw.buttons import ButtonId
+from razertux.gui.action_dialog import ActionDialog
+from razertux.hw.buttons import ButtonId
 
 CTRL, SHIFT, M = E.KEY_LEFTCTRL, E.KEY_LEFTSHIFT, E.KEY_M
 

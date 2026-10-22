@@ -3,13 +3,13 @@ import json
 import pytest
 from evdev import ecodes as E
 
-from naga_config.config import (
+from razertux.config import (
     ComboAction, ConfigStore, DefaultAction, DisabledAction, DpiStageAction,
     HypershiftAction, KeyAction, LightingZone, Macro, MacroAction, Profile,
     Settings, DelayStep, KeyStep, ButtonStep, default_profile, new_profile_id,
     validate,
 )
-from naga_config.hw.buttons import ButtonId
+from razertux.hw.buttons import ButtonId
 
 
 def full_profile():

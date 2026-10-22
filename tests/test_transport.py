@@ -1,13 +1,13 @@
 import pytest
 
-from naga_config.razer import transport as tr
-from naga_config.razer.report import (
+from razertux.razer import transport as tr
+from razertux.razer.report import (
     STATUS_BUSY,
     STATUS_FAIL,
     STATUS_OK,
     build_report,
 )
-from naga_config.razer.transport import HidrawTransport, RazerError
+from razertux.razer.transport import HidrawTransport, RazerError
 
 
 def _resp(status, args=b"\x01\x02"):

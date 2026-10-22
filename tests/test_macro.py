@@ -4,9 +4,9 @@ import logging
 from evdev import ecodes as E
 from fake_output import FakeSleep, GateSleep, RecordingOutput
 
-from naga_config.config.model import ButtonStep, DelayStep, KeyStep, Macro
-from naga_config.engine.macro import MacroPlayer
-from naga_config.hw.buttons import ButtonId
+from razertux.config.model import ButtonStep, DelayStep, KeyStep, Macro
+from razertux.engine.macro import MacroPlayer
+from razertux.hw.buttons import ButtonId
 
 A, B = E.KEY_A, E.KEY_B
 K = ButtonId.SIDE_1

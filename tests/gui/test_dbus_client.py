@@ -1,5 +1,5 @@
 from fake_daemon import FakeTransport
-from naga_config.gui.dbus_client import DaemonClient, DaemonError, DaemonUnavailable
+from razertux.gui.dbus_client import DaemonClient, DaemonError, DaemonUnavailable
 
 
 def make(t):
@@ -76,7 +76,7 @@ def test_refresh_publishes_status_and_active_profile(qapp):
 
 
 def test_real_transport_invalid_bus_address_is_unavailable(qapp, monkeypatch):
-    from naga_config.gui.dbus_client import DBusNextTransport
+    from razertux.gui.dbus_client import DBusNextTransport
     monkeypatch.setenv("DBUS_SESSION_BUS_ADDRESS", "bogus:nothing")
     t = DBusNextTransport()
     t.start()

@@ -1,7 +1,7 @@
 import pytest
 
-from naga_config.config.model import Profile, validate
-from naga_config.gui.performance_tab import PerformanceTab
+from razertux.config.model import Profile, validate
+from razertux.gui.performance_tab import PerformanceTab
 
 
 @pytest.fixture
@@ -110,7 +110,7 @@ def test_stages_toggle_on_from_single_adds_second_stage(tab):
 
 
 def test_round_half_up(tab):
-    from naga_config.gui.performance_tab import _round_dpi
+    from razertux.gui.performance_tab import _round_dpi
     assert (_round_dpi(125), _round_dpi(175), _round_dpi(124)) == (150, 200, 100)
 
 

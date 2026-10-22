@@ -69,7 +69,7 @@ Einstellung steht als `"language"` in `~/.config/naga-config/settings.json`.
 French. "System language" falls back to English if the system language is not supported.
 The GUI switches after a restart ("Restart now"); the service switches immediately.
 
-Übersetzungen liegen als JSON in `naga_config/i18n/<lang>.json`
+Übersetzungen liegen als JSON in `razertux/i18n/<lang>.json`
 (`{"Kontext": {"deutscher Text": "Übersetzung"}}`); `tests/test_i18n.py` prüft, dass jeder
 Text übersetzt ist und die Platzhalter stimmen.
 

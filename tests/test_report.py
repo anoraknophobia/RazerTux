@@ -3,7 +3,7 @@ import operator
 
 import pytest
 
-from naga_config.razer.report import (
+from razertux.razer.report import (
     STATUS_OK,
     build_report,
     parse_report,

@@ -4,16 +4,16 @@ import pytest
 from evdev import ecodes as E
 from fake_daemon import FakeTransport
 
-from naga_config.config.model import (
+from razertux.config.model import (
     ButtonStep, DefaultAction, DelayStep, KeyStep, Macro, MacroAction, Profile, default_profile,
 )
-from naga_config.config.store import ConfigStore
-from naga_config.gui.action_dialog import ActionDialog
-from naga_config.gui.dbus_client import DaemonClient
-from naga_config.gui.macro_recorder import MacroRecorder, apply_fixed_delay
-from naga_config.gui.macro_tab import MacroTab, profiles_using
-from naga_config.gui.main_window import MainWindow
-from naga_config.hw.buttons import ButtonId
+from razertux.config.store import ConfigStore
+from razertux.gui.action_dialog import ActionDialog
+from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.macro_recorder import MacroRecorder, apply_fixed_delay
+from razertux.gui.macro_tab import MacroTab, profiles_using
+from razertux.gui.main_window import MainWindow
+from razertux.hw.buttons import ButtonId
 
 
 def test_records_key_with_pause(qapp):

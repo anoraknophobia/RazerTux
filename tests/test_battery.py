@@ -1,7 +1,7 @@
 """BatteryMonitor: polling only when wireless, change callback, one-shot warning."""
 import asyncio
 
-from naga_config.daemon.battery import BatteryMonitor, notify_desktop
+from razertux.daemon.battery import BatteryMonitor, notify_desktop
 
 
 class FakeDev:
@@ -110,7 +110,7 @@ async def test_notify_desktop_calls_freedesktop_notifications():
 
 
 def test_warned_state_survives_new_monitor():
-    from naga_config.daemon.battery import WarnState
+    from razertux.daemon.battery import WarnState
     state = WarnState()
     notes = []
     for _ in range(2):  # dongle reconnect: new monitor, same state

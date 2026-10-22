@@ -1,9 +1,9 @@
 import pytest
 from PySide6.QtGui import QPalette
 
-from naga_config.config.model import Settings
-from naga_config.config.store import ConfigStore
-from naga_config.gui import theme
+from razertux.config.model import Settings
+from razertux.config.store import ConfigStore
+from razertux.gui import theme
 
 
 @pytest.fixture

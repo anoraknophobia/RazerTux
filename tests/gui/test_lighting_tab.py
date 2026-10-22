@@ -1,8 +1,8 @@
 import pytest
 from PySide6.QtGui import QColor
 
-from naga_config.config.model import LightingZone, Profile, validate
-from naga_config.gui.lighting_tab import LightingTab
+from razertux.config.model import LightingZone, Profile, validate
+from razertux.gui.lighting_tab import LightingTab
 
 
 @pytest.fixture

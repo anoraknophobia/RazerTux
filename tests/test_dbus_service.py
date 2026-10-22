@@ -8,15 +8,15 @@ from dbus_next import DBusError
 from dbus_next.service import ServiceInterface
 from dbus_next.signature import SignatureTree
 
-from naga_config.config.model import KeyAction, Profile, Settings
-from naga_config.config.store import ConfigStore
-from naga_config.daemon.dbus_service import (
+from razertux.config.model import KeyAction, Profile, Settings
+from razertux.config.store import ConfigStore
+from razertux.daemon.dbus_service import (
     BUS_NAME,
     INTERFACE,
     OBJECT_PATH,
     NagaService,
 )
-from naga_config.hw.buttons import ButtonId
+from razertux.hw.buttons import ButtonId
 
 
 class FakeBus:

@@ -1,0 +1,197 @@
+"""D-Bus interface io.github.nagaconfig.Daemon (session bus, dbus-next).
+
+No `from __future__ import annotations` here: dbus-next reads the D-Bus
+signatures from the (string) annotations.
+"""
+import logging
+import warnings
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any, Protocol
+
+from dbus_next import DBusError, Variant
+from dbus_next.service import ServiceInterface
+from dbus_next.service import method as _dbus_method
+from dbus_next.service import signal as _dbus_signal
+
+from razertux.backup import load_backup
+from razertux.config.model import Profile, Settings, validate
+from razertux.config.store import ConfigStore
+from razertux.i18n import apply_settings as apply_language, tr
+
+logger = logging.getLogger(__name__)
+
+BUS_NAME = "io.github.nagaconfig"
+OBJECT_PATH = "/io/github/nagaconfig"
+INTERFACE = "io.github.nagaconfig.Daemon"
+_ERR = "io.github.nagaconfig.Error."
+
+
+class Hardware(Protocol):
+    def hw_status(self) -> dict[str, Any]:
+        """connected (bool), connection (str), battery (int, -1 unknown), charging (bool),
+        scroll_stage (int 1-6, -1 unknown), dpi (int, -1 unknown)."""
+
+
+def openrazer_loaded() -> bool:
+    return Path("/sys/module/razermouse").exists()
+
+
+def _quiet(decorator_factory):
+    """dbus-next's @method/@signal call typing.no_type_check_decorator,
+    deprecated since Python 3.13 (removed in 3.15); silence just that."""
+    def factory(*args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*no_type_check_decorator",
+                                    category=DeprecationWarning)
+            return decorator_factory(*args, **kwargs)
+    return factory
+
+
+method = _quiet(_dbus_method)
+signal = _quiet(_dbus_signal)
+
+
+class NagaService(ServiceInterface):
+    """Profile state + D-Bus methods. Plain async methods (activate, reload, ...)
+    hold the logic; the D-Bus methods are thin wrappers."""
+
+    def __init__(self, store: ConfigStore, mapper: Any, hw: Hardware, *,
+                 apply_device_settings: Callable[[Profile], None] = lambda p: None,
+                 apply_settings: Callable[[Settings], None] = lambda s: None,
+                 restore: Callable[[dict], list[str] | None] | None = None,
+                 openrazer_loaded: Callable[[], bool] = openrazer_loaded,
+                 backup_path: Path | None = None) -> None:
+        super().__init__(INTERFACE)
+        self._store = store
+        self._mapper = mapper
+        self._hw = hw
+        self._apply = apply_device_settings
+        self._apply_settings = apply_settings
+        self._restore = restore
+        self._openrazer = openrazer_loaded
+        self._backup_path = backup_path or (
+            Path.home() / ".config" / "naga-config" / "mouse-backup.json")
+        self._settings = store.load_settings()
+        apply_language(self._settings)  # language of config errors and notifications
+        self.active_profile_id = self._settings.active_profile
+        self.active_profile: Profile | None = None
+        self._macros: dict = {}
+        self._validation: list[str] = []
+
+    # -- logic ---------------------------------------------------------------
+
+    @property
+    def settings(self) -> Settings:
+        return self._settings
+
+    def list_profiles(self) -> list[list[str]]:
+        return [[p.id, p.name] for p in self._store.list_profiles()]
+
+    async def activate(self, profile_id: str) -> None:
+        known = {p.id for p in self._store.list_profiles()} | {"default"}
+        if profile_id not in known:
+            raise DBusError(_ERR + "UnknownProfile", tr("daemon", "Unbekanntes Profil: {profile}", profile=profile_id))
+        profile = self._store.load_profile(profile_id)
+        await self._use(profile)
+        self._settings = self._store.load_settings()  # keep what the GUI saved meanwhile
+        self._settings.active_profile = profile.id
+        self._store.save_settings(self._settings)
+        self.ProfileChanged(profile.id)
+        self.notify_status()
+
+    async def reload(self) -> None:
+        """Re-read settings, macros and the active profile from disk."""
+        self._store.errors.clear()
+        old = self.active_profile_id
+        self._settings = self._store.load_settings()
+        apply_language(self._settings)
+        self._store.errors.clear()  # settings.json errors again, in the (new) language
+        self._settings = self._store.load_settings()
+        try:
+            self._apply_settings(self._settings)
+        except Exception:
+            logger.exception("Energie-Einstellungen nicht angewendet")
+        self._macros = self._store.load_macros()
+        self._mapper.set_macros(self._macros)
+        profile = self._store.load_profile(self._settings.active_profile)
+        await self._use(profile)
+        if profile.id != old:
+            self.ProfileChanged(profile.id)
+        self.notify_status()
+
+    async def _use(self, profile: Profile) -> None:
+        await self._mapper.set_profile(profile)
+        self.active_profile = profile
+        self.active_profile_id = profile.id
+        self._validation = validate(profile, self._macros)
+        try:
+            self._apply(profile)
+        except Exception:
+            logger.exception("Geräteeinstellungen für %s nicht angewendet", profile.id)
+
+    def config_errors(self) -> list[str]:
+        return list(dict.fromkeys([*self._store.errors, *self._validation]))
+
+    def status(self) -> dict[str, Variant]:
+        hw = self._hw.hw_status()
+        return {
+            "connected": Variant("b", bool(hw["connected"])),
+            "connection": Variant("s", hw["connection"]),
+            "battery": Variant("i", int(hw["battery"])),
+            "charging": Variant("b", bool(hw["charging"])),
+            "scroll_stage": Variant("i", int(hw.get("scroll_stage", -1))),
+            "dpi": Variant("i", int(hw.get("dpi", -1))),
+            "openrazer_loaded": Variant("b", bool(self._openrazer())),
+            "config_errors": Variant("as", self.config_errors()),
+        }
+
+    def notify_status(self) -> None:
+        self.StatusChanged(self.status())
+
+    def restore_original(self) -> list[str]:
+        """Write the backup back to the mouse; returns the fields that could not be restored."""
+        try:
+            backup = load_backup(self._backup_path)
+        except (OSError, ValueError) as e:
+            raise DBusError(_ERR + "NoBackup",
+                            tr("daemon", "Keine lesbare Sicherung unter {path}: {error}",
+                               path=self._backup_path, error=e)) from e
+        if self._restore is None:
+            raise DBusError(_ERR + "NotImplemented",
+                            tr("daemon", "Wiederherstellen des Originalzustands ist noch nicht umgesetzt"))
+        return list(self._restore(backup) or [])
+
+    # -- D-Bus ---------------------------------------------------------------
+
+    @method()
+    def ListProfiles(self) -> 'a(ss)':
+        return self.list_profiles()
+
+    @method()
+    def GetActiveProfile(self) -> 's':
+        return self.active_profile_id
+
+    @method()
+    async def ActivateProfile(self, profile_id: 's'):
+        await self.activate(profile_id)
+
+    @method()
+    async def Reload(self):
+        await self.reload()
+
+    @method()
+    def GetStatus(self) -> 'a{sv}':
+        return self.status()
+
+    @method()
+    def RestoreOriginal(self) -> 'as':
+        return self.restore_original()
+
+    @signal()
+    def ProfileChanged(self, profile_id) -> 's':
+        return profile_id
+
+    @signal()
+    def StatusChanged(self, status) -> 'a{sv}':
+        return status

@@ -2,7 +2,7 @@ from evdev import ecodes as E
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QKeyEvent
 
-from naga_config.gui.keynames import combo_label, key_label, keycode_from_qt
+from razertux.gui.keynames import combo_label, key_label, keycode_from_qt
 
 
 def fake_key_event(native_scan_code):

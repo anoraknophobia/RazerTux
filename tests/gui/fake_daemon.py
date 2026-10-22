@@ -1,4 +1,4 @@
-from naga_config.gui.dbus_client import DaemonUnavailable
+from razertux.gui.dbus_client import DaemonUnavailable
 
 
 class FakeTransport:

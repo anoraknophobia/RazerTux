@@ -4,14 +4,14 @@ import pytest
 from fake_daemon import FakeTransport
 from PySide6.QtCore import QCoreApplication
 
-from naga_config.config.model import Profile, Settings, default_profile
-from naga_config.config.store import ConfigStore
-from naga_config.gui import language
-from naga_config.gui.dbus_client import DaemonClient
-from naga_config.gui.main_window import MainWindow
-from naga_config.gui.tray import TrayIcon
-from naga_config.gui.widgets import Card
-from naga_config.i18n.qt_translator import JsonTranslator
+from razertux.config.model import Profile, Settings, default_profile
+from razertux.config.store import ConfigStore
+from razertux.gui import language
+from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.main_window import MainWindow
+from razertux.gui.tray import TrayIcon
+from razertux.gui.widgets import Card
+from razertux.i18n.qt_translator import JsonTranslator
 
 NAMES = ["Systemsprache", "Deutsch", "English", "Español", "Français"]
 
@@ -122,11 +122,11 @@ def test_restart_arguments_keep_options_and_window_state():
         "--config-dir", "/x", "--tray"]
     assert language.restart_args(args, window_visible=False) == args
     exe, argv = language.restart_command(["--tray"])
-    assert exe == sys.executable and argv == ["-m", "naga_config.gui.app", "--tray"]
+    assert exe == sys.executable and argv == ["-m", "razertux.gui.app", "--tray"]
 
 
 def test_install_language_sets_both_layers(qapp, store):
-    from naga_config import i18n
+    from razertux import i18n
     s = store.load_settings()
     s.language = "fr"
     store.save_settings(s)

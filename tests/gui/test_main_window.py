@@ -4,11 +4,11 @@ import pytest
 from evdev import ecodes as E
 from fake_daemon import FakeTransport
 
-from naga_config.config.model import default_profile, DisabledAction, KeyAction, Macro, Profile, Settings
-from naga_config.config.store import ConfigStore
-from naga_config.gui.dbus_client import DaemonClient
-from naga_config.gui.main_window import MainWindow
-from naga_config.hw.buttons import ButtonId
+from razertux.config.model import default_profile, DisabledAction, KeyAction, Macro, Profile, Settings
+from razertux.config.store import ConfigStore
+from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.main_window import MainWindow
+from razertux.hw.buttons import ButtonId
 
 
 @pytest.fixture
@@ -191,7 +191,7 @@ def test_performance_edit_marks_dirty_saves_and_reverts(env):
 
 
 def test_lighting_tab_follows_profile_switch(env):
-    from naga_config.config.model import LightingZone
+    from razertux.config.model import LightingZone
     w, store, _ = env
     store.save_profile(Profile(id="lit", name="Licht",
                                lighting={"logo": LightingZone("wave", (0, 0, 0), 255)}))
@@ -249,7 +249,7 @@ def test_theme_menu_action(env):
 
 def test_main_window_stays_small():
     from pathlib import Path
-    import naga_config.gui.main_window as mw
+    import razertux.gui.main_window as mw
     assert len(Path(mw.__file__).read_text().splitlines()) <= 400
 
 

@@ -1,8 +1,8 @@
 import pytest
 from fake_daemon import FakeTransport
 
-from naga_config.gui.dbus_client import DaemonClient
-from naga_config.gui.tray import TrayIcon
+from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.tray import TrayIcon
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def test_restore_asks_first_and_reports_failed_fields(tray):
 
 def _all_restore_fields():
     """Every field name restore_backup() can report as failed."""
-    from naga_config.backup import restore_backup
+    from razertux.backup import restore_backup
 
     class Broken:
         def __getattr__(self, name):
@@ -73,7 +73,7 @@ def _all_restore_fields():
 
 
 def test_restore_field_names_match_restore_backup_and_are_german(tray):
-    from naga_config.gui.tray import _FIELD_NAMES
+    from razertux.gui.tray import _FIELD_NAMES
     fields = _all_restore_fields()
     assert set(fields) == set(_FIELD_NAMES)
     tr, t = tray
@@ -99,7 +99,7 @@ def test_restore_confirmation_names_what_is_restored(tray):
 
 
 def test_battery_text_variants():
-    from naga_config.gui.labels import battery_text
+    from razertux.gui.labels import battery_text
     assert battery_text({"connected": True, "battery": 80}) == "Akku: 80 %"
     assert battery_text({"connected": True, "battery": 80, "charging": True,
                          "connection": "wireless"}) == "Akku: 80 % ⚡ lädt"
