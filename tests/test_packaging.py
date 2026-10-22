@@ -70,8 +70,7 @@ def test_pkgbuild_names_and_relations():
         assert line in lines, line
     assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next)" in p
     assert "license=('GPL-2.0-or-later')" in p and "arch=('any')" in p
-    assert not any(l.startswith("url=") for l in lines)  # no guessed repository URL
-    assert "github.com" not in p
+    assert [l for l in lines if l.startswith("url=")] == ["url='https://github.com/anoraknophobia/razertux'"]
     rest = "\n".join(l for l in lines if not l.startswith(("replaces=", "conflicts=")))
     for old in ("naga-config", "naga_config", "nagaconfig"):
         assert old not in rest
@@ -165,6 +164,7 @@ def test_readme_names_disclaimer_and_switch_over():
     assert "systemctl --user enable --now razertuxd.service" in switch
     assert "~/.config/razertux" in switch
     assert "OpenRazer" in readme and "GPL" in readme
+    assert "https://github.com/anoraknophobia/razertux" in head
     # the old name only appears where the switch-over is explained
     rest = readme.replace(switch, "")
     assert "naga-configd" not in rest and "~/.config/naga-config" not in rest

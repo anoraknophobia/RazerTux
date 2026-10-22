@@ -3,6 +3,8 @@
 > **Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.**
 > **Not an official Razer product; not affiliated with Razer Inc.**
 > „Razer“ und „Naga“ sind Marken von Razer Inc.; RazerTux nutzt keine Razer-Logos.
+>
+> Projekt / Project: <https://github.com/anoraknophobia/razertux>
 
 > **English:** RazerTux (formerly *naga-config*) is an unofficial Linux replacement for
 > Razer Synapse, currently for the Razer Naga V2 Pro: a background service (`razertuxd`),

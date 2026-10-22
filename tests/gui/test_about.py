@@ -67,14 +67,26 @@ def test_about_dialog_german(qapp):
     assert d.windowTitle() == "Über RazerTux"
     for part in ("RazerTux", f"Version {__version__}",
                  "Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.",
-                 "GPL-2.0-or-later", "Protokollwissen aus OpenRazer (GPL-2.0)"):
+                 "GPL-2.0-or-later", "Protokollwissen aus OpenRazer (GPL-2.0)",
+                 "https://github.com/anoraknophobia/razertux"):
         assert part in text, part
     assert not d.windowIcon().isNull()
     assert d.close_button.text() == "Schließen"
 
 
-def test_about_hides_the_link_without_a_project_url(qapp):
-    assert PROJECT_URL == ""  # no public repository yet: no guessed URL
+def test_project_url():
+    assert PROJECT_URL == "https://github.com/anoraknophobia/razertux"
+
+
+def test_about_shows_the_project_link(qapp):
+    d = AboutDialog()
+    assert d.url_label is not None and d.url_label.openExternalLinks()
+    assert f'href="{PROJECT_URL}"' in d.url_label.text()
+
+
+def test_about_hides_the_link_without_a_project_url(qapp, monkeypatch):
+    from razertux.gui import about
+    monkeypatch.setattr(about, "PROJECT_URL", "")
     d = AboutDialog()
     assert d.url_label is None
     assert "http" not in _text(d) and "<a " not in _text(d)
