@@ -380,12 +380,15 @@ def naga_transport():
     return t
 
 
-def make_daemon(tmp_path, transport=None, find_control=lambda: "/dev/hidraw2"):
+def make_daemon(tmp_path, transport=None, find_control=lambda: "/dev/hidraw2",
+                applied=None, openrazer=False):
     t = transport or naga_transport()
+    applied = applied if applied is not None else []
     d = Daemon(ConfigStore(tmp_path), RecOut(),
                transport_factory=lambda path: t,
                find_control=find_control, find_vendor=lambda: None,
-               openrazer_loaded=lambda: False, retry_delay=0)
+               openrazer_loaded=lambda: openrazer, retry_delay=0,
+               apply_device_settings=applied.append)
     return d, t
 
 
@@ -471,3 +474,93 @@ async def test_daemon_start_loads_active_profile(tmp_path):
 def test_parser_debug_flag():
     assert build_parser().parse_args(["--debug"]).debug is True
     assert build_parser().parse_args([]).debug is False
+
+
+async def test_daemon_hotplug_readd(tmp_path):
+    applied = []
+    d, t = make_daemon(tmp_path, applied=applied)
+    await d.start()
+    assert applied == []  # no mouse yet
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    d.on_removed("/dev/input/event18")
+    await d.settle()
+    assert d.hw_status()["connected"] is False
+    second = FakeDev("/dev/input/event22")
+    d.on_added("mouse", second)
+    await d.settle()
+    assert second.grabbed
+    assert modes(t) == [DRIVER_MODE, DRIVER_MODE]
+    assert d.hw_status()["connected"] is True
+    assert [p.id for p in applied] == ["default", "default"]
+    await d.shutdown()
+
+
+async def test_daemon_apply_hook_failure_is_logged(tmp_path, caplog):
+    def boom(profile):
+        raise RuntimeError("apply kaputt")
+    d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: naga_transport(),
+               find_control=lambda: "/dev/hidraw2", find_vendor=lambda: None,
+               openrazer_loaded=lambda: False, retry_delay=0, apply_device_settings=boom)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    assert "apply kaputt" in caplog.text
+    assert d.hw_status()["connected"] is True
+    await d.shutdown()
+
+
+async def test_daemon_activate_applies_when_connected(tmp_path):
+    from naga_config.config.model import Profile
+    applied = []
+    d, _ = make_daemon(tmp_path, applied=applied)
+    d.service._store.save_profile(Profile(id="game", name="Spiel"))
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    await d.service.activate("game")
+    assert [p.id for p in applied] == ["default", "game"]
+    await d.shutdown()
+
+
+async def test_daemon_warns_when_openrazer_loaded(tmp_path, caplog):
+    d, _ = make_daemon(tmp_path, openrazer=True)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    warnings = [r for r in caplog.records
+                if r.levelname == "WARNING" and "OpenRazer" in r.getMessage()]
+    assert len(warnings) == 2  # startup + connect
+    await d.shutdown()
+
+
+async def test_router_replaces_stale_device_on_same_path():
+    mapper, out = FakeMapper(), RecordingOutput()
+    r = InputRouter(mapper, out)
+    old = FakeDev("/dev/input/event19")
+    r.add("if02", old)
+    new = FakeDev("/dev/input/event19", [ev(E.EV_KEY, E.KEY_1, 1)])
+    r.add("if02", new)
+    assert old.closed and old.ungrabbed
+    assert new.grabbed and not new.closed
+    await settle(new)
+    assert mapper.released == 1
+    assert mapper.calls == [(ButtonId.SIDE_1, 1)]
+    assert r.paths == {"/dev/input/event19"}
+    await r.close()
+
+
+async def test_router_close_releases_before_ungrab():
+    order = []
+
+    class OrderMapper(FakeMapper):
+        async def release_all(self):
+            order.append("release")
+
+    r = InputRouter(OrderMapper(), RecordingOutput())
+    dev = FakeDev("/dev/input/event19")
+    dev.ungrab = lambda: order.append("ungrab")
+    dev.close = lambda: order.append("close")
+    r.add("if02", dev)
+    await r.close()
+    assert order == ["release", "ungrab", "close"]

@@ -72,6 +72,7 @@ class NagaService(ServiceInterface):
             Path.home() / ".config" / "naga-config" / "mouse-backup.json")
         self._settings = store.load_settings()
         self.active_profile_id = self._settings.active_profile
+        self.active_profile: Profile | None = None
         self._macros: dict = {}
         self._validation: list[str] = []
 
@@ -106,6 +107,7 @@ class NagaService(ServiceInterface):
 
     async def _use(self, profile: Profile) -> None:
         await self._mapper.set_profile(profile)
+        self.active_profile = profile
         self.active_profile_id = profile.id
         self._validation = validate(profile, self._macros)
         try:

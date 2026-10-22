@@ -61,8 +61,11 @@ class Daemon:
                  find_vendor: Callable[[], str | None] = find_vendor_hidraw,
                  hidraw_reader: Callable[..., Any] = HidrawReader,
                  openrazer_loaded: Callable[[], bool] = openrazer_loaded,
+                 apply_device_settings: Callable[[Profile], None] = apply_device_settings,
                  retry_delay: float = 0.2, backup_path: Path | None = None) -> None:
         self.out = out
+        self._apply = apply_device_settings
+        self._openrazer = openrazer_loaded
         self._transport_factory = transport_factory
         self._find_control = find_control
         self._find_vendor = find_vendor
@@ -71,7 +74,7 @@ class Daemon:
         self.mapper = Mapper(default_profile(), {}, out, on_dpi_stage=self._on_dpi_stage)
         self.router = InputRouter(self.mapper, out)
         self.service = NagaService(store, self.mapper, self,
-                                   apply_device_settings=apply_device_settings,
+                                   apply_device_settings=self._apply_if_connected,
                                    openrazer_loaded=openrazer_loaded,
                                    backup_path=backup_path)
         self._tasks: set[asyncio.Task] = set()
@@ -94,6 +97,7 @@ class Daemon:
     # -- lifecycle -------------------------------------------------------------
 
     async def start(self) -> None:
+        self._warn_openrazer()
         await self.service.reload()
 
     def on_added(self, source: str, dev: Any) -> None:
@@ -128,6 +132,24 @@ class Daemon:
         task = asyncio.get_running_loop().create_task(guarded())
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
+
+    def _warn_openrazer(self) -> None:
+        if self._openrazer():
+            logger.warning("OpenRazer-Treiber (razermouse) ist geladen und kann mit "
+                           "naga-config kollidieren – bitte entladen oder deaktivieren")
+
+    def _apply_if_connected(self, profile: Profile) -> None:
+        if self._naga is not None:
+            self._apply(profile)  # NagaService._use logs exceptions
+
+    def _apply_active(self) -> None:
+        profile = self.service.active_profile
+        if profile is None:
+            return
+        try:
+            self._apply(profile)
+        except Exception:
+            logger.exception("Geräteeinstellungen für %s nicht angewendet", profile.id)
 
     def _on_dpi_stage(self, direction: str) -> None:
         # TODO(Task 7): switch the mouse's DPI stage up/down.
@@ -172,6 +194,8 @@ class Daemon:
                     "battery": _safe(naga.battery, -1),
                     "charging": bool(_safe(naga.charging, False))}
         logger.info("Maus verbunden: %s", self._hw)
+        self._warn_openrazer()
+        self._apply_active()
         self.service.notify_status()
 
     async def _disconnect(self, reset_mode: bool) -> None:

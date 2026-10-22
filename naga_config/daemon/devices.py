@@ -139,22 +139,33 @@ class InputRouter:
         self._out = out
         self._devs: dict[str, tuple[Any, asyncio.Task]] = {}
         self._top_down: list[ButtonId] = []
+        self._bg: set[asyncio.Task] = set()
 
     @property
     def paths(self) -> set[str]:
         return set(self._devs)
 
     def add(self, source: str, dev: Any) -> None:
-        if dev.path in self._devs:
-            dev.close()
-            return
+        loop = asyncio.get_running_loop()
+        stale = self._devs.pop(dev.path, None)
+        if stale:
+            # Node path reused before we saw the removal: retire the old device.
+            old, task = stale
+            task.cancel()
+            with contextlib.suppress(OSError):
+                old.ungrab()
+            old.close()
+            # Created before the new reader task, so the release runs first.
+            bg = loop.create_task(self._release())
+            self._bg.add(bg)
+            bg.add_done_callback(self._bg.discard)
         try:
             dev.grab()
         except OSError as e:
             logger.error("Kann %s nicht exklusiv öffnen (grab): %s", dev.path, e)
             dev.close()
             return
-        task = asyncio.get_running_loop().create_task(self._read(source, dev))
+        task = loop.create_task(self._read(source, dev))
         self._devs[dev.path] = (dev, task)
 
     async def remove(self, path: str) -> None:
@@ -167,13 +178,16 @@ class InputRouter:
         await self._release()
 
     async def close(self) -> None:
-        for dev, task in self._devs.values():
+        for _dev, task in self._devs.values():
             await _cancel(task)
+        if self._bg:
+            await asyncio.gather(*list(self._bg), return_exceptions=True)
+        await self._release()  # key-ups still reach uinput before we let go
+        for dev, _task in self._devs.values():
             with contextlib.suppress(OSError):
                 dev.ungrab()
             dev.close()
         self._devs.clear()
-        await self._release()
 
     async def vendor_report(self, report: bytes) -> None:
         res = identify_vendor(report)
