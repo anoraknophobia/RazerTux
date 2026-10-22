@@ -70,6 +70,8 @@ def test_pkgbuild_names_and_relations():
         assert line in lines, line
     assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next)" in p
     assert "license=('GPL-2.0-or-later')" in p and "arch=('any')" in p
+    assert not any(l.startswith("url=") for l in lines)  # no guessed repository URL
+    assert "github.com" not in p
     rest = "\n".join(l for l in lines if not l.startswith(("replaces=", "conflicts=")))
     for old in ("naga-config", "naga_config", "nagaconfig"):
         assert old not in rest
@@ -96,9 +98,12 @@ def test_install_script_only_prints_the_switch_commands():
     code = "\n".join(line for line in s.splitlines()
                      if "echo" not in line and not line.lstrip().startswith("#"))
     assert "systemctl" not in code
-    out = subprocess.run(["bash", "-c", f"source {PKG / 'razertux.install'}; post_install; post_upgrade"],
-                         capture_output=True, text=True, check=True).stdout
-    assert out.count(SWITCH_CMD) == 2
+    def run(call):
+        return subprocess.run(["bash", "-c", f"source {PKG / 'razertux.install'}; {call}"],
+                              capture_output=True, text=True, check=True).stdout
+    assert run("post_install 0.2.0-1").count(SWITCH_CMD) == 1
+    assert run("post_upgrade 0.2.0-1 0.1.0-1").count(SWITCH_CMD) == 1  # from the naga-config era
+    assert run("post_upgrade 0.2.1-1 0.2.0-1") == ""                    # later upgrades stay quiet
 
 
 def test_pkgbuild_is_valid_bash():

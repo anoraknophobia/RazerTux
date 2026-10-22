@@ -13,5 +13,8 @@ post_install() {
 }
 
 post_upgrade() {
-  _razertux_switch_hint
+  # $1 = new version, $2 = old version: only the step from the naga-config era needs it
+  if [ "$(vercmp "$2" 0.2.0)" -lt 0 ]; then
+    _razertux_switch_hint
+  fi
 }

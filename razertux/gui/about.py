@@ -29,16 +29,19 @@ class AboutDialog(QDialog):
         disclaimer.setObjectName("aboutDisclaimer")
         licence = QLabel(self.tr("Lizenz: %1").replace("%1", LICENSE))
         credit = QLabel(self.tr("Protokollwissen aus OpenRazer (GPL-2.0)"))
-        url = QLabel(f'<a href="{PROJECT_URL}">{PROJECT_URL}</a>')
-        url.setOpenExternalLinks(True)
-        url.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+        self.url_label: QLabel | None = None
+        if PROJECT_URL:
+            self.url_label = QLabel(f'<a href="{PROJECT_URL}">{PROJECT_URL}</a>')
+            self.url_label.setOpenExternalLinks(True)
+            self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         for label in (description, disclaimer):
             label.setWordWrap(True)
 
         text = QVBoxLayout()
         text.setSpacing(6)
-        for w in (name, version, description, disclaimer, licence, credit, url):
-            text.addWidget(w)
+        for w in (name, version, description, disclaimer, licence, credit, self.url_label):
+            if w is not None:
+                text.addWidget(w)
         text.addStretch(1)
         row = QHBoxLayout()
         row.setSpacing(16)
