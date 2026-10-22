@@ -7,6 +7,7 @@ class FakeTransport:
         self.calls = []
         self.on_signal = None
         self.on_owner = None
+        self.restore_failed = ["dpi_stages"]
 
     def call(self, member, signature="", args=()):
         self.calls.append((member, tuple(args)))
@@ -16,7 +17,7 @@ class FakeTransport:
             "ListProfiles": [[("default", "Standard"), ("p2", "Zwei")]],
             "GetActiveProfile": ["p2"],
             "GetStatus": [{"connected": True, "battery": 80}],
-            "RestoreOriginal": [["dpi"]],
+            "RestoreOriginal": [list(self.restore_failed)],
             "Reload": [], "ActivateProfile": [],
         }[member]
 

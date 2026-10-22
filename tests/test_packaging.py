@@ -61,3 +61,10 @@ def test_entry_points_match_packaging():
     for f in ("naga-config.desktop", "naga-config-tray.desktop"):
         m = re.search(r"^Exec=(\S+)", _read(f), re.M)
         assert m.group(1) in scripts
+
+
+def test_pyproject_license_is_spdx_expression():
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert data["project"]["license"] == "GPL-2.0-or-later"  # PEP 639 string, no table
+    # SPDX license strings need setuptools >= 77 (older versions warn or fail)
+    assert "setuptools>=77" in data["build-system"]["requires"]

@@ -10,10 +10,16 @@ from naga_config.gui.dbus_client import DaemonClient, DaemonError
 from naga_config.gui.labels import battery_text
 from naga_config.gui.mouse_view import themed_svg
 
+# German names for the field names restore_backup() reports as failed
 _FIELD_NAMES = {
-    "dpi": QT_TRANSLATE_NOOP("TrayIcon", "DPI-Stufen"),
-    "poll_rate": QT_TRANSLATE_NOOP("TrayIcon", "Abtastrate"),
-    "lighting": QT_TRANSLATE_NOOP("TrayIcon", "Beleuchtung"),
+    "poll_rate": QT_TRANSLATE_NOOP("TrayIcon", "Abfragerate"),
+    "dpi_stages": QT_TRANSLATE_NOOP("TrayIcon", "DPI-Stufen"),
+    "dpi": QT_TRANSLATE_NOOP("TrayIcon", "DPI"),
+    "brightness.logo": QT_TRANSLATE_NOOP("TrayIcon", "Helligkeit Logo"),
+    "brightness.scroll": QT_TRANSLATE_NOOP("TrayIcon", "Helligkeit Mausrad"),
+    "brightness.thumb": QT_TRANSLATE_NOOP("TrayIcon", "Helligkeit Daumenfeld"),
+    "idle_time": QT_TRANSLATE_NOOP("TrayIcon", "Leerlaufzeit"),
+    "low_battery_threshold": QT_TRANSLATE_NOOP("TrayIcon", "Akku-Energiesparschwelle"),
 }
 
 
@@ -105,8 +111,11 @@ class TrayIcon(QSystemTrayIcon):
 
     def restore_original(self) -> None:
         if not self._confirm(self.tr("Originalzustand wiederherstellen"),
-                             self.tr("Die gesicherten Originaleinstellungen werden auf die Maus zurückgeschrieben "
-                                     "(DPI, Abtastrate, Beleuchtung). Fortfahren?")):
+                             self.tr("Die gesicherten Originalwerte werden auf die Maus zurückgeschrieben: "
+                                     "DPI, DPI-Stufen, Abfragerate, Helligkeit und Energie-Einstellungen "
+                                     "(Leerlaufzeit, Energiesparschwelle). Effekte und Farben gehören nicht "
+                                     "dazu – die kommen durch Aus- und wieder Einstecken der Maus zurück. "
+                                     "Fortfahren?")):
             return
         try:
             failed = self.client.restore_original()

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,8 @@ name = "naga-config"
 version = "0.1.0"
 description = "Linux replacement for Razer Synapse for the Razer Naga V2 Pro"
 requires-python = ">=3.11"
-license = { text = "GPL-2.0-or-later" }
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE"]
 dependencies = ["evdev", "pyudev", "dbus-next", "PySide6"]
 
 [project.optional-dependencies]

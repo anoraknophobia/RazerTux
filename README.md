@@ -36,14 +36,15 @@ greifen auf dasselbe Gerät zu und stören sich gegenseitig.
 ## Erste Schritte
 
 1. Maus per Funk-Dongle oder USB verbinden und `naga-config-gui` starten (oder das
-   Tray-Symbol anklicken).
-2. Vor der ersten Änderung den Ausgangszustand sichern: `naga-config backup` (nur einmal;
-   siehe unten).
-3. Profil anlegen, Tasten, DPI und Beleuchtung einstellen. Profile lassen sich im Tray
+   Tray-Symbol anklicken). Beim ersten Verbinden sichert der Dienst den Ausgangszustand
+   der Maus automatisch nach `~/.config/naga-config/mouse-backup.json` (eine vorhandene
+   Sicherung wird nie überschrieben).
+2. Profil anlegen, Tasten, DPI und Beleuchtung einstellen. Profile lassen sich im Tray
    wechseln.
 
-Kommandozeile: `naga-config status` zeigt den Maus-Zustand, `naga-config backup` sichert
-ihn, `naga-config restore` stellt ihn wieder her.
+Kommandozeile: `naga-config status` zeigt den Maus-Zustand, `naga-config restore` stellt
+den gesicherten Zustand wieder her. `naga-config backup` legt die Sicherung von Hand an
+(optional, nur nötig ohne laufenden Dienst; überschreibt ebenfalls nichts).
 
 ## Originalzustand wiederherstellen
 
@@ -51,9 +52,11 @@ ihn, `naga-config restore` stellt ihn wieder her.
 naga-config restore
 ```
 
-schreibt den gesicherten Zustand (DPI, Abfragerate, Beleuchtung, Leerlaufzeit,
-Akku-Schwelle) zurück. Mit `naga-config status` lässt sich das Ergebnis gegen die
-Sicherung prüfen. Die Sicherung liegt in `~/.config/naga-config/mouse-backup.json`.
+(oder „Originalzustand wiederherstellen“ im Tray) schreibt die gesicherten Werte zurück:
+DPI, DPI-Stufen, Abfragerate, Helligkeit und die Energie-Einstellungen (Leerlaufzeit,
+Akku-Energiesparschwelle). Effekte und Farben gehören nicht dazu; die setzt die Maus beim
+Aus- und wieder Einstecken selbst zurück. Mit `naga-config status` lässt sich das Ergebnis
+gegen die Sicherung prüfen. Die Sicherung liegt in `~/.config/naga-config/mouse-backup.json`.
 
 ## Deinstallation
 
@@ -71,7 +74,10 @@ von `~/.config/naga-config` löscht auch die Sicherung und die Profile.
 
 - Bluetooth: nur normale Eingabe, keine Konfiguration. Dafür Funk-Dongle oder USB nutzen.
 - Stufenwerte des Mausrads (Haptik) sind nicht änderbar, nur die aktive Stufe wird angezeigt.
-- `kill -9` auf den Dienst lässt die Maus im Treibermodus, bis sie neu angesteckt wird.
+- `kill -9` auf den Dienst überspringt das Aufräumen. systemd startet den Dienst neu; das
+  betrifft nur „Obere Tasten frei belegen“ (Treibermodus): bis zum Neustart reagieren die
+  oberen Tasten nicht, danach stellt der Dienst den Modus wieder passend zum Profil ein.
+  Ohne laufenden Dienst hilft Aus- und wieder Einstecken der Maus.
 - `dbus-next` ist ab Python 3.15 veraltet (deprecation); dann ist ein Ersatz nötig.
 - Parallel laufender OpenRazer-Dienst wird nicht unterstützt (Paketkonflikt).
 - Weitere Details zur Hardware: `docs/hardware-notes.md`.

@@ -15,7 +15,7 @@ def test_calls_when_up(qapp):
     assert c.list_profiles() == [("default", "Standard"), ("p2", "Zwei")]
     assert c.active_profile() == "p2"
     assert c.status()["battery"] == 80
-    assert c.restore_original() == ["dpi"]
+    assert c.restore_original() == ["dpi_stages"]
     c.activate_profile("p2")
     assert ("ActivateProfile", ("p2",)) in t.calls
     assert c.is_available and seen == [True]
