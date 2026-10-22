@@ -106,8 +106,13 @@ class NagaV2Pro:
         raw = self._get(0x07, 0x81, b"", 0x01)[0]
         return round(raw * 100 / 255)
 
-    def scroll_profile(self) -> int | None:
-        """Read-only; not in OpenRazer. None if the firmware rejects it."""
+    def scroll_profile(self, *, allow_unverified: bool = False) -> int | None:
+        """Read-only; not in OpenRazer. None if the firmware rejects it.
+
+        Disabled (R16): this unverified 0x02/0x98 get is suspected of changing the
+        wheel haptics on the real mouse. Needs allow_unverified=True until Task 11."""
+        if not allow_unverified:
+            raise RuntimeError("deaktiviert bis Task 11 (R16)")
         try:
             return self._get(0x02, 0x98, bytes([VARSTORE]), 0x02)[1]
         except RazerError:
@@ -212,5 +217,5 @@ class NagaV2Pro:
             "charging": safe(self.charging),
             "idle_time": safe(self.idle_time),
             "low_battery_threshold": safe(self.low_battery_threshold),
-            "scroll_profile": safe(self.scroll_profile),
+            "scroll_profile": None,  # R16: never queried until Task 11 research
         }

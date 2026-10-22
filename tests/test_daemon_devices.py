@@ -406,7 +406,9 @@ async def test_daemon_connect_sets_driver_mode_and_status(tmp_path):
     assert modes(t) == [DRIVER_MODE]
     assert d.hw_status() == {"connected": True, "connection": "wired",
                              "battery": 100, "charging": True}
-    assert d.scroll_profile_supported() is True
+    n = len(t.sent)
+    assert d.scroll_profile_supported() is False  # R16: never probes the device
+    assert len(t.sent) == n and all(c != 0x02 for c, _ in t.sent)
     await d.shutdown()
     assert modes(t) == [DRIVER_MODE, NORMAL_MODE]
     assert mouse.ungrabbed and mouse.closed and d.out.closed
@@ -757,3 +759,16 @@ async def test_daemon_restore_without_mouse_raises_dbus_error(tmp_path):
     d = Daemon(ConfigStore(tmp_path), RecOut(), openrazer_loaded=lambda: False)
     with pytest.raises(DBusError):
         d._restore_backup({})
+
+
+async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
+    d, t = await connected(tmp_path, full_profile())  # stepping over profile stages
+    assert d._stages == [(800, 800), (1600, 1600), (3200, 3200)]
+    stages = bytes([1, 1, 2]) + b"".join(
+        bytes([i, v >> 8, v & 0xFF, v >> 8, v & 0xFF, 0, 0]) for i, v in enumerate((400, 500)))
+    t.responses[(0x04, 0x86)] = stages  # what the mouse reports after the restore
+    d._restore_backup({})
+    assert d._stages == [(400, 400), (500, 500)] and d._stage_idx == 0
+    d._on_dpi_stage("up")
+    assert dpi_writes(t)[-1] == 500
+    await d.shutdown()

@@ -78,10 +78,11 @@ def test_cli_backup_dead_device_exit1_no_file(monkeypatch, tmp_path, capsys):
 
 def test_cli_backup_warns_about_none_fields(monkeypatch, tmp_path, capsys):
     t = FakeTransport.full()
-    del t.responses[(0x02, 0x98)]
+    del t.responses[(0x07, 0x83)]
     monkeypatch.setattr(cli, "_open_transport", lambda path: _Ctx(t))
     assert cli.main(["backup", "--path", str(tmp_path / "bk.json")]) == 0
-    assert "scroll_profile" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "idle_time" in err and "scroll_profile" not in err
 
 
 # -- restore ------------------------------------------------------------------

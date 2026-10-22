@@ -129,9 +129,9 @@ class Daemon:
         return dict(self._hw)
 
     def scroll_profile_supported(self) -> bool:
-        if self._naga is None:
-            return False
-        return _safe(self._naga.scroll_profile, None) is not None
+        # R16: 0x02/0x98 is suspected of altering wheel haptics; never probe the
+        # device until Task 11 has researched it.
+        return False
 
     # -- lifecycle -------------------------------------------------------------
 
@@ -232,7 +232,11 @@ class Daemon:
     def _restore_backup(self, backup: dict) -> list[str]:
         if self._naga is None:
             raise DBusError("io.github.nagaconfig.Error.NotConnected", "Maus nicht verbunden")
-        return restore_backup(self._naga, backup)
+        failed = restore_backup(self._naga, backup)
+        # DPI buttons should step through the restored onboard stages
+        profile = Profile(id="", name="")
+        self._reset_stages(profile)
+        return failed
 
     async def _removed(self, path: str) -> None:
         await self.router.remove(path)

@@ -69,15 +69,26 @@ def test_charging_idle_threshold():
     assert dev.low_battery_threshold() == 25
 
 
-def test_scroll_profile_value_and_readonly_request():
+def test_scroll_profile_disabled_by_default_sends_nothing():
     t = FakeTransport.full()
-    assert NagaV2Pro(t).scroll_profile() == 3
+    with pytest.raises(RuntimeError, match="R16"):
+        NagaV2Pro(t).scroll_profile()
+    assert t.sent == []
+
+
+def test_scroll_profile_explicit_opt_in():
+    t = FakeTransport.full()
+    assert NagaV2Pro(t).scroll_profile(allow_unverified=True) == 3
     assert t.requests[0].args[0] == 0x01 and t.requests[0].size == 0x02
+    assert NagaV2Pro(FakeTransport(default=STATUS_UNSUPPORTED)).scroll_profile(
+        allow_unverified=True) is None
 
 
-def test_scroll_profile_unsupported_is_none():
-    t = FakeTransport(default=STATUS_UNSUPPORTED)
-    assert NagaV2Pro(t).scroll_profile() is None
+def test_snapshot_never_sends_class_0x02():
+    t = FakeTransport.full()
+    snap = NagaV2Pro(t).snapshot()
+    assert snap["scroll_profile"] is None
+    assert all(c != 0x02 for c, _ in t.sent)
 
 
 def test_snapshot_survives_unsupported_field():
