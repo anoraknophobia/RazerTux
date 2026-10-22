@@ -86,6 +86,8 @@ QPushButton#pillButton:hover:!checked {{ color: #ffffff; }}
 QPushButton#pillButton:checked {{ background: {ACCENT}; border-color: {ACCENT}; color: #000000; }}
 QPushButton#bindingLabel {{ color: {TEXT}; }}
 QPushButton#bindingLabel[hot="true"] {{ color: {ACCENT}; }}
+QPushButton#bindingLabel:focus {{ color: {ACCENT}; background: #1a2a17; border: 1px solid {ACCENT_DIM};
+              border-radius: 2px; }}
 QPushButton#bindingLabel:disabled {{ color: #5a5a5a; }}
 QComboBox#languageCombo {{ color: {MUTED}; }}
 QScrollBar:vertical {{ background: {WINDOW}; width: 10px; }}

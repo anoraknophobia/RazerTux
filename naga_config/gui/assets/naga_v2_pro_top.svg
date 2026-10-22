@@ -3,34 +3,34 @@
        Platzhalter @..@ werden zur Laufzeit durch Theme-/Palettenfarben ersetzt (mouse_scene.themed_svg);
        @HOT:<id>@ ist die Deckkraft der grünen Hervorhebung einer Taste. -->
   <defs>
-    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="g_body" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="@BODY_D@"/>
       <stop offset="0.35" stop-color="@BODY_A@"/>
       <stop offset="0.7" stop-color="@BODY_B@"/>
       <stop offset="1" stop-color="@BODY_A@"/>
     </linearGradient>
-    <linearGradient id="btn" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="g_btn" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="@BODY_A@"/>
       <stop offset="1" stop-color="@BODY_B@"/>
     </linearGradient>
-    <linearGradient id="key" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="g_key" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="@KEY_A@"/>
       <stop offset="1" stop-color="@KEY_B@"/>
     </linearGradient>
-    <linearGradient id="wheel" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="g_wheel" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="@BODY_D@"/>
       <stop offset="0.5" stop-color="@BODY_C@"/>
       <stop offset="1" stop-color="@BODY_D@"/>
     </linearGradient>
-    <radialGradient id="shine" cx="128" cy="262" r="90" gradientUnits="userSpaceOnUse">
+    <radialGradient id="g_shine" cx="128" cy="262" r="90" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#ffffff" stop-opacity="0.11"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
   <!-- body and palm -->
-  <path d="M110 26 C120 14 150 10 162 22 C176 38 182 70 184 110 C186 150 182 180 186 212 C192 252 198 292 186 328 C172 364 140 376 110 376 C76 376 46 366 36 332 C26 298 26 252 30 202 C32 162 34 122 44 86 C50 52 58 26 72 18 C88 12 104 16 110 26 Z" fill="url(#body)" stroke="@EDGE@" stroke-width="1.5" stroke-linejoin="round"/>
-  <path d="M110 26 C120 14 150 10 162 22 C176 38 182 70 184 110 C186 150 182 180 186 212 C192 252 198 292 186 328 C172 364 140 376 110 376 C76 376 46 366 36 332 C26 298 26 252 30 202 C32 162 34 122 44 86 C50 52 58 26 72 18 C88 12 104 16 110 26 Z" fill="url(#shine)"/>
+  <path d="M110 26 C120 14 150 10 162 22 C176 38 182 70 184 110 C186 150 182 180 186 212 C192 252 198 292 186 328 C172 364 140 376 110 376 C76 376 46 366 36 332 C26 298 26 252 30 202 C32 162 34 122 44 86 C50 52 58 26 72 18 C88 12 104 16 110 26 Z" fill="url(#g_body)" stroke="@EDGE@" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M110 26 C120 14 150 10 162 22 C176 38 182 70 184 110 C186 150 182 180 186 212 C192 252 198 292 186 328 C172 364 140 376 110 376 C76 376 46 366 36 332 C26 298 26 252 30 202 C32 162 34 122 44 86 C50 52 58 26 72 18 C88 12 104 16 110 26 Z" fill="url(#g_shine)"/>
   <path d="M184 110 C186 150 182 180 186 212 C192 252 198 292 186 328" fill="none"
         stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.6"/>
   <!-- thumb plate edge with the side keys peeking out -->
@@ -44,11 +44,11 @@
 
   <!-- main buttons -->
   <g id="left">
-    <path d="M107 24 C98 14 84 12 72 18 C58 26 50 52 44 86 C40 112 38 138 37 162 C62 170 88 174 107 174 Z" fill="url(#btn)" stroke="@BODY_D@" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M107 24 C98 14 84 12 72 18 C58 26 50 52 44 86 C40 112 38 138 37 162 C62 170 88 174 107 174 Z" fill="url(#g_btn)" stroke="@BODY_D@" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M107 24 C98 14 84 12 72 18 C58 26 50 52 44 86 C40 112 38 138 37 162 C62 170 88 174 107 174 Z" fill="@ACC@" fill-opacity="@HOT:left@"/>
   </g>
   <g id="right">
-    <path d="M113 24 C122 14 148 10 162 22 C176 38 182 70 184 110 C185 132 185 150 184 164 C160 172 134 174 113 174 Z" fill="url(#btn)" stroke="@BODY_D@" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M113 24 C122 14 148 10 162 22 C176 38 182 70 184 110 C185 132 185 150 184 164 C160 172 134 174 113 174 Z" fill="url(#g_btn)" stroke="@BODY_D@" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M113 24 C122 14 148 10 162 22 C176 38 182 70 184 110 C185 132 185 150 184 164 C160 172 134 174 113 174 Z" fill="@ACC@" fill-opacity="@HOT:right@"/>
   </g>
   <path d="M37 162 C62 170 88 174 110 174 C134 174 160 172 184 164" fill="none" stroke="@BODY_D@" stroke-width="2"/>
@@ -57,17 +57,17 @@
   <rect x="96" y="40" width="28" height="134" rx="13" fill="@BODY_D@" stroke="@EDGE@" stroke-width="1"/>
   <g id="wheel">
     <rect x="100" y="50" width="20" height="64" rx="9" fill="none" stroke="@ACC@" stroke-opacity="0.25" stroke-width="6"/>
-    <rect x="100" y="50" width="20" height="64" rx="9" fill="url(#wheel)" stroke="@ACC@" stroke-width="2"/>
+    <rect x="100" y="50" width="20" height="64" rx="9" fill="url(#g_wheel)" stroke="@ACC@" stroke-width="2"/>
     <path d="M103 58 H117 M103 64 H117 M103 70 H117 M103 76 H117 M103 82 H117 M103 88 H117 M103 94 H117 M103 100 H117 M103 106 H117" stroke="@BODY_D@" stroke-width="1.6"/>
     <rect x="100" y="50" width="20" height="64" rx="9" fill="@ACC@" fill-opacity="@HOT:wheel@"/>
   </g>
   <g id="top_1">
-    <rect x="101" y="122" width="18" height="18" rx="5" fill="url(#key)" stroke="#5a5a5a" stroke-width="1.2"/>
+    <rect x="101" y="122" width="18" height="18" rx="5" fill="url(#g_key)" stroke="#5a5a5a" stroke-width="1.2"/>
     <rect x="104" y="124" width="12" height="3" rx="1.5" fill="#ffffff" fill-opacity="0.08"/>
     <rect x="101" y="122" width="18" height="18" rx="5" fill="@ACC@" fill-opacity="@HOT:top_1@"/>
   </g>
   <g id="top_2">
-    <rect x="101" y="146" width="18" height="18" rx="5" fill="url(#key)" stroke="#5a5a5a" stroke-width="1.2"/>
+    <rect x="101" y="146" width="18" height="18" rx="5" fill="url(#g_key)" stroke="#5a5a5a" stroke-width="1.2"/>
     <rect x="104" y="148" width="12" height="3" rx="1.5" fill="#ffffff" fill-opacity="0.08"/>
     <rect x="101" y="146" width="18" height="18" rx="5" fill="@ACC@" fill-opacity="@HOT:top_2@"/>
   </g>

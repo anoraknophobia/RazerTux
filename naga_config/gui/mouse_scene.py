@@ -63,19 +63,31 @@ class Drawing:
     """One SVG asset placed into a rectangle of a widget."""
 
     def __init__(self, asset: str, ids: tuple[str, ...], keys_layer: bool = False):
-        self.asset, self.ids = asset, ids
-        self.renderer = QSvgRenderer()
-        self.keys = QSvgRenderer() if keys_layer else None
+        self.asset, self.ids, self._keys_layer = asset, ids, keys_layer
         self.rect = QRectF()
+        # one (renderer, keys-only renderer) per hover state; dropped on a palette change
+        self._cache: dict[str | None, tuple[QSvgRenderer, QSvgRenderer | None]] = {}
+        self._palette_key: int | None = None
+        self.renderer, self.keys = self._build(QPalette(), None)  # replaced by load()
         self._loaded: tuple | None = None
+
+    def _build(self, palette: QPalette, hot: str | None) -> tuple[QSvgRenderer, QSvgRenderer | None]:
+        full = QSvgRenderer(QByteArray(themed_svg(self.asset, palette, hot)))
+        keys = (QSvgRenderer(QByteArray(themed_svg(self.asset, palette, hot, keys_only=True)))
+                if self._keys_layer else None)
+        return full, keys
 
     def load(self, palette: QPalette, hot: str | None) -> None:
         key = (palette.cacheKey(), hot if hot in self.ids else None)
-        if key != self._loaded:
-            self.renderer.load(QByteArray(themed_svg(self.asset, palette, key[1])))
-            if self.keys is not None:
-                self.keys.load(QByteArray(themed_svg(self.asset, palette, key[1], keys_only=True)))
-            self._loaded = key
+        if key == self._loaded:
+            return
+        if key[0] != self._palette_key:
+            self._cache.clear()
+            self._palette_key = key[0]
+        if key[1] not in self._cache:
+            self._cache[key[1]] = self._build(palette, key[1])
+        self.renderer, self.keys = self._cache[key[1]]
+        self._loaded = key
 
     def aspect(self) -> float:
         box = self.renderer.viewBoxF()

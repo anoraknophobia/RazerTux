@@ -4,7 +4,7 @@ import re
 import pytest
 from fake_daemon import FakeTransport
 from PySide6.QtCore import QByteArray, QEvent, QPoint, QPointF, Qt
-from PySide6.QtGui import QColor, QMouseEvent, QPalette
+from PySide6.QtGui import QColor, QFocusEvent, QMouseEvent, QPalette
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
@@ -76,7 +76,8 @@ def test_leader_lines_end_on_their_key_after_resize(view, qapp, size):
     view.resize(*size)
     qapp.processEvents()
     for b in ALL:
-        start, _elbow, end = view.leader_line(b)
+        pts = view.leader_line(b)
+        start, end = pts[0], pts[-1]
         key, label = view.key_rect(b), view.label_rect(b)
         assert not key.isEmpty()
         assert key.contains(end), b
@@ -184,6 +185,7 @@ def test_click_on_key_opens_the_action_dialog(window, monkeypatch):
                         staticmethod(lambda parent, action, macros, button, layer: seen.append(button)))
     view = window.mouse_view
     pos = view.key_rect(ButtonId.SIDE_4).center()
+    _mouse(view, QEvent.Type.MouseButtonPress, pos)
     _mouse(view, QEvent.Type.MouseButtonRelease, pos)
     view._buttons[ButtonId.SIDE_4].click()
     assert seen == [ButtonId.SIDE_4, ButtonId.SIDE_4]
@@ -248,3 +250,95 @@ def test_footer_language_combo_is_bottom_left(window):
     pos = combo.mapTo(window, QPoint(0, 0))
     assert pos.x() <= 24 and pos.y() > window.height() - 70
     assert pos.x() < window.revert_btn.mapTo(window, QPoint(0, 0)).x()
+
+
+# -- review fixes: line geometry, ids, focus, press/release ---------------------------
+def _segments(pts):
+    return [(pts[i], pts[i + 1]) for i in range(len(pts) - 1)
+            if (pts[i] - pts[i + 1]).manhattanLength() > 1e-6]
+
+
+def _cross(a, b):
+    def orient(p, q, r):
+        v = (q.x() - p.x()) * (r.y() - p.y()) - (q.y() - p.y()) * (r.x() - p.x())
+        return 0 if abs(v) < 1e-9 else (1 if v > 0 else -1)
+    (p1, p2), (p3, p4) = a, b
+    o1, o2, o3, o4 = orient(p1, p2, p3), orient(p1, p2, p4), orient(p3, p4, p1), orient(p3, p4, p2)
+    if 0 not in (o1, o2, o3, o4):
+        return o1 != o2 and o3 != o4
+    return min(_dist(p3, a), _dist(p4, a), _dist(p1, b), _dist(p2, b)) < 1e-6  # touching
+
+
+def _dist(p, seg):
+    a, b = seg
+    dx, dy = b.x() - a.x(), b.y() - a.y()
+    t = 0.0 if dx == dy == 0 else max(0.0, min(1.0, ((p.x() - a.x()) * dx + (p.y() - a.y()) * dy)
+                                                 / (dx * dx + dy * dy)))
+    return ((p.x() - a.x() - t * dx) ** 2 + (p.y() - a.y() - t * dy) ** 2) ** 0.5
+
+
+def _rect_hit(rect, seg):
+    a, b = seg
+    if rect.contains(a) or rect.contains(b):
+        return True
+    corners = [rect.topLeft(), rect.topRight(), rect.bottomRight(), rect.bottomLeft()]
+    return any(_cross(seg, (corners[i], corners[(i + 1) % 4])) for i in range(4))
+
+
+@pytest.mark.parametrize("size", [(982, 796), (1100, 800), (1600, 1000)])
+def test_leader_lines_never_cross_and_keep_clear_of_dots(window, qapp, size):
+    window.resize(*size)
+    qapp.processEvents()
+    view = window.mouse_view
+    lines = {b: view.leader_line(b) for b in ALL}
+    wheel = view.top.element_rect("wheel")
+    for b, pts in lines.items():
+        for other, opts in lines.items():
+            if other == b:
+                continue
+            for seg in _segments(opts):
+                for dot in (pts[0], pts[-1]):
+                    assert _dist(dot, seg) >= 6, (size, b, other)
+                for mine in _segments(pts):
+                    assert not _cross(mine, seg), (size, b, other)
+        if element_of(b) != "wheel":
+            assert not any(_rect_hit(wheel, seg) for seg in _segments(pts)), (size, b)
+
+
+@pytest.mark.parametrize("asset", [mouse_scene.SIDE_SVG, mouse_scene.TOP_SVG])
+def test_svg_ids_are_unique(asset):
+    ids = re.findall(r'\bid="([^"]+)"', (mouse_scene.ASSETS / asset).read_text(encoding="utf-8"))
+    assert len(ids) == len(set(ids)), sorted(i for i in ids if ids.count(i) > 1)
+
+
+def test_keyboard_focus_on_label_lights_key(view):
+    btn = view._buttons[ButtonId.SIDE_9]
+    btn.setFocus(Qt.FocusReason.TabFocusReason)
+    QApplication.sendEvent(btn, QFocusEvent(QEvent.Type.FocusIn, Qt.FocusReason.TabFocusReason))
+    assert view.hot == ButtonId.SIDE_9 and btn.property("hot") is True
+    QApplication.sendEvent(btn, QFocusEvent(QEvent.Type.FocusOut, Qt.FocusReason.TabFocusReason))
+    assert view.hot is None
+
+
+def test_release_counts_only_when_pressed_on_the_same_key(view):
+    got = []
+    view.bindingClicked.connect(got.append)
+    _mouse(view, QEvent.Type.MouseButtonPress, _centre(view, ButtonId.SIDE_1))
+    _mouse(view, QEvent.Type.MouseButtonRelease, _centre(view, ButtonId.SIDE_2))
+    assert got == []
+    _mouse(view, QEvent.Type.MouseButtonPress, QPoint(2, 2))
+    _mouse(view, QEvent.Type.MouseButtonRelease, _centre(view, ButtonId.SIDE_2))
+    assert got == []
+    _mouse(view, QEvent.Type.MouseButtonPress, _centre(view, ButtonId.SIDE_2))
+    _mouse(view, QEvent.Type.MouseButtonRelease, _centre(view, ButtonId.SIDE_2))
+    assert got == [ButtonId.SIDE_2]
+
+
+def test_themed_svgs_are_cached_per_hover_state(view, monkeypatch):
+    calls = []
+    real = mouse_scene.themed_svg
+    monkeypatch.setattr(mouse_scene, "themed_svg", lambda *a, **k: calls.append(a) or real(*a, **k))
+    for _ in range(2):
+        view.set_hot(ButtonId.SIDE_3)
+        view.set_hot(ButtonId.SIDE_4)
+    assert len(calls) <= 4  # each state built once (side: full + keys layer), then reused
