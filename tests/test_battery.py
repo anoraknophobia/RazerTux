@@ -145,3 +145,21 @@ async def test_stop_logs_unexpected_task_error(caplog):
     await asyncio.sleep(0)
     await mon.stop()  # must not raise
     assert "weg" in caplog.text
+
+
+def test_on_poll_reports_each_reading_ok_or_failed():
+    dev = FakeDev()
+    seen = []
+    mon = BatteryMonitor(dev, on_poll=seen.append)
+    mon.poll()
+    ok_battery = dev.battery
+
+    def boom():
+        raise OSError("schläft")
+    dev.battery = boom
+    mon.poll()
+    dev.battery = ok_battery
+    mon.poll()
+    assert seen == [True, False, True]
+    BatteryMonitor(dev, on_poll=seen.append, connection=lambda: "wired").poll()
+    assert len(seen) == 3  # wired: no reading, no callback

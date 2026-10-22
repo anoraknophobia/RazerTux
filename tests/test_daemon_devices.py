@@ -1295,3 +1295,47 @@ async def test_open_uinput_gives_up_after_timeout():
     with pytest.raises(OSError):
         await open_uinput(factory, sleep=sleep)
     assert sum(slept) == 60 and set(slept) == {2.0}
+
+
+# -- wireless wake-up: the mouse drops volatile settings while asleep --------------
+
+async def test_wake_up_after_failed_polls_reapplies_mode_and_profile(tmp_path):
+    from naga_config.config.model import Settings
+    store = ConfigStore(tmp_path)
+    store.save_profile(_remap_profile())
+    store.save_settings(Settings(active_profile="remap"))
+    applied = []
+    d, t = make_daemon(tmp_path, applied=applied)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
+    await d.settle()
+    assert modes(t) == [DRIVER_MODE] and len(applied) == 1
+    battery = t.responses.pop((0x07, 0x80))
+    d._battery.poll()  # asleep: no answer
+    d._battery.poll()
+    assert modes(t) == [DRIVER_MODE] and len(applied) == 1
+    t.responses[(0x07, 0x80)] = battery
+    d._battery.poll()  # awake again
+    assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
+    d._battery.poll()  # nothing new: no further writes
+    assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
+    await d.shutdown()
+
+
+async def test_device_mode_mismatch_on_poll_reapplies(tmp_path):
+    from naga_config.config.model import Settings
+    store = ConfigStore(tmp_path)
+    store.save_profile(_remap_profile())
+    store.save_settings(Settings(active_profile="remap"))
+    applied = []
+    d, t = make_daemon(tmp_path, applied=applied)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
+    await d.settle()
+    t.responses[(0x00, 0x84)] = bytes([DRIVER_MODE, 0])
+    d._battery.poll()
+    assert modes(t) == [DRIVER_MODE] and len(applied) == 1  # matches: nothing to do
+    t.responses[(0x00, 0x84)] = bytes([NORMAL_MODE, 0])  # woke up in normal mode
+    d._battery.poll()
+    assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
+    await d.shutdown()

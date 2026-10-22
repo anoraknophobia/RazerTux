@@ -166,6 +166,7 @@ class Daemon:
         self._written: set[str] = set()
         self._power_applied: dict[str, int] = {}  # skip rewriting unchanged values
         self._battery: BatteryMonitor | None = None
+        self._poll_failed = False  # last wireless poll got no answer (mouse asleep?)
         self._battery_warn = WarnState()  # survives reconnects: one warning per discharge
 
     # -- Hardware protocol for the D-Bus service ---------------------------
@@ -404,6 +405,7 @@ class Daemon:
         naga = self._naga = NagaV2Pro(self._transport)
         self._ensure_backup(naga)  # before anything persistent is written
         self._power_applied = {}
+        self._poll_failed = False
         self._mode = None
         self._sync_mode(self.service.active_profile)
         vendor_path = self._find_vendor((product,))
@@ -429,7 +431,8 @@ class Daemon:
             self._battery = BatteryMonitor(
                 naga, 60, self._on_battery, connection=lambda: self._hw["connection"],
                 threshold=lambda: self.service.settings.low_battery_notify,
-                notify=self._low_battery, state=self._battery_warn)
+                notify=self._low_battery, state=self._battery_warn,
+                on_poll=self._after_poll)
             self._battery.poll()
             self._battery.start()
         self.service.notify_status()
@@ -445,6 +448,30 @@ class Daemon:
             logger.warning("Sicherung %s nicht angelegt: %s", self._backup_path, e)
             return
         logger.info("Ausgangszustand der Maus gesichert: %s", self._backup_path)
+
+    def _after_poll(self, ok: bool) -> None:
+        """Wireless poll: after sleep the mouse answers again but has dropped the device
+        mode and the volatile (NOSTORE) settings. Detected by an answer after failed
+        polls, or by a device mode other than the one we set; then re-apply both."""
+        if not ok:
+            self._poll_failed = True
+            return
+        woke, self._poll_failed = self._poll_failed, False
+        naga = self._naga
+        if naga is None:
+            return
+        if not woke:
+            mode = _safe(naga.device_mode, None)
+            if mode is None or mode == device_mode_for(self.service.active_profile):
+                return
+        logger.info("Maus wieder erreichbar – Gerätemodus und Profil werden neu gesetzt")
+        self._mode = None
+        self._sync_mode(self.service.active_profile)
+        self._apply_active()
+        dpi = _safe(naga.dpi, None)
+        if dpi and self._hw["dpi"] != dpi[0]:
+            self._hw["dpi"] = dpi[0]
+            self.service.notify_status()
 
     def _on_battery(self, level: int, charging: bool) -> None:
         if (self._hw["battery"], self._hw["charging"]) != (level, charging):

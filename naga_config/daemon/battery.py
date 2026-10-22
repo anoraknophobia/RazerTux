@@ -25,15 +25,19 @@ class BatteryMonitor:
 
     on_change(level, charging) runs whenever a reading differs from the last one.
     notify(level) runs once when the level drops below threshold() (0 = off) while
-    not charging; it re-arms when the level is back at threshold + 5 or more."""
+    not charging; it re-arms when the level is back at threshold + 5 or more.
+    on_poll(ok) runs after every wireless reading attempt (False: no answer, e.g. the
+    mouse is asleep), before on_change/notify."""
 
     def __init__(self, dev: Any, interval_s: float = 60,
                  on_change: Callable[[int, bool], None] | None = None, *,
                  connection: Callable[[], str] = lambda: "wireless",
                  threshold: Callable[[], int] = lambda: 15,
                  notify: Callable[[int], None] | None = None,
-                 state: WarnState | None = None) -> None:
+                 state: WarnState | None = None,
+                 on_poll: Callable[[bool], None] | None = None) -> None:
         self.dev = dev
+        self._on_poll = on_poll or (lambda ok: None)
         self.interval_s = interval_s
         self._on_change = on_change or (lambda b, c: None)
         self._connection = connection
@@ -49,9 +53,11 @@ class BatteryMonitor:
             return
         try:
             level, charging = int(self.dev.battery()), bool(self.dev.charging())
-        except Exception as e:  # HW gone / garbage reply: try again next interval
+        except Exception as e:  # HW gone / asleep / garbage reply: try again next interval
             logger.debug("Akkustand nicht lesbar: %s", e)
+            self._on_poll(False)
             return
+        self._on_poll(True)
         if (level, charging) != self._last:
             self._last = (level, charging)
             self._on_change(level, charging)
