@@ -37,6 +37,7 @@ class RecordField(QPushButton):
 class MacroRecorder(QObject):
     limitReached = Signal()
     stepsChanged = Signal()
+    focusLost = Signal()
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
@@ -104,6 +105,9 @@ class MacroRecorder(QObject):
         if not self.recording:
             return False
         t = e.type()
+        if t == QEvent.Type.FocusOut:
+            self.focusLost.emit()
+            return False
         if t == QEvent.Type.ShortcutOverride:
             e.accept()
             return True
@@ -111,9 +115,10 @@ class MacroRecorder(QObject):
             if not e.isAutoRepeat():
                 self.key_event(keycode_from_qt(e), t == QEvent.Type.KeyPress)
             return True
-        if t in (QEvent.Type.MouseButtonPress, QEvent.Type.MouseButtonRelease):
+        if t in (QEvent.Type.MouseButtonPress, QEvent.Type.MouseButtonDblClick,
+                 QEvent.Type.MouseButtonRelease):
             code = _QT_BUTTONS.get(e.button())
             if code:
-                self.button_event(code, t == QEvent.Type.MouseButtonPress)
+                self.button_event(code, t != QEvent.Type.MouseButtonRelease)
             return True
         return False

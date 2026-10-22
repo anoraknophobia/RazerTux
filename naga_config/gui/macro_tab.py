@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from evdev import ecodes as E
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QInputDialog, QLabel,
     QListWidget, QListWidgetItem, QMessageBox, QPushButton, QSpinBox, QVBoxLayout, QWidget,
@@ -52,6 +52,7 @@ class MacroTab(QWidget):
         self.recorder = MacroRecorder(self)
         self.recorder.stepsChanged.connect(self._live_update)
         self.recorder.limitReached.connect(self._on_limit)
+        self.recorder.focusLost.connect(self.commit_recording)
         self._build()
         self.refresh()
 
@@ -126,6 +127,7 @@ class MacroTab(QWidget):
         self.record_field.setMinimumHeight(48)
         self.record_field.installEventFilter(self.recorder)
         self.record_btn = self._button("", self.toggle_recording)
+        self.record_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # clicking it must not steal field focus
         self.delays_check = QCheckBox(self.tr("Pausen aufnehmen"))
         self.delays_check.setChecked(True)
         self.fixed_check = QCheckBox(self.tr("Pausen fest:"))
@@ -169,9 +171,7 @@ class MacroTab(QWidget):
     def refresh(self, select: str | None = None) -> None:
         """Rebuild lists from the (possibly replaced) macro dict."""
         keep = select or self.current_id
-        if self.recorder.recording:
-            self.recorder.stop()
-            self._set_recording_ui(False)
+        self.commit_recording()
         self.macro_list.blockSignals(True)
         self.macro_list.clear()
         for mid, m in self.macros.items():
@@ -341,6 +341,17 @@ class MacroTab(QWidget):
         if m is not None:
             m.steps = self._base_steps + steps
             self._changed(len(m.steps) - 1)
+
+    def commit_recording(self) -> None:
+        """Finish a running recording and keep its steps (focus loss, save, close)."""
+        if self.recorder.recording:
+            self.stop_recording()
+
+    def changeEvent(self, e) -> None:
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.ActivationChange and self.recorder.recording \
+                and not self.window().isActiveWindow():
+            self.commit_recording()
 
     def toggle_recording(self) -> None:
         self.stop_recording() if self.recorder.recording else self.start_recording()

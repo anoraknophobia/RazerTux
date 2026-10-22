@@ -249,6 +249,7 @@ class MainWindow(QMainWindow):
 
     # -- saving ---------------------------------------------------------------
     def save(self) -> bool:
+        self.macro_tab.commit_recording()
         errors = validate(self.profile, self.macros)
         if errors:
             self._warn(self.tr("Speichern nicht möglich"),
@@ -270,16 +271,25 @@ class MainWindow(QMainWindow):
         return True
 
     def _on_macro_deleted(self, macro_id: str) -> None:
-        """Deleted macro: reset its bindings in every profile and persist everything."""
-        for p in self.store.list_profiles():  # on-disk state (the open profile too)
-            strip_macro(p, macro_id)
-            self.store.save_profile(p)
+        """Deleted macro: reset its bindings in every profile and drop it from disk.
+
+        Other unsaved macro edits stay unsaved (only this id leaves disk, memory and baseline)."""
+        try:
+            for p in self.store.list_profiles():  # on-disk state (the open profile too)
+                strip_macro(p, macro_id)
+                self.store.save_profile(p)
+            on_disk = self.store.load_macros()
+            on_disk.pop(macro_id, None)
+            self.store.save_macros(on_disk)
+        except OSError as e:
+            self._warn(self.tr("Speichern fehlgeschlagen"),
+                       self.tr("Das Makro konnte nicht gelöscht werden:") + f"\n{e}")
+            return
         strip_macro(self.profile, macro_id)  # unsaved edits stay, only the binding goes
         base = Profile.from_dict(self._baseline)
         strip_macro(base, macro_id)
         self._baseline = base.to_dict()
-        self.store.save_macros(self.macros)
-        self._macros_baseline = self._macro_dicts()
+        self._macros_baseline.pop(macro_id, None)
         self.client.reload()
         self._refresh()
 
@@ -400,6 +410,7 @@ class MainWindow(QMainWindow):
     # -- closing --------------------------------------------------------------
     def request_close(self) -> bool:
         """Ask about unsaved changes; True if closing/quitting may go on."""
+        self.macro_tab.commit_recording()
         if not self._resolve_unsaved():
             return False
         if self.is_dirty:  # discarded

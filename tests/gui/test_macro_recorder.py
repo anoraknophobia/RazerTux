@@ -192,3 +192,85 @@ def test_field_records_mouse_clicks_via_event_filter(env):
     assert tab.current.steps[-2:] == [ButtonStep(E.BTN_RIGHT, True), ButtonStep(E.BTN_RIGHT, False)]
     QTest.mouseClick(tab.record_field, Qt.MouseButton.LeftButton)  # not recording: ignored
     assert len(tab.current.steps) == 4
+
+
+def test_double_click_records_two_pairs(env):
+    from PySide6.QtCore import Qt
+    w, *_ = env
+    tab = w.macro_tab
+    tab.macro_list.setCurrentRow(0)
+    tab.delays_check.setChecked(False)
+    tab.start_recording()
+    from PySide6.QtCore import QEvent, QPointF
+    from PySide6.QtGui import QMouseEvent, QPointingDevice
+    from PySide6.QtWidgets import QApplication
+    L, none = Qt.MouseButton.LeftButton, Qt.MouseButton.NoButton
+    pt = QPointF(5, 5)
+    for t, btn, buttons in ((QEvent.Type.MouseButtonPress, L, L), (QEvent.Type.MouseButtonRelease, L, none),
+                            (QEvent.Type.MouseButtonDblClick, L, L), (QEvent.Type.MouseButtonRelease, L, none)):
+        QApplication.sendEvent(tab.record_field, QMouseEvent(
+            t, pt, pt, btn, buttons, Qt.KeyboardModifier.NoModifier, QPointingDevice.primaryPointingDevice()))
+    tab.stop_recording()
+    assert tab.current.steps[2:] == [ButtonStep(E.BTN_LEFT, True), ButtonStep(E.BTN_LEFT, False)] * 2
+
+
+def test_focus_loss_commits_recording(env):
+    from PySide6.QtCore import QEvent
+    from PySide6.QtGui import QFocusEvent
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    w, *_ = env
+    tab = w.macro_tab
+    tab.macro_list.setCurrentRow(0)
+    tab.delays_check.setChecked(False)
+    tab.start_recording()
+    tab.recorder.key_event(E.KEY_A, True)
+    QApplication.sendEvent(tab.record_field, QFocusEvent(QEvent.Type.FocusOut, Qt.FocusReason.OtherFocusReason))
+    assert not tab.recorder.recording
+    assert tab.current.steps[-2:] == [KeyStep(E.KEY_A, True), KeyStep(E.KEY_A, False)]
+    assert w.is_dirty
+
+
+def test_refresh_and_save_commit_in_progress_recording(env):
+    w, store, _ = env
+    tab = w.macro_tab
+    tab.macro_list.setCurrentRow(0)
+    tab.start_recording()
+    tab.recorder.key_event(E.KEY_B, True)
+    assert w.save()
+    assert KeyStep(E.KEY_B, False) in store.load_macros()["gruss"].steps
+
+
+def test_real_key_event_and_autorepeat(env):
+    from PySide6.QtCore import QEvent, Qt
+    from PySide6.QtGui import QKeyEvent
+    from PySide6.QtWidgets import QApplication
+    w, *_ = env
+    tab = w.macro_tab
+    tab.macro_list.setCurrentRow(0)
+    tab.delays_check.setChecked(False)
+    tab.start_recording()
+    def ev(t, auto=False):
+        # nativeScanCode = evdev + 8 (XKB), here 30 + 8 for KEY_A
+        return QKeyEvent(t, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier, 38, 0, 0, "a", auto)
+    for e in (ev(QEvent.Type.KeyPress), ev(QEvent.Type.KeyPress, True), ev(QEvent.Type.KeyRelease)):
+        QApplication.sendEvent(tab.record_field, e)
+    tab.stop_recording()
+    assert tab.current.steps[2:] == [KeyStep(E.KEY_A, True), KeyStep(E.KEY_A, False)]
+
+
+def test_delete_keeps_other_unsaved_macro_edits(env):
+    w, store, _ = env
+    tab = w.macro_tab
+    other = tab.add_macro("B")
+    w.save()
+    tab.macro_list.setCurrentRow(0)  # "gruss"
+    tab.insert_delay(33)  # unsaved edit of A
+    idx = [tab.macro_list.item(i).data(0x100) for i in range(tab.macro_list.count())].index(other)
+    tab.macro_list.setCurrentRow(idx)
+    assert tab.delete_macro()
+    disk = store.load_macros()
+    assert other not in disk and DelayStep(33) not in disk["gruss"].steps
+    assert w.is_dirty and DelayStep(33) in w.macros["gruss"].steps
+    w.revert()
+    assert DelayStep(33) not in w.macros["gruss"].steps and not w.is_dirty
