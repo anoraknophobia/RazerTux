@@ -15,7 +15,8 @@ def tab(qapp):
 def test_six_stages_with_names(tab):
     tab.load(Settings("default"))
     assert [r.title.text() for r in tab.rows] == [f"Stufe {n}" for n in range(1, 7)]
-    assert [r.name_edit.text() for r in tab.rows] == ["", "", "", "", "", "Ultra-fine"]
+    assert [r.name_edit.text() for r in tab.rows] == ["Ultra-fine", "Standard", "Distinct",
+                                                     "Adaptive", "Smooth Scroll", "Custom"]
     assert tab.changes == []
 
 
@@ -23,11 +24,14 @@ def test_active_stage_highlight_and_big_name(tab):
     tab.load(Settings("default"))
     tab.set_status({"scroll_stage": 6})
     assert [r.property("active") for r in tab.rows] == [False] * 5 + [True]
-    assert tab.active_name.text() == "Ultra-fine"
+    assert tab.active_name.text() == "Custom"
     assert "6" in tab.active_slot.text()
     tab.set_status({"scroll_stage": 2})
     assert tab.rows[1].property("active") and not tab.rows[5].property("active")
-    assert tab.active_name.text() == "Stufe 2"  # no name given yet
+    assert tab.active_name.text() == "Standard"
+    tab.load(Settings("default", scroll_stage_names={}))
+    tab.set_status({"scroll_stage": 2})
+    assert tab.active_name.text() == "Stufe 2"  # no name given
 
 
 def test_unknown_stage(tab):
@@ -39,7 +43,7 @@ def test_unknown_stage(tab):
 
 
 def test_editing_names_updates_settings(tab):
-    s = Settings("default")
+    s = Settings("default", scroll_stage_names={6: "Ultra-fine"})
     tab.load(s)
     tab.set_status({"scroll_stage": 3})
     tab.rows[2].name_edit.setText("Distinct")
@@ -52,6 +56,10 @@ def test_editing_names_updates_settings(tab):
 
 
 def test_hint_and_reference(tab):
+    names = tab.findChildren(type(tab.hint))
+    texts = " ".join(w.text() for w in names)
+    assert "nicht bekannt" not in texts and "außer Stufe 6" not in texts
+    assert "Reihenfolge" in texts and "umbenennen" in texts
     assert "oberen Taste vorne" in tab.hint.text() and "Razer Synapse" in tab.hint.text()
     assert [p[0] for p in SYNAPSE_PRESETS] == ["Ultra-fine", "Standard", "Distinct",
                                                 "Adaptive", "Smooth Scroll", "Custom"]

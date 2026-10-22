@@ -178,6 +178,16 @@ def test_new_profile_id_is_filesystem_safe():
     assert new_profile_id("§§§")
 
 
+@pytest.mark.parametrize("button", [ButtonId.TOP_1, ButtonId.TOP_2])
+def test_hypershift_on_top_button_needs_remap(button):
+    msg = "Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“"
+    p = default_profile()
+    p.standard[button] = HypershiftAction()
+    assert msg in validate(p)
+    p.remap_top_buttons = True
+    assert validate(p) == []
+
+
 def test_hypershift_key_in_hypershift_layer_rejected():
     p = default_profile()
     p.hypershift[ButtonId.SIDE_1] = HypershiftAction()
@@ -252,12 +262,25 @@ def test_old_profile_with_scroll_profile_loads_and_is_not_written(tmp_path):
     assert "scroll_profile" not in on_disk and on_disk["remap_top_buttons"] is False
 
 
+SYNAPSE_ORDER = {1: "Ultra-fine", 2: "Standard", 3: "Distinct", 4: "Adaptive", 5: "Smooth Scroll", 6: "Custom"}
+
+
 def test_settings_scroll_stage_names(tmp_path):
     s = Settings("default")
-    assert s.scroll_stage_names == {6: "Ultra-fine"}
+    assert s.scroll_stage_names == SYNAPSE_ORDER  # R25: Synapse list order, user-verified
     assert Settings("x").scroll_stage_names is not s.scroll_stage_names  # no shared default
     s.scroll_stage_names = {1: "Fein", 6: "Ultra-fine"}
     store = ConfigStore(tmp_path)
     store.save_settings(s)
     assert store.load_settings().scroll_stage_names == {1: "Fein", 6: "Ultra-fine"}
-    assert Settings.from_dict({"active_profile": "a"}).scroll_stage_names == {6: "Ultra-fine"}
+    assert Settings.from_dict({"active_profile": "a"}).scroll_stage_names == SYNAPSE_ORDER
+
+
+def test_old_default_stage_names_are_migrated(tmp_path):
+    (tmp_path / "settings.json").write_text(json.dumps(
+        {"active_profile": "default", "scroll_stage_names": {"6": "Ultra-fine"}}))
+    assert ConfigStore(tmp_path).load_settings().scroll_stage_names == SYNAPSE_ORDER
+    # anything the user named themselves is kept as is
+    for names in ({"6": "Ultra-fine", "1": "Fein"}, {"6": "Fein"}, {}):
+        got = Settings.from_dict({"active_profile": "a", "scroll_stage_names": names})
+        assert got.scroll_stage_names == {int(k): v for k, v in names.items()}

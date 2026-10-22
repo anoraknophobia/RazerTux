@@ -277,13 +277,14 @@ def test_scroll_tab_status_and_names_saved(env):
     w, store, transport = env
     w.client.statusChanged.emit({"connected": True, "scroll_stage": 6, "dpi": 2500,
                                  "connection": "wired"})
-    assert w.scroll_tab.active_name.text() == "Ultra-fine"
+    assert w.scroll_tab.active_name.text() == "Custom"
     assert w.dpi_label.text() == "2500 DPI"
     w.scroll_tab.rows[0].name_edit.setText("Fein")
     w.scroll_tab.rows[0].name_edit.textEdited.emit("Fein")
     assert w.is_dirty
     assert w.save() is True
-    assert store.load_settings().scroll_stage_names == {1: "Fein", 6: "Ultra-fine"}
+    assert store.load_settings().scroll_stage_names == {
+        1: "Fein", 2: "Standard", 3: "Distinct", 4: "Adaptive", 5: "Smooth Scroll", 6: "Custom"}
     assert not w.is_dirty
     w.client.statusChanged.emit({"connected": True, "dpi": -1})
     assert w.dpi_label.text() == ""

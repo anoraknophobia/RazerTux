@@ -193,12 +193,16 @@ class Profile:
 THEMES = ("synapse", "system")
 IDLE_MIN_S, IDLE_MAX_S = 60, 900
 LOW_POWER_MIN, LOW_POWER_MAX = 5, 25
-SCROLL_STAGES = 6  # firmware slots 1-6 (05 3a notifications); 6 = "Ultra-fine"
+SCROLL_STAGES = 6  # firmware slots 1-6 (05 3a notifications)
+# R25 (user-verified: slot 5 = free-spinning Smooth Scroll): slots follow Synapse's list order
+_SYNAPSE_STAGE_ORDER = ("Ultra-fine", "Standard", "Distinct", "Adaptive", "Smooth Scroll",
+                        "Custom")
+# what older versions stored as the default; replaced on load (the user never named these)
+_OLD_DEFAULT_STAGE_NAMES = {6: "Ultra-fine"}
 
 
 def default_stage_names() -> dict[int, str]:
-    """Only slot 6 is verified on hardware; other slot -> preset names are unknown."""
-    return {6: "Ultra-fine"}
+    return dict(enumerate(_SYNAPSE_STAGE_ORDER, start=1))
 
 
 @dataclass
@@ -226,11 +230,13 @@ class Settings:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
         names = d.get("scroll_stage_names")
+        stage_names = default_stage_names() if names is None \
+            else {int(k): str(v) for k, v in names.items()}
+        if stage_names == _OLD_DEFAULT_STAGE_NAMES:  # migrate the old default
+            stage_names = default_stage_names()
         return cls(d["active_profile"], d.get("low_battery_notify", 15),
                    d.get("theme", "synapse"), d.get("idle_time"),
-                   d.get("low_battery_threshold"),
-                   default_stage_names() if names is None
-                   else {int(k): str(v) for k, v in names.items()})
+                   d.get("low_battery_threshold"), stage_names)
 
 
 def default_profile() -> Profile:
@@ -253,6 +259,11 @@ def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[s
         errors.append("Mehr als eine Hypershift-Taste")
     if any(isinstance(a, HypershiftAction) for a in profile.hypershift.values()):
         errors.append("Hypershift-Taste in der Hypershift-Ebene nicht erlaubt")
+    if not profile.remap_top_buttons and any(
+            isinstance(profile.standard.get(b), HypershiftAction)
+            for b in (ButtonId.TOP_1, ButtonId.TOP_2)):
+        # normal mode: the firmware owns the top buttons, the key would never be seen
+        errors.append("Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“")
     if macros is not None:
         for layer in (profile.standard, profile.hypershift):
             for a in layer.values():

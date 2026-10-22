@@ -83,8 +83,8 @@ class ScrollTab(QWidget):
 
         stages = Card(self.tr("Mausrad-Stufen"))
         stages.add(description(self.tr(
-            "Die Maus hat sechs Mausrad-Stufen. Gib ihnen Namen – welche Synapse-Stufe auf "
-            "welchem Platz liegt, ist außer Stufe 6 (Ultra-fine) nicht bekannt.")))
+            "Die Maus hat sechs Mausrad-Stufen. Die Namen folgen der Reihenfolge in Synapse "
+            "(Stufe 1 = Ultra-fine … Stufe 6 = Custom); du kannst sie beliebig umbenennen.")))
         self.rows: list[StageRow] = []
         for slot in range(1, SCROLL_STAGES + 1):
             row = StageRow(slot)
