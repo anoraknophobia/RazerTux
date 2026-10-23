@@ -332,7 +332,7 @@ class InputRouter:
         try:
             await self._mapper.release_all()
         except Exception:
-            logger.exception("release_all fehlgeschlagen")
+            logger.exception("release_all failed")
 
     async def _read(self, source: str, dev: Any) -> None:
         pending = False
@@ -346,11 +346,11 @@ class InputRouter:
                     logger.exception("Error handling event from %s", dev.path)
         except OSError as e:
             if e.errno == errno.ENODEV:
-                logger.info("%s entfernt", dev.path)
+                logger.info("%s removed", dev.path)
             else:
-                logger.exception("Lesefehler auf %s", dev.path)
+                logger.exception("Read error on %s", dev.path)
         except Exception:
-            logger.exception("Lesefehler auf %s", dev.path)
+            logger.exception("Read error on %s", dev.path)
         # Read loop ended: the device is gone or unusable.
         if self._devs.get(dev.path, (None,))[0] is dev:
             del self._devs[dev.path]
@@ -438,7 +438,7 @@ class HidrawReader:
         except BlockingIOError:
             return
         except OSError as e:
-            logger.info("hidraw %s beendet: %s", self.path, e)
+            logger.info("hidraw %s ended: %s", self.path, e)
             data = b""
         if not data:
             self._stop_reading()

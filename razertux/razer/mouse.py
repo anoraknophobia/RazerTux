@@ -217,7 +217,7 @@ def _executable(cmd: Command | None) -> bool:
 def _check_rgb(rgb) -> tuple[int, int, int]:
     rgb = tuple(rgb)
     if len(rgb) != 3 or not all(isinstance(v, int) and 0 <= v <= 255 for v in rgb):
-        raise ValueError(f"Farbe {rgb!r} ungueltig")
+        raise ValueError(f"invalid colour {rgb!r}")
     return rgb  # type: ignore[return-value]
 
 

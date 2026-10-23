@@ -31,7 +31,7 @@ NAGA_V2_PRO: ButtonMap = {
 }
 # Naga V2 Pro side plates. UNVERIFIED ASSUMPTION (the plates are no longer available to
 # test): the 6-key plate sends the same codes as keys 1-6 of the 12-key plate and the
-# 2-key plate those of keys 1-2. If a key turns out different, "Taste anlernen" fixes it.
+# 2-key plate those of keys 1-2. If a key turns out different, "Learn button" fixes it.
 NAGA_V2_PRO_PLATES: dict[int, ButtonMap] = {
     plate: {sig: b for sig, b in NAGA_V2_PRO.items()
             if not b.value.startswith("side_") or int(b.value[5:]) <= plate}

@@ -157,7 +157,7 @@ def _safe(fn: Callable[[], Any], default: Any) -> Any:
     try:
         return fn()
     except _HW_ERRORS as e:
-        logger.debug("Abfrage fehlgeschlagen: %s", e)
+        logger.debug("Query failed: %s", e)
         return default
 
 
@@ -422,7 +422,7 @@ class DeviceSession:
             try:
                 await coro
             except Exception:
-                logger.exception("Hintergrundaufgabe fehlgeschlagen")
+                logger.exception("Background task failed")
 
         task = asyncio.get_running_loop().create_task(guarded())
         self._tasks.add(task)
@@ -617,7 +617,7 @@ class DeviceSession:
         self._stage_idx = idx
         self._hw["dpi"] = x
         self._on_status()
-        logger.info("DPI-Stufe %d: %dx%d", idx + 1, x, y)
+        logger.info("DPI stage %d: %dx%d", idx + 1, x, y)
 
     def restore_backup(self, backup: dict) -> list[str]:
         if self._mouse is None:
@@ -641,7 +641,7 @@ class DeviceSession:
             await self._disconnect(reset_mode=False)  # unplug resets the mode itself
             if self._mice:  # e.g. charge cable pulled, dongle still connected
                 self._mouse_path, pid = list(self._mice.items())[-1]
-                logger.info("Wechsle auf %s (%s)", self._mouse_path,
+                logger.info("Switching to %s (%s)", self._mouse_path,
                             self.info.pids.get(pid, f"{pid:#06x}"))
                 await self._connect(pid)
         if not self._paths and not self._is_naga_model:
@@ -799,7 +799,7 @@ class DeviceSession:
             self._on_status()
 
     def _low_battery(self, level: int) -> None:
-        logger.warning("Akku schwach (%s): %d %%", self.info.name, level)
+        logger.warning("Battery low (%s): %d %%", self.info.name, level)
         if self._is_naga_model:
             title = tr("daemon", "Naga V2 Pro: Low battery")
         else:
@@ -808,7 +808,7 @@ class DeviceSession:
             self._notify(title, tr("daemon", "Battery at {level} % – please charge the mouse.",
                                    level=level))
         except Exception:
-            logger.exception("Benachrichtigung nicht gesendet")
+            logger.exception("Notification not sent")
 
     async def _disconnect(self, reset_mode: bool) -> None:
         if self._battery is not None:

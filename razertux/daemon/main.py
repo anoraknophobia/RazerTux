@@ -81,7 +81,7 @@ class Daemon:
         pid = dev.info.product
         info = by_pid(pid)
         if info is None:
-            logger.info("%s: unbekannte Razer-PID %#06x – ignoriert", dev.path, pid)
+            logger.info("%s: unknown Razer PID %#06x - ignored", dev.path, pid)
             dev.close()
             return True
         session = self.sessions.get(info.model) or self._session(info)
@@ -105,7 +105,7 @@ class Daemon:
             try:  # one failing session must not keep the others (and uinput) open
                 await session.close()
             except Exception:
-                logger.exception("Sitzung %s nicht sauber beendet", session.model)
+                logger.exception("Session %s did not shut down cleanly", session.model)
         self.out.close()
 
     # -- internals -------------------------------------------------------------
@@ -120,8 +120,8 @@ class Daemon:
             **self._session_kw)
         self.sessions[model] = session
         if model != NAGA_MODEL:
-            logger.info("Neue Sitzung: %s (%s)%s", info.name, model,
-                        "" if info.verified else " – experimentell")
+            logger.info("New session: %s (%s)%s", info.name, model,
+                        "" if info.verified else " - experimental")
             self.service.devices_changed()
         return session
 
@@ -130,7 +130,7 @@ class Daemon:
             try:
                 await coro
             except Exception:
-                logger.exception("Hintergrundaufgabe fehlgeschlagen")
+                logger.exception("Background task failed")
 
         task = asyncio.get_running_loop().create_task(guarded())
         self._tasks.add(task)

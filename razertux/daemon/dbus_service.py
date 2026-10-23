@@ -103,7 +103,7 @@ class Daemon1Service(ServiceInterface):
             try:
                 await session.reload()
             except Exception:
-                logger.exception("%s: Neuladen fehlgeschlagen", session.info.name)
+                logger.exception("%s: reload failed", session.info.name)
         for model, session in sessions.items():
             if session.active_profile_id != old[model]:
                 self.ProfileChanged(model, session.active_profile_id)

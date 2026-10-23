@@ -1,5 +1,5 @@
 """Device handling of the main window: which mouse is shown, its tabs, the
-experimental banner and "Taste anlernen". A mixin for MainWindow (no texts of its
+experimental banner and "Learn button". A mixin for MainWindow (no texts of its
 own; the dialogs and the device bar carry them)."""
 from __future__ import annotations
 
@@ -103,7 +103,7 @@ class DeviceActions:
                                    self._remap_enabled)
 
     def set_remap_enabled(self, on: bool) -> None:
-        """"Tastenbelegung aktivieren" of an experimental mouse: saved at once, like the plate."""
+        """"Enable button assignment" of an experimental mouse: saved at once, like the plate."""
         ds = self.profiles.load_device_settings()
         ds.remap_enabled = on
         try:
@@ -116,7 +116,7 @@ class DeviceActions:
 
     # -- learning -------------------------------------------------------------------
     def learnable(self, button: ButtonId) -> bool:
-        """"Taste anlernen" for learn slots, experimental mice and the Naga's unchecked plates."""
+        """"Learn button" for learn slots, experimental mice and the Naga's unchecked plates."""
         if button.startswith("learn_") or not self.info.verified:
             return True
         return self.model == NAGA_MODEL and self.buttons_tab.plate != 12 and button.startswith("side_")

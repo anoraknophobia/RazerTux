@@ -1,4 +1,4 @@
-"""Tab "Mausrad": the firmware's six scroll-wheel stages (Synapse style).
+"""Tab "Scroll wheel": the firmware's six scroll-wheel stages (Synapse style).
 
 The active stage comes from the daemon status ("scroll_stage", reported by the
 mouse when the front top button cycles it; -1 = unknown). Stage names are user

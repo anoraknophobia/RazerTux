@@ -48,7 +48,7 @@ def make_banner(text: str, colour: str = "#b3261e") -> QFrame:
 
 class DeviceBar(QWidget):
     deviceChanged = Signal(str)  # model
-    remapToggled = Signal(bool)  # "Tastenbelegung aktivieren"
+    remapToggled = Signal(bool)  # "Enable button assignment"
 
     def __init__(self, client: DaemonClient, parent: QWidget | None = None):
         super().__init__(parent)

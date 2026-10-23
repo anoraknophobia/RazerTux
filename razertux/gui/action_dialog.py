@@ -122,7 +122,7 @@ class ActionDialog(QDialog):
     def __init__(self, parent: QWidget | None, current: Action, macros: dict[str, Macro],
                  *, button: ButtonId | None = None, layer: str = "standard",
                  on_learn: Callable[[], object] | None = None):
-        """on_learn: offer "Taste anlernen …" (an unchecked or experimental key)."""
+        """on_learn: offer "Learn button …" (an unchecked or experimental key)."""
         super().__init__(parent)
         self.setWindowTitle(self.tr("Assignment: %1").replace("%1", button_name(button))
                             if button else self.tr("Assignment"))

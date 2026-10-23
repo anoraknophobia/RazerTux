@@ -301,7 +301,7 @@ def test_cli_and_daemon_help_follow_the_language(fake_home, capsys):
     assert "ausführliches Protokoll" in capsys.readouterr().out
 
 
-def test_cli_stays_english_with_language_en(monkeypatch, capsys):
+def test_cli_stays_english_with_language_en(monkeypatch, fake_home, capsys):
     from razertux import cli
     monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": [])
     assert cli.main(["restore"]) == 0

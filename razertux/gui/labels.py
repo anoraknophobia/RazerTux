@@ -55,7 +55,7 @@ def battery_text(status: dict) -> str:
     return text + " ⚡ " + _tr("charging") if status.get("charging") else text
 
 
-# Top buttons while "Obere Tasten frei belegen" is off: the firmware handles them.
+# Top buttons while "Assign top buttons freely" is off: the firmware handles them.
 _FIRMWARE_TOP = {
     ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Scroll wheel stage cycle (mouse)"),
     ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Sensitivity stage cycle (mouse)"),

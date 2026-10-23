@@ -19,8 +19,8 @@ from razertux.hw.buttons import ButtonId
 class ButtonsTab(QWidget):
     bindingClicked = Signal(object)  # ButtonId
     layerChanged = Signal(str)
-    remapToggled = Signal(bool)  # "Obere Tasten frei belegen" (per profile)
-    learnRequested = Signal(object)  # ButtonId: the free learn slot "Taste anlernen …" fills
+    remapToggled = Signal(bool)  # "Assign top buttons freely" (per profile)
+    learnRequested = Signal(object)  # ButtonId: the free learn slot "Learn button …" fills
 
     def __init__(self, model_store: ModelStore | None = None,
                  on_plate_saved: Callable[[], object] | None = None, parent: QWidget | None = None):

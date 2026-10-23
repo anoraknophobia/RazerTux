@@ -1,4 +1,4 @@
-""""Taste anlernen": asks the daemon for the next key press the mouse's button
+""""Learn button": asks the daemon for the next key press the mouse's button
 table does not know (StartLearning), stores it as `learned[button]` in the
 device settings and tells the daemon to reload. Gives up after 15 s."""
 from __future__ import annotations
