@@ -184,6 +184,9 @@ def test_standard_keys_cover_typing_keys():
                  E.KEY_UP, E.KEY_DOWN, E.KEY_LEFT, E.KEY_RIGHT, E.KEY_KP1, E.KEY_KPENTER]
     required += [getattr(E, f"KEY_F{n}") for n in range(1, 13)]
     assert all(keyfilter.classify_standard_key(c) for c in required)
+    required += [E.KEY_KPLEFTPAREN, E.KEY_KPRIGHTPAREN, E.KEY_DOLLAR, E.KEY_EURO, E.KEY_NUMERIC_STAR,
+                 E.KEY_NUMERIC_POUND] + [getattr(E, f"KEY_NUMERIC_{n}") for n in range(10)]
+    assert all(keyfilter.classify_standard_key(c) for c in required)
     for extra in (E.KEY_F13, E.KEY_F24, E.KEY_VOLUMEUP, E.KEY_MUTE, E.KEY_MACRO1, E.BTN_SIDE, E.BTN_LEFT):
         assert not keyfilter.classify_standard_key(extra)
 
@@ -222,6 +225,17 @@ def test_mouse_side_keys_are_signals_once_each_without_values():
     assert f.standard_keys_seen == 0
 
 
+def test_mouse_keyboard_node_keeps_only_the_grid():
+    f = keyfilter.SignalFilter("mouse")
+    events = [press(E.KEY_A), press(E.KEY_ENTER), press(E.KEY_1), press(E.KEY_0), press(E.KEY_MINUS),
+              press(E.KEY_EQUAL), press(E.KEY_KP5), press(E.KEY_F13)]
+    assert _feed(f, events, "if1:keyboard") == [("if1:keyboard", E.EV_KEY, c) for c in
+                                                (E.KEY_1, E.KEY_0, E.KEY_MINUS, E.KEY_EQUAL, E.KEY_F13)]
+    assert f.standard_keys_seen == 1
+    assert _feed(f, [press(E.BTN_LEFT), press(E.KEY_A)], "if0:mouse") == [
+        ("if0:mouse", E.EV_KEY, E.BTN_LEFT), ("if0:mouse", E.EV_KEY, E.KEY_A)]
+
+
 def test_extra_keys_on_keyboard_are_signals():
     f = keyfilter.SignalFilter("keyboard")
     assert _feed(f, [press(E.KEY_A), press(E.KEY_MACRO1), press(E.KEY_VOLUMEUP)]) == [
@@ -246,7 +260,8 @@ BAD_REQUESTS = [
     {"op": "open", "pid": 0xA7, "interfaces": [True]},
     {"op": "open", "pid": 0xA7, "interfaces": list(range(40))},
     {"op": "read", "name": "firmware"}, {"op": "light", "zone": "logo", "state": "green"},
-    {"op": "listen", "seconds": 5}, {"op": "stop"},
+    {"op": "listen", "seconds": 5}, {"op": "open", "pid": 0xA7, "id": "1"}, {"op": "open", "pid": 0xA7, "id": -1},
+    {"op": "open", "pid": 0xA7, "id": True}, {"op": "stop", "id": 2**40},
 ]
 
 
@@ -511,6 +526,117 @@ def test_quit(tmp_path):
     assert set(rig.one({"op": "quit", "now": 1})) == {"error"}
 
 
+# -- request ids and the late-stop race (fix round 1) ----------------------------------------
+
+def test_top_level_stop_is_ignored_silently(tmp_path):
+    rig = Rig(tmp_path)
+    rig.one({"op": "open", "pid": 0xA7})
+    for req in ({"op": "stop"}, {"op": "stop", "id": 3}):
+        out, keep = rig.send(req)
+        assert out == [] and keep is True
+
+
+def test_ids_echoed_on_every_line(tmp_path):
+    rig = Rig(tmp_path, batches=[[("if0:mouse", *press(E.BTN_SIDE))]])
+    assert rig.one({"op": "open", "pid": 0xA7, "id": 7})["id"] == 7
+    assert rig.one({"op": "read", "name": "serial", "id": 8}) == {"error": "unknown read", "id": 8}
+    assert rig.one({"op": "bogus", "id": 9}) == {"error": "unknown op", "id": 9}
+    out, _ = rig.send({"op": "listen", "seconds": 1, "id": 10})
+    assert [o["id"] for o in out] == [10, 10] and "signal" in out[0] and out[1]["done"] is True
+
+
+def test_stale_stop_does_not_end_a_new_listen(tmp_path):
+    rig = Rig(tmp_path)
+    rig.one({"op": "open", "pid": 0xA7})
+    start = rig.clock.t
+    lines = iter([json.dumps({"op": "stop", "id": 1})] + [None] * 100)
+    out, keep = rig.send({"op": "listen", "seconds": 3, "id": 2}, poll_input=lambda t: next(lines))
+    assert keep and out == [{"done": True, "standard_keys_seen": 0, "id": 2}]
+    assert rig.clock.t - start == pytest.approx(3)  # ran to the end
+    start = rig.clock.t
+    lines = iter([None, json.dumps({"op": "stop", "id": 4})])
+    out, _ = rig.send({"op": "listen", "seconds": 60, "id": 4}, poll_input=lambda t: next(lines))
+    assert out == [{"done": True, "standard_keys_seen": 0, "id": 4}] and rig.clock.t - start < 5
+
+
+def test_error_mid_listen_carries_the_offending_id(tmp_path):
+    rig = Rig(tmp_path)
+    rig.one({"op": "open", "pid": 0xA7})
+    lines = iter([json.dumps({"op": "read", "name": "firmware", "id": 42}), "garbage"] + [None] * 100)
+    out, _ = rig.send({"op": "listen", "seconds": 1, "id": 5}, poll_input=lambda t: next(lines))
+    assert out == [{"error": "listening: only stop is accepted", "id": 42},
+                   {"error": "listening: only stop is accepted"},
+                   {"done": True, "standard_keys_seen": 0, "id": 5}]
+    assert rig.all_raw() == []  # the read inside the listen was not executed
+
+
+def test_helper_backend_discards_stale_lines(tmp_path):
+    rig = Rig(tmp_path, canned={(0x00, 0x81): bytes([1, 2])})
+    procs = []
+    b = backend.HelperBackend(spawn=lambda argv: procs.append(FakeProc(rig)) or procs[-1])
+    b.start()
+    b.open(0xA7)
+    b.listen(1, lambda s: None)
+    b.request_stop()  # listen already over: nothing is sent
+    b._write({"op": "stop", "id": 2})  # a late stop that raced the end: helper stays silent
+    assert procs[0].pending == []
+    procs[0].pending += ['{"error":"unknown op","id":2}', '{"error":"no id"}', "not json",
+                         '{"done":true,"standard_keys_seen":0,"id":1}']
+    assert b.read("firmware")["value"] == "v1.2"
+    b.close()
+
+
+def test_in_process_request_stop_ends_listen(tmp_path):
+    rig = Rig(tmp_path, batches=[[("if0:mouse", *press(E.BTN_SIDE))]])
+    b = backend.InProcessBackend(helper_obj=rig.helper)
+    b.open(0xA7)
+    start = rig.clock.t
+    assert b.listen(60, lambda s: b.request_stop())["done"] is True
+    assert rig.clock.t - start < 5
+    b.request_stop()  # late stop: the next listen is not cut short
+    start = rig.clock.t
+    b.listen(2, lambda s: None)
+    assert rig.clock.t - start == pytest.approx(2)
+
+
+# -- Ruling R-4: client kind only for devices unknown to the database -------------------------
+
+def _listen_signals(rig, req, batch):
+    rig.batches[:] = [batch]
+    out, _ = rig.send(req)
+    return [o["signal"] for o in out if "signal" in o], out[-1]
+
+
+def test_listen_kind_only_for_unknown_devices(tmp_path):
+    batch = [("if0:keyboard", *press(E.KEY_1)), ("if0:keyboard", *press(E.KEY_A))]
+    rig = Rig(tmp_path)
+    rig.one({"op": "open", "pid": 0xFFFE})  # not in the database
+    sig, done = _listen_signals(rig, {"op": "listen", "seconds": 1}, batch)
+    assert sig == [] and done["standard_keys_seen"] == 1  # unknown, no kind: keyboard filter
+    sig, done = _listen_signals(rig, {"op": "listen", "seconds": 1, "kind": "mouse"}, batch)
+    assert sig == [["if0:keyboard", E.EV_KEY, E.KEY_1]] and done["standard_keys_seen"] == 1
+    assert set(rig.one({"op": "listen", "seconds": 1, "kind": "cat"})) == {"error"}
+    assert set(rig.one({"op": "listen", "seconds": 1, "kind": 1})) == {"error"}
+    rig2 = Rig(tmp_path / "b")
+    rig2.one({"op": "open", "pid": 0x0227})  # known keyboard: the database kind wins
+    sig, done = _listen_signals(rig2, {"op": "listen", "seconds": 1, "kind": "mouse"}, batch)
+    assert sig == [] and done["standard_keys_seen"] == 1
+
+
+def test_serve_rearms_the_alarm(tmp_path):
+    rig = Rig(tmp_path)
+    r, w = os.pipe()
+    os.write(w, b'{"op": "bogus"}\n{"op": "quit"}\n')
+    os.close(w)
+    calls = []
+    try:
+        assert helper.serve(rig.helper, r, lambda s: None, alarm=calls.append) == 0
+    finally:
+        os.close(r)
+    assert len(calls) >= 3 and set(calls) == {helper.ALARM_SECONDS}
+    assert helper.IDLE_TIMEOUT < helper.ALARM_SECONDS <= helper.IDLE_TIMEOUT + helper.LISTEN_MAX + 60
+
+
 def test_in_process_node_filter(tmp_path):
     rig = Rig(tmp_path, node_allowed=lambda node: node.path != "/dev/hidraw0")
     resp = rig.one({"op": "open", "pid": 0xA7})
@@ -592,6 +718,9 @@ def test_node_owner_checks_sysfs(tmp_path):
     assert helper.node_owner(str(root), "/dev/hidraw0") == (0x1532, 0xA7, rdev)
     assert helper.node_owner(str(root), "/dev/hidraw4") == (0x046D, 0x1234, os.makedev(241, 4))
     assert helper.node_owner(str(root), "/dev/hidraw9") is None
+    outside = tmp_path.parent / (tmp_path.name + "-outside") / "hidraw7"
+    _class_link(root, "hidraw", "hidraw7", outside, "241:7")  # link leaving the sysfs root
+    assert helper.node_owner(str(root), "/dev/hidraw7") is None
     for bad in ("/dev/hidraw0/../sda", "/dev/sda", "/tmp/hidraw0", "/dev/input/../hidraw0", "hidraw0"):
         assert helper.node_owner(str(root), bad) is None
 
@@ -673,7 +802,8 @@ def test_helper_backend_speaks_the_protocol(tmp_path):
     assert b.read("firmware")["value"] == "v1.2"
     assert b.light("logo", "green")["status"] == "ok"
     got = []
-    assert b.listen(1, got.append) == {"done": True, "standard_keys_seen": 0}
+    final = b.listen(1, got.append)
+    assert final["done"] is True and final["standard_keys_seen"] == 0
     assert got == [["if0:mouse", E.EV_KEY, E.BTN_SIDE]]
     with pytest.raises(backend.BackendError):
         b.read("serial")

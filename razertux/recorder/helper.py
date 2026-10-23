@@ -1,7 +1,9 @@
 """razertux-record-helper: the privileged part of the device recorder (run as root via pkexec).
 
-Protocol: JSON lines on stdin/stdout. The helper first writes ``{"ready": true, "protocol": 1}``.
-Requests (no other fields are accepted, every other request gets ``{"error": "..."}``):
+Protocol: JSON lines on stdin/stdout. The helper first writes ``{"ready": true, "protocol": 2}``.
+Every request may carry ``"id": int`` (0..2**31-1); it is echoed in every line answering that
+request (stream lines included), so a client can drop stale lines. Requests (no other fields are
+accepted, every other request gets ``{"error": "..."}``):
 
 - ``{"op": "open", "pid": int, "interfaces": [int, ...]}`` (interfaces optional, default all):
   open the connected vendor-0x1532 device with this PID. Its nodes come only from sysfs discovery
@@ -12,10 +14,13 @@ Requests (no other fields are accepted, every other request gets ``{"error": "..
   -> ``{"ok": true, "name", "status": "ok"|"failed", "value"?, "raw"?, "txn"?}``
 - ``{"op": "light", "zone": str, "state": "green"|"off"}``: a zone from ``light_zones``
   -> ``{"ok": true, "zone", "state", "status": "ok"|"failed"}``
-- ``{"op": "listen", "seconds": int 1..120}``: streams ``{"signal": [source, ev_type, code]}``
-  (keylogger filter applied here, see ``keyfilter``) and ends with
-  ``{"done": true, "standard_keys_seen": int}``. While listening only ``{"op": "stop"}`` is
-  accepted (ends early); stdin EOF ends the listen and the helper.
+- ``{"op": "listen", "seconds": int 1..120, "kind": str?}``: streams
+  ``{"signal": [source, ev_type, code]}`` (keylogger filter applied here, see ``keyfilter``) and
+  ends with ``{"done": true, "standard_keys_seen": int}``. ``kind`` is only used when the database
+  does not know the device (Ruling R-4; the database kind always wins); unknown without ``kind``
+  gets the keyboard filter. While listening only ``{"op": "stop"}`` with the listen's id ends it
+  early; other lines get an error (with their own id) and are not executed; stdin EOF ends the
+  listen and the helper. A ``stop`` outside a listen is ignored silently (late stop race).
 - ``{"op": "quit"}`` -> ``{"ok": true}`` and exit.
 
 The helper exits on stdin EOF and after ``IDLE_TIMEOUT`` seconds without a request. Lines longer
@@ -28,6 +33,7 @@ import json
 import os
 import re
 import select
+import signal
 import stat
 import struct
 import sys
@@ -42,22 +48,27 @@ from razertux.recorder.discover import RAZER_VID, Node, _event_kind, list_razer_
 from razertux.recorder.keyfilter import SignalFilter
 from razertux.recorder.whitelist import LIGHT_STATES, DeviceSession
 
-PROTOCOL = 1
+PROTOCOL = 2
 MAX_LINE = 4096
 IDLE_TIMEOUT = 600
 LISTEN_MAX = 120
 POLL_STEP = 0.25
+ID_MAX = 2**31 - 1
+# hard deadline (SIGALRM, default action: terminate) re-armed per request in main(): even a
+# client that stops reading stdout (blocked write) cannot keep the root process alive
+ALARM_SECONDS = IDLE_TIMEOUT + LISTEN_MAX + 60
+KINDS = frozenset({"mouse", "keyboard", "keypad", "headset", "mousemat", "accessory", "dock", "other"})
 MAX_IFACES = 16
 
 _HIDRAW_RE = re.compile(r"/dev/(hidraw\d{1,4})")
 _EVENT_RE = re.compile(r"/dev/input/(event\d{1,4})")
 
 _FIELDS = {
-    "open": ({"op", "pid", "interfaces"}, {"op", "pid"}),
-    "read": ({"op", "name"}, {"op", "name"}),
-    "light": ({"op", "zone", "state"}, {"op", "zone", "state"}),
-    "listen": ({"op", "seconds"}, {"op", "seconds"}),
-    "quit": ({"op"}, {"op"}),
+    "open": ({"op", "id", "pid", "interfaces"}, {"op", "pid"}),
+    "read": ({"op", "id", "name"}, {"op", "name"}),
+    "light": ({"op", "id", "zone", "state"}, {"op", "zone", "state"}),
+    "listen": ({"op", "id", "seconds", "kind"}, {"op", "seconds"}),
+    "quit": ({"op", "id"}, {"op"}),
 }
 
 Emit = Callable[[dict], None]
@@ -79,10 +90,10 @@ def node_owner(sysfs_root: str, path: str) -> tuple[int, int, int] | None:
     root = Path(sysfs_root).resolve()
     try:
         real = (root / "class" / cls / m.group(1)).resolve(strict=True)
+        if root not in real.parents:  # never read anything outside the sysfs root
+            return None
         major, minor = (int(x) for x in (real / "dev").read_text().strip().split(":"))
     except (OSError, ValueError):
-        return None
-    if root not in real.parents:
         return None
     p = real.parent
     while p != root and root in p.parents:
@@ -205,8 +216,15 @@ class Helper:
 
     def handle(self, line: str, emit: Emit, poll_input: PollInput | None = None) -> bool:
         """Handle one request line; False when the helper must exit."""
-        req = self._parse(line, emit)
-        if req is None:
+        req, rid = self._parse(line)
+        raw_emit = emit
+        if rid is not None:
+            def emit(d: dict) -> None:
+                raw_emit({**d, "id": rid})
+        if isinstance(req, str):
+            emit({"error": req})
+            return True
+        if req is None:  # top-level stop: a late stop after a listen ended, ignored silently
             return True
         op = req["op"]
         try:
@@ -224,28 +242,33 @@ class Helper:
             elif op == "light":
                 self._op_light(req, emit)
             elif op == "listen":
-                return self._op_listen(req, emit, poll_input)
+                return self._op_listen(req, emit, poll_input, rid, raw_emit)
         except Exception:  # never leak details, never die on a bad device answer
             emit({"error": "internal error"})
         return True
 
-    def _parse(self, line, emit: Emit) -> dict | None:
+    @staticmethod
+    def _parse(line) -> tuple[dict | str | None, int | None]:
+        """(request | error text | None for a stop, id to echo)."""
         if not isinstance(line, str) or len(line.encode("utf-8", "replace")) > MAX_LINE:
-            emit({"error": "request too long"})
-            return None
+            return "request too long", None
         try:
             req = json.loads(line, parse_constant=_reject_constant)
         except (ValueError, RecursionError):
-            emit({"error": "invalid JSON"})
-            return None
-        if type(req) is not dict or type(req.get("op")) is not str or req["op"] not in _FIELDS:
-            emit({"error": "unknown op"})
-            return None
+            return "invalid JSON", None
+        if type(req) is not dict:
+            return "unknown op", None
+        rid = req.get("id")
+        if "id" in req and not _is_int(rid, 0, ID_MAX):
+            return "invalid id", None
+        if req.get("op") == "stop":
+            return None, rid
+        if type(req.get("op")) is not str or req["op"] not in _FIELDS:
+            return "unknown op", rid
         allowed, required = _FIELDS[req["op"]]
         if not set(req) <= allowed or not required <= set(req):
-            emit({"error": "unexpected or missing field"})
-            return None
-        return req
+            return "unexpected or missing field", rid
+        return req, rid
 
     def close(self) -> None:
         if self._dev is not None and hasattr(self._dev.transport, "close"):
@@ -311,20 +334,27 @@ class Helper:
             return emit({"error": "light not allowed"})
         emit({"ok": True, **s.light(zone, state)})
 
-    def _op_listen(self, req: dict, emit: Emit, poll_input: PollInput | None) -> bool:
-        seconds = req["seconds"]
+    def _op_listen(self, req: dict, emit: Emit, poll_input: PollInput | None, rid: int | None,
+                   raw_emit: Emit) -> bool:
+        seconds, client_kind = req["seconds"], req.get("kind")
         if not _is_int(seconds, 1, LISTEN_MAX):
             emit({"error": f"seconds must be 1-{LISTEN_MAX}"})
+            return True
+        if client_kind is not None and (type(client_kind) is not str or client_kind not in KINDS):
+            emit({"error": "invalid kind"})
             return True
         if not self._dev.events:
             emit({"error": "no input nodes"})
             return True
+        # Ruling R-4: the database kind always wins; the client may only name the kind of a
+        # device the database does not know; unknown without a kind -> keyboard filter
+        kind = self._dev.kind if self._dev.kind != "unknown" else (client_kind or "unknown")
         try:
             src = self._open_events(list(self._dev.events), self._dev.pid)
         except OSError:
             emit({"error": "cannot open input nodes"})
             return True
-        filt = SignalFilter(self._dev.kind)
+        filt = SignalFilter(kind)
         deadline = self._clock() + seconds
         keep = True
         try:
@@ -341,22 +371,19 @@ class Helper:
                 if x == "":
                     keep = False
                     break
-                if _is_stop(x):
-                    break
-                emit({"error": "listening: only stop is accepted"})
+                other, other_id = self._parse(x)
+                if other is None:
+                    if other_id == rid:
+                        break
+                    continue  # a stale stop of an earlier listen
+                err = {"error": "listening: only stop is accepted"}
+                if other_id is not None:
+                    err["id"] = other_id
+                raw_emit(err)  # answers that line (its own id), not the listen
         finally:
             src.close()
         emit({"done": True, "standard_keys_seen": filt.standard_keys_seen})
         return keep
-
-
-def _is_stop(line: str) -> bool:
-    if len(line) > MAX_LINE:
-        return False
-    try:
-        return json.loads(line, parse_constant=_reject_constant) == {"op": "stop"}
-    except (ValueError, RecursionError):
-        return False
 
 
 # -- stdin loop ---------------------------------------------------------------------------------
@@ -398,8 +425,12 @@ class LineReader:
             self.buf += chunk
 
 
-def serve(h: Helper, fd: int, write: Callable[[str], None], idle_timeout: float = IDLE_TIMEOUT) -> int:
+def serve(h: Helper, fd: int, write: Callable[[str], None], idle_timeout: float = IDLE_TIMEOUT,
+          alarm: Callable[[int], object] | None = None) -> int:
+    """``alarm`` (signal.alarm in main) is re-armed with ALARM_SECONDS before every wait, so a
+    blocked stdout write or any hang still ends the process."""
     reader = LineReader(fd)
+    arm = alarm or (lambda seconds: None)
 
     def emit(d: dict) -> None:
         write(json.dumps(d, separators=(",", ":")))
@@ -412,9 +443,11 @@ def serve(h: Helper, fd: int, write: Callable[[str], None], idle_timeout: float 
             return "<oversize>"
         return x if x != "" else " "
 
+    arm(ALARM_SECONDS)
     emit({"ready": True, "protocol": PROTOCOL})
     try:
         while True:
+            arm(ALARM_SECONDS)
             line = reader.readline(idle_timeout)
             if line is None:
                 emit({"error": "idle timeout"})
@@ -439,7 +472,8 @@ def main() -> int:
         while data:
             data = data[os.write(out, data):]
 
-    return serve(Helper(), sys.stdin.fileno(), write)
+    signal.signal(signal.SIGALRM, signal.SIG_DFL)  # SIGALRM terminates the helper
+    return serve(Helper(), sys.stdin.fileno(), write, alarm=signal.alarm)
 
 
 if __name__ == "__main__":

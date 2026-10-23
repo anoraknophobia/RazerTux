@@ -28,9 +28,16 @@ class Backend(Protocol):
     def open(self, pid: int, interfaces: list[int] | None = None) -> dict: ...
     def read(self, name: str) -> dict: ...
     def light(self, zone: str, state: str) -> dict: ...
-    def listen(self, seconds: int, on_signal: Callable[[list], None]) -> dict: ...
+    def listen(self, seconds: int, on_signal: Callable[[list], None], kind: str | None = None) -> dict: ...
     def request_stop(self) -> None: ...
     def close(self) -> None: ...
+
+
+def _listen_req(seconds: int, kind: str | None) -> dict:
+    req = {"op": "listen", "seconds": seconds}
+    if kind is not None:
+        req["kind"] = kind  # only used by the helper when the database does not know the device
+    return req
 
 
 def _open_req(pid: int, interfaces: list[int] | None) -> dict:
@@ -52,21 +59,32 @@ class InProcessBackend:
     def __init__(self, helper_obj: _helper.Helper | None = None, sysfs_root: str = "/sys", notice: str = ""):
         self._helper = helper_obj or _helper.Helper(sysfs_root=sysfs_root, node_allowed=user_can_open)
         self._stop = threading.Event()
+        self._next_id = 0
         self.notice = notice
 
     def _request(self, req: dict, on_signal=None) -> dict:
+        self._next_id += 1
+        rid = self._next_id
         out: list[dict] = []
 
         def emit(d: dict) -> None:
-            if "signal" in d and on_signal is not None:
-                on_signal(d["signal"])
+            if d.get("id") != rid:
+                return  # not an answer to this request
+            if "signal" in d:
+                if on_signal is not None:
+                    on_signal(d["signal"])
             else:
                 out.append(d)
 
         def poll_input(timeout: float):
-            return json.dumps({"op": "stop"}) if self._stop.is_set() else None
+            if not self._stop.is_set():
+                return None
+            self._stop.clear()
+            return json.dumps({"op": "stop", "id": rid})
 
-        self._helper.handle(json.dumps(req), emit, poll_input)
+        self._helper.handle(json.dumps({**req, "id": rid}), emit, poll_input)
+        if not out:
+            raise BackendError("no answer")
         final = out[-1]
         if "error" in final:
             raise BackendError(final["error"])
@@ -81,9 +99,9 @@ class InProcessBackend:
     def light(self, zone, state):
         return self._request({"op": "light", "zone": zone, "state": state})
 
-    def listen(self, seconds, on_signal):
+    def listen(self, seconds, on_signal, kind=None):
         self._stop.clear()
-        return self._request({"op": "listen", "seconds": seconds}, on_signal)
+        return self._request(_listen_req(seconds, kind), on_signal)
 
     def request_stop(self):
         self._stop.set()
@@ -106,6 +124,8 @@ class HelperBackend:
         self._spawn = spawn
         self._proc = None
         self._lock = threading.Lock()
+        self._next_id = 0
+        self._listen_id: int | None = None
 
     @staticmethod
     def availability(which=shutil.which, exists=os.path.exists) -> tuple[bool, str]:
@@ -140,12 +160,27 @@ class HelperBackend:
     def _request(self, req: dict, on_signal=None) -> dict:
         if self._proc is None:
             raise BackendError("record helper not running")
-        self._write(req)
+        self._next_id += 1
+        rid = self._next_id
+        if req["op"] == "listen":
+            self._listen_id = rid
+        try:
+            self._write({**req, "id": rid})
+            return self._answer(rid, on_signal)
+        finally:
+            self._listen_id = None
+
+    def _answer(self, rid: int, on_signal) -> dict:
         while True:
             line = self._proc.stdout.readline()
             if not line:
                 raise BackendError("record helper exited")
-            d = json.loads(line)
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(d, dict) or d.get("id") != rid:
+                continue  # stale line of an earlier request (e.g. an error about a late stop)
             if "signal" in d:
                 if on_signal is not None:
                     on_signal(d["signal"])
@@ -163,12 +198,15 @@ class HelperBackend:
     def light(self, zone, state):
         return self._request({"op": "light", "zone": zone, "state": state})
 
-    def listen(self, seconds, on_signal):
-        return self._request({"op": "listen", "seconds": seconds}, on_signal)
+    def listen(self, seconds, on_signal, kind=None):
+        return self._request(_listen_req(seconds, kind), on_signal)
 
     def request_stop(self):
-        if self._proc is not None:
-            self._write({"op": "stop"})
+        """Ends a running listen early (callable from another thread). The stop carries the
+        listen's id; a stop that arrives after the listen ended is ignored by the helper."""
+        rid = self._listen_id
+        if self._proc is not None and rid is not None:
+            self._write({"op": "stop", "id": rid})
 
     def close(self):
         proc, self._proc = self._proc, None
