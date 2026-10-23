@@ -12,6 +12,7 @@ Source data: OpenRazer (GPL-2.0-only), https://github.com/openrazer/openrazer
 from __future__ import annotations
 
 import ast
+import inspect
 import json
 import re
 import subprocess
@@ -388,10 +389,12 @@ def device_kind(methods, class_name: str) -> str:
         if not t:
             continue
         t = t.group(1)
+        if t not in KIND_TYPES:
+            raise ValueError(f"{class_name}: unknown daemon device type {m!r}")
         if t == "accessory":
             return "dock" if "Dock" in class_name else "accessory"
-        return {"core": "other"}.get(t, t) if t in KIND_TYPES else "other"
-    return "other"
+        return "other" if t == "core" else t  # the Razer Core is the one explicit "other"
+    raise ValueError(f"{class_name}: no get_device_type_* method")
 
 
 def model_slug(class_name: str) -> str:
@@ -436,7 +439,8 @@ def _class_attr(classes, cname, attr):
     return None
 
 
-def parse_daemon_classes(text: str) -> dict[str, ClassInfo]:
+def parse_daemon_classes(text: str, kinds: bool = False) -> dict[str, ClassInfo]:
+    """``kinds=True`` derives each model's kind from get_device_type_* (raises when unknown)."""
     tree = ast.parse(text)
     classes = {n.name: n for n in tree.body if isinstance(n, ast.ClassDef)}
     devices: dict[str, ClassInfo] = {}
@@ -449,7 +453,8 @@ def parse_daemon_classes(text: str) -> dict[str, ClassInfo]:
         name = m.group(1) if m else "Razer " + model_slug(cname).replace("_", " ").title()
         slug = model_slug(cname)
         info = devices.setdefault(slug, ClassInfo(slug, name))
-        info.kind = device_kind(_class_attr(classes, cname, "METHODS"), cname) if info.pids == {} else info.kind
+        if kinds and not info.pids:
+            info.kind = device_kind(_class_attr(classes, cname, "METHODS"), cname)
         info.pids[pid] = class_kind(cname)
         dpi_max = _class_attr(classes, cname, "DPI_MAX") or 0
         info.dpi_max = max(info.dpi_max, dpi_max)
@@ -652,7 +657,7 @@ def build_other_db(clone: Path, stderr=sys.stderr) -> dict:
     devices, kinds, fn_counts = [], Counter(), Counter()
     seen_slugs: dict[str, str] = {}
     for module, dname in OTHER_SOURCES.items():
-        classes = parse_daemon_classes((hw / f"{module}.py").read_text())
+        classes = parse_daemon_classes((hw / f"{module}.py").read_text(), kinds=True)
         for slug in sorted(classes):
             ci = classes[slug]
             # the driver that owns the PIDs (the Kraken Kitty Edition is a headset on the accessory driver)
@@ -691,7 +696,10 @@ def build_other_db(clone: Path, stderr=sys.stderr) -> dict:
             common_proto = {k: c for k, c in per_pid[pids[0]].items() if all(per_pid[p].get(k) == c for p in pids)}
 
             def enc(c: Command) -> dict:
-                return {"fn": c.fn, "txn": c.txn, "steps": list(c.steps), "args": list(c.args)}
+                params = list(inspect.signature(BUILDERS[c.fn]).parameters)
+                si = params.index("variable_storage") if "variable_storage" in params else None
+                return {"fn": c.fn, "txn": c.txn, "steps": list(c.steps), "args": list(c.args),
+                        "storage_index": si}
 
             pid_protocol, pid_features = {}, {}
             for p in pids:

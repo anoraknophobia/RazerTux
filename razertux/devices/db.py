@@ -17,6 +17,8 @@ class Command:
     # constant arguments of the (single) builder call, resolved to numbers; "*" marks a value
     # supplied at run time (colour, level ...). Only recorded for non-mouse devices.
     args: tuple[int | str, ...] = ()
+    # position in ``args`` of the builder's storage byte (variable_storage); None = builder has none
+    storage_index: int | None = None
 
     def __post_init__(self) -> None:
         if not self.steps:
@@ -58,7 +60,7 @@ class DeviceInfo:
 
 
 def _commands(d: dict) -> dict[str, Command]:
-    return {k: Command(c["fn"], c["txn"], tuple(c.get("steps", ())), tuple(c.get("args", ()))) for k, c in d.items()}
+    return {k: Command(c["fn"], c["txn"], tuple(c.get("steps", ())), tuple(c.get("args", ())), c.get("storage_index")) for k, c in d.items()}
 
 
 def _from_json(d: dict) -> DeviceInfo:
@@ -126,3 +128,33 @@ def by_pid_any(pid: int) -> DeviceInfo | None:
 def kind_by_pid(pid: int) -> str | None:
     d = _pid_index_any().get(pid)
     return d.kind if d else None
+
+
+# static colour builders: name -> position of the colour parameter in the call
+_STATIC_COLOUR = {
+    "razer_chroma_extended_matrix_effect_static": 2,
+    "razer_chroma_mouse_extended_matrix_effect_static": 2,
+}
+_NOSTORE = 0x00
+
+
+def light_test_command(info: DeviceInfo) -> tuple[Command, tuple[int | str, ...]] | None:
+    """Static colour command for a non-persistent light test, or None when anything is uncertain.
+
+    ``info`` is a per-PID view (``DeviceInfo.for_pid``). The returned args have NOSTORE at the
+    command's storage_index and "*" at the colour position; every other argument is concrete.
+    """
+    cmd = info.protocol.get("set_effect:matrix:static")
+    if cmd is None or cmd.steps != (cmd.fn,):
+        return None
+    colour = _STATIC_COLOUR.get(cmd.fn)
+    si = cmd.storage_index
+    if colour is None or si is None or len(cmd.args) <= max(colour, si) or si == colour:
+        return None
+    if cmd.args[si] == "*":
+        return None  # storage chosen at run time by the driver
+    if any(a == "*" for i, a in enumerate(cmd.args) if i != colour) or cmd.args[colour] != "*":
+        return None
+    args = list(cmd.args)
+    args[si] = _NOSTORE
+    return cmd, tuple(args)

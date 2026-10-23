@@ -176,3 +176,38 @@ def test_importer_resolves_constants_and_blade_branches():
     src = "if (is_blade_laptop(device)) { A(); } else { B(); } z();"
     assert imp.resolve_blade(src, True).split() == "{ A(); } z();".split()
     assert imp.resolve_blade(src, False).split() == "{ B(); } z();".split()
+
+
+def _static(model_pid):
+    return by_pid_any(model_pid).for_pid(model_pid)
+
+
+def test_storage_index_is_recorded():
+    c = _static(0x0227).protocol["set_effect:matrix:static"]
+    assert c.storage_index == 0
+    assert _static(0x0227).protocol["get_firmware"].storage_index is None
+    assert db.Command("x", 1).storage_index is None
+    ext_get = _static(0x0227).protocol["get_brightness:matrix"]
+    assert ext_get.storage_index == 0
+
+
+def test_light_test_command_places_nostore():
+    cmd, args = db.light_test_command(_static(0x0227))
+    assert cmd.fn == "razer_chroma_extended_matrix_effect_static"
+    assert args == (0x00, 0x05, "*")  # NOSTORE at storage_index, colour left to the caller
+
+
+def test_light_test_command_refuses_uncertain_cases():
+    assert db.light_test_command(_static(0x02CF)) is None  # runtime storage byte
+    v2 = load_all_devices()["black_widow_chroma_v2"]
+    assert db.light_test_command(v2.for_pid(next(iter(v2.pids)))) is None  # no storage byte
+    classic = load_all_devices()["black_widow_stealth"]
+    assert db.light_test_command(classic.for_pid(next(iter(classic.pids)))) is None  # set_led_effect
+    assert db.light_test_command(_static(0x00A8)) is None  # mouse without the key
+
+
+def test_device_kind_rejects_unknown_types():
+    with pytest.raises(ValueError):
+        imp.device_kind(["get_device_type_toaster"], "RazerX")
+    with pytest.raises(ValueError):
+        imp.device_kind(["set_static_effect"], "RazerX")
