@@ -16,7 +16,8 @@ The GUI is available in English, German, Spanish and French (see "Language" belo
 - **Buttons**: assignments, key combinations, macros, Hypershift, several profiles per model.
 - **Free top buttons**: off = the firmware steps the scroll-wheel stage or DPI stage
   (normal mode). On = driver mode, the two top buttons can be assigned freely.
-- **Learn button**: press a button on the mouse to select it in the GUI.
+- **Learn button**: teach RazerTux the signal of a button it does not recognise (press it on the
+  mouse) and assign it to a button slot. Needs the running service.
 - **Performance**: DPI and DPI stages. A DPI value written permanently is restored to the
   backed-up value when the service exits cleanly.
 - **Lighting**: logo and thumb pad (the scroll wheel has no LED).
@@ -93,7 +94,7 @@ pick a model when several mice are connected.
 
 ## Language
 
-*View -> Language* (also in the tray menu): system language, English, German, Spanish,
+*View → Language* (also in the tray menu): system language, English, German, Spanish,
 French. "System language" uses the language of the system and falls back to English if it
 is not supported. The GUI switches to a new language after a restart ("Restart now" restarts
 it immediately); the service switches immediately (battery warning, configuration errors).
@@ -133,8 +134,8 @@ Run `restore` before uninstalling, while the service is still there. Removing
 - **All other Razer mice from the OpenRazer database** (88 models / 117 USB product IDs, see
   `razertux/devices/openrazer_mice.json`): **experimental**. RazerTux first only reads (read
   probe) and backs up the device state before anything is written. On these mice, DPI,
-  polling rate and similar settings are available depending on the model; untested means
-  no guarantee.
+  polling rate and similar settings are available depending on the model; these mice are
+  untested, so there is no guarantee.
 - Reporting problems: choose **"Copy diagnostics"** in the GUI and paste the text into a
   GitHub issue (<https://github.com/anoraknophobia/RazerTux/issues>).
 - The database comes from OpenRazer (GPL-2.0), see `OPENRAZER-NOTICE` (installed to
@@ -160,7 +161,7 @@ The display can be switched on and off in the tray menu.
   afterwards the service sets the mode to match the profile again. Without a running
   service, unplugging and replugging the mouse helps.
 - `dbus-next` is deprecated as of Python 3.15; a replacement will be needed then.
-- A parallel running OpenRazer service is not supported (package conflict).
+- Running an OpenRazer service in parallel is not supported (package conflict).
 - More hardware details: `docs/hardware-notes.md`.
 
 ## Credits
