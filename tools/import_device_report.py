@@ -5,11 +5,13 @@ Usage: python tools/import_device_report.py <issue-body-or-report-file> [-o OUTD
 
 The input is either the raw JSON report or the text of a GitHub issue (the JSON is taken from the
 ```json block). The report is validated (schema, version, size, and that sanitizing it changes
-nothing). Three suggestion files are written to OUTDIR (default ./device-report-out):
+nothing). Four suggestion files are written to OUTDIR (default ./device-report-out):
 
   device_override.json  fields for the device database (kind, name, connection, confirmed reads, light zones)
   button_map.json       signal -> ButtonId; guided results by button, free signals as learn_1..learn_16,
                         wheel signals by sign; ambiguous signals are listed under "review", not mapped
+  button_map.py.txt     paste-ready InputSignal(...): ButtonId.X lines in the style of razertux/hw/button_maps.py
+                        (button_map.json is only an aid for humans; source names are daemon names there)
   layout.json           skeleton: template views + the buttons that are present on the device
 
 This tool never edits repository files; review the output and copy what is right by hand.
@@ -38,7 +40,9 @@ _WHEEL = {("REL_WHEEL", 1): "wheel_up", ("REL_WHEEL", -1): "wheel_down",
           ("REL_WHEEL_HI_RES", 1): "wheel_up", ("REL_WHEEL_HI_RES", -1): "wheel_down",
           ("REL_HWHEEL", 1): "wheel_right", ("REL_HWHEEL", -1): "wheel_left",
           ("REL_HWHEEL_HI_RES", 1): "wheel_right", ("REL_HWHEEL_HI_RES", -1): "wheel_left"}
-_FENCE = re.compile(r"```json[ \t]*\r?\n(.*?)```", re.S | re.I)
+_FENCE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})[^\n]*\n(.*?)\n[ ]{0,3}\1[`~]*[ \t]*$", re.S | re.M)
+_INDENT = re.compile(r"(?:^(?:    |\t)[^\n]*(?:\n|$)|^[ \t]*\n)+", re.M)
+_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 _CODE = re.compile(r"^CODE_(\d+)_(\d+)$")
 
 
@@ -56,7 +60,9 @@ def extract_json(text: str) -> dict:
             return data
     except ValueError:
         pass
-    blocks = _FENCE.findall(text)
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    blocks = [m[1] for m in _FENCE.findall(text)]
+    blocks += [re.sub(r"(?m)^(?:    |\t)", "", m.group(0)) for m in _INDENT.finditer(text) if m.group(0).strip()]
     if not blocks:
         raise ImportError_("no JSON report found")
     last = None
@@ -77,7 +83,7 @@ def validate(data: dict) -> dict:
     v = data.get("version")
     if type(v) is not int or v != VERSION:
         raise ImportError_(f"unsupported report version {str(v)[:20]!r}, expected {VERSION}")
-    if sanitize(data) != data:
+    if sanitize(data, local_identity=False) != data:
         raise ImportError_("report is tampered or not sanitized (sanitizing it changes its content)")
     return data
 
@@ -115,6 +121,39 @@ def parse_signal(name: str) -> tuple[str, int, int, int | None] | None:
         if sig.startswith(prefix) and isinstance(getattr(E, sig, None), int):
             return source, ev, getattr(E, sig), sign
     return None
+
+
+_NODE = re.compile(r"^if(\d+):(\w+)$")
+
+
+def daemon_source(report_source: str) -> tuple[str, bool]:
+    """Report source ('if2:keyboard') -> daemon source name ('if02'), plus whether the guess is solid.
+
+    Follows razertux/daemon/devices.py: mouse node of interface 0 -> 'mouse', mouse node of ifN ->
+    'ifNN_mouse', keyboard node of ifN -> 'ifNN'; other nodes are guessed as 'ifNN_event'."""
+    m = _NODE.match(report_source)
+    if not m:
+        return report_source, False
+    n, node = int(m[1]), m[2]
+    if node == "mouse":
+        return ("mouse" if n == 0 else f"if{n:02d}_mouse"), True
+    if node == "keyboard":
+        return f"if{n:02d}", True
+    return f"if{n:02d}_event", False
+
+
+def python_snippet(entries: list[dict]) -> str:
+    """Ready-to-paste table lines in the style of razertux/hw/button_maps.py."""
+    lines = ["# Suggested by tools/import_device_report.py - UNVERIFIED, check each line on hardware.",
+             "SUGGESTED: ButtonMap = {"]
+    for e in entries:
+        ev = {E.EV_KEY: "E.EV_KEY", E.EV_REL: "E.EV_REL", E.EV_ABS: "E.EV_ABS"}.get(e["ev_type"], str(e["ev_type"]))
+        code = e["code_name"] if e["code_name"] and not e["code_name"].startswith("CODE_") else str(e["code"])
+        code = f"E.{code}" if not code.isdigit() else code
+        todo = "" if e["source_certain"] else "  # TODO: check the source name"
+        lines.append(f"    InputSignal({e['daemon_source']!r}, {ev}, {code}): ButtonId.{ButtonId(e['button']).name},{todo}")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
 
 
 def _wheel_button(name: str) -> str | None:
@@ -176,7 +215,10 @@ def suggest(report: dict) -> dict:
         if p is None:
             notes.append(f"{sig}: unrecognized signal name, not mapped")
             continue
-        entries.append({"signal": sig, "source": p[0], "ev_type": p[1], "code": p[2], "button": button})
+        src, certain = daemon_source(p[0])
+        raw = sig.rsplit(":", 1)[0] if p[3] is not None else sig
+        entries.append({"signal": sig, "source": p[0], "daemon_source": src, "source_certain": certain,
+                        "ev_type": p[1], "code": p[2], "code_name": raw.rsplit(":", 1)[-1], "button": button})
     mapping = {e["signal"]: e["button"] for e in entries}
     if b.get("timed_out"):
         notes.append(f"recording timed out at {b.get('stopped_at', '?')}; later buttons were not recorded")
@@ -186,11 +228,17 @@ def suggest(report: dict) -> dict:
     if tfile and tfile.exists():
         tpl = json.loads(tfile.read_text(encoding="utf-8"))
         layout["views"] = tpl.get("views", [])
+        plates = tpl.get("plate_buttons", {})
+        if plates:
+            layout["plate_buttons"] = plates
+        known_specs = {**{k: v for t in plates.values() for k, v in t.items()}, **tpl["buttons"]}
+        view0 = layout["views"][0]["name"] if layout["views"] else "TODO"
         for button in present:
-            if button in tpl["buttons"]:
-                layout["buttons"][button] = tpl["buttons"][button]
+            if button in known_specs:
+                layout["buttons"][button] = known_specs[button]
             else:
-                notes.append(f"{button} is not in {tfile.stem}; add it to the layout by hand")
+                layout["buttons"][button] = {"view": view0, "element": "TODO", "side": "TODO", "todo": True}
+                notes.append(f"{button} is not in {tfile.stem}; added to layout.json with a TODO element")
     elif b.get("template"):
         notes.append(f"unknown template {str(b['template'])[:20]!r}")
 
@@ -211,37 +259,48 @@ def suggest(report: dict) -> dict:
             "layout": layout}
 
 
-def write_suggestions(sug: dict, outdir: Path) -> list[Path]:
+def write_suggestions(sug: dict, outdir: Path, force: bool = False) -> list[Path]:
     out = outdir.resolve()
-    for guarded in (ROOT / "razertux", ROOT / "tests", ROOT / ".git"):
-        if out == guarded or guarded in out.parents:
-            raise ImportError_(f"refusing to write into the repository ({guarded.name}/)")
+    if out == ROOT or ROOT in out.parents:
+        raise ImportError_("refusing to write inside the repository; choose an output directory outside it")
+    files = {f"{n}.json": json.dumps(sug[n], indent=1) + "\n" for n in ("device_override", "button_map", "layout")}
+    files["button_map.py.txt"] = python_snippet(sug["button_map"]["signals"])
+    if not force:
+        existing = [n for n in files if (out / n).exists()]
+        if existing:
+            raise ImportError_(f"{', '.join(existing)} already exist in {out}; use --force to overwrite")
     out.mkdir(parents=True, exist_ok=True)
     paths = []
-    for name in ("device_override", "button_map", "layout"):
-        p = out / f"{name}.json"
-        p.write_text(json.dumps(sug[name], indent=1, sort_keys=False) + "\n", encoding="utf-8")
+    for name, text in files.items():
+        p = out / name
+        p.write_text(text, encoding="utf-8")
         paths.append(p)
     return paths
+
+
+def _clean(text: str) -> str:
+    return _CTRL.sub("?", text)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("input", help="issue body text file or report JSON file")
-    ap.add_argument("-o", "--output", default="device-report-out", help="output directory for the suggestions")
+    ap.add_argument("-o", "--output", default="device-report-out",
+                    help="output directory for the suggestions (must be outside the repository)")
+    ap.add_argument("--force", action="store_true", help="overwrite existing output files")
     a = ap.parse_args(argv)
     try:
         report = load_report(a.input)
         sug = suggest(report)
-        print(summary_text(report))
-        paths = write_suggestions(sug, Path(a.output))
+        print(_clean(summary_text(report)))
+        paths = write_suggestions(sug, Path(a.output), a.force)
     except (ImportError_, OSError) as e:
-        print(f"refused: {e}", file=sys.stderr)
+        print(_clean(f"refused: {e}"), file=sys.stderr)
         return 1
     bm = sug["button_map"]
-    print(f"\nMapped {len(bm['map'])} signal(s); {len(bm['review'])} for manual review: {', '.join(bm['review']) or '-'}")
+    print(_clean(f"\nMapped {len(bm['map'])} signal(s); {len(bm['review'])} for manual review: {', '.join(bm['review']) or '-'}"))
     for n in bm["notes"]:
-        print(f"note: {n}")
+        print(_clean(f"note: {n}"))
     for p in paths:
         print(f"wrote {p}")
     return 0

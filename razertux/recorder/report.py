@@ -1,6 +1,7 @@
 """Device report: format, privacy filter, human summary and prefilled GitHub issue URL."""
 from __future__ import annotations
 
+import contextvars
 import getpass
 import json
 import os
@@ -54,8 +55,13 @@ class Report:
     version: int = VERSION
 
 
+_LOCAL = contextvars.ContextVar("razertux_report_local_identity", default=True)
+
+
 def _secret_words() -> set[str]:
-    words = set()
+    words: set[str] = set()
+    if not _LOCAL.get():
+        return words
     for fn in (_uname_node, _user):
         w = fn()
         if len(w) >= 3:
@@ -196,8 +202,19 @@ def _interface(i: dict) -> dict:
     return out
 
 
-def sanitize(data):
-    """Whitelist report sections/keys and scrub every string value; accepts a Report or its dict form."""
+def sanitize(data, local_identity: bool = True):
+    """Whitelist report sections/keys and scrub every string value; accepts a Report or its dict form.
+
+    ``local_identity=False`` skips the machine-specific scrub of this host's user and host name
+    (for checking a report that was produced elsewhere, e.g. by the maintainer import tool)."""
+    token = _LOCAL.set(bool(local_identity))
+    try:
+        return _sanitize(data)
+    finally:
+        _LOCAL.reset(token)
+
+
+def _sanitize(data):
     if isinstance(data, Report):
         data = {k: getattr(data, k) for k in _TOP}
     data = _d(data)
