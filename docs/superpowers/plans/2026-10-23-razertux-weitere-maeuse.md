@@ -279,12 +279,12 @@ def test_diagnostics_contains_pid_and_hex_but_no_serial(): ...
 **Vorlage:** Entwurf vom 2026-10-23, vom Nutzer mit „passt“ freigegeben: Generator `.superpowers/sdd/2026-10-22-naga-config/naga2-mockup-generator.py`, Bild `.superpowers/sdd/2026-10-22-naga-config/naga2-mockup.png`. Formen von dort übernehmen (Draufsicht: schmale Front, rechter Buckel, Tastenfeld links, Mausrad + zwei obere Tasten in einem Streifen; 12er-Platte 3×4 versetzt; 6er-Platte 2×3 Pfeiltasten mit Beschriftung links 6/5/4, rechts 1/2/3; 2er-Platte zwei große Tasten oben/unten).
 
 **Interfaces:**
-- `DeviceSettings.plate` (Task 6) wählt die Plattengrafik und die Tasten-Tabelle. 12er: wie heute. 6er/2er: **vorläufig** dieselben Codes wie Tasten 1–6 bzw. 1–2 der 12er-Platte (Annahme, nicht geprüft) – Ruling im Ledger; Prüfung mit dem Nutzer am Gerät nach Task 10 (er hat alle drei Platten). Tasten außerhalb der gewählten Platte werden in der Liste ausgeblendet, ihre Belegungen bleiben im Profil erhalten.
+- `DeviceSettings.plate` (Task 6) wählt die Plattengrafik und die Tasten-Tabelle. 12er: wie heute. 6er/2er: **vorläufig** dieselben Codes wie Tasten 1–6 bzw. 1–2 der 12er-Platte (Annahme, nicht prüfbar – Nutzer hat die Platten nicht mehr) – Ruling im Ledger; „Taste anlernen“ ist der Ausweg. Tasten außerhalb der gewählten Platte werden in der Liste ausgeblendet, ihre Belegungen bleiben im Profil erhalten.
 - Reiter TASTEN: Auswahlliste „Seitenplatte: 12 Tasten / 6 Tasten / 2 Tasten“ (nur Naga V2 Pro), speichert sofort in `devices/naga_v2_pro.json`.
 
 - [ ] **Step 1: Failing tests** – Layout enthält `side_1…side_12` (Platte 12), `side_1…side_6` (6), `side_1…side_2` (2), `wheel`, `top_1`, `top_2`, `left`, `right`; Plattenwechsel blendet Beschriftungen aus, Profil unverändert.
 - [ ] **Step 2–4:** FAIL → SVGs zeichnen (Linien-Format aus Task 9) → PASS. Screenshots offscreen 1100×800 (`task-10-tasten-de.png`, je Platte) in den SDD-Ordner. **Step 5: Commit** `feat: Naga V2 Pro laser drawings with all three side plates`.
-- [ ] **Step 6 (Nutzer, am Gerät):** 6er- und 2er-Platte anstecken, Tasten drücken; Controller prüft mit `tools/probe_buttons.py`, welche Codes kommen, und korrigiert die Tabellen falls nötig.
+- Keine Hardware-Prüfung der 6er-/2er-Platte möglich (Nutzer hat die Platten nicht mehr, 2026-10-23). Ihre Tasten-Tabellen bleiben als „ungeprüft“ markiert; im Reiter TASTEN steht bei diesen Platten der Hinweis „Belegung ungeprüft – falls eine Taste nicht stimmt: Taste anlernen“.
 
 ---
 
@@ -347,4 +347,4 @@ def test_diagnostics_contains_pid_and_hex_but_no_serial(): ...
 - README: Abschnitt „Unterstützte Mäuse“ (Naga V2 Pro geprüft, alle anderen experimentell, wie man Diagnose meldet), Abschnitt „Laser-Grafiken“ (eigene Zeichnungen, keine Razer-Bilder).
 
 - [ ] **Step 1–4:** Failing packaging tests → umsetzen → volle Suite grün, `makepkg -f` baut. **Step 5: Commit** `chore: package 0.3.0 for all supported mice`.
-- [ ] **Step 6 (Nutzer):** `sudo pacman -U …/razertux-0.3.0-1-any.pkg.tar.zst`; Controller startet Dienst/Tray neu und prüft mit dem Nutzer: Naga-Tasten, Makro, Profilwechsel, DPI-Stufen, Mausrad-Anzeige, alle drei Platten (Task 10 Step 6).
+- [ ] **Step 6 (Nutzer):** `sudo pacman -U …/razertux-0.3.0-1-any.pkg.tar.zst`; Controller startet Dienst/Tray neu und prüft mit dem Nutzer: Naga-Tasten, Makro, Profilwechsel, DPI-Stufen, Mausrad-Anzeige, 12er-Platte in der neuen Grafik.
