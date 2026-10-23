@@ -78,8 +78,10 @@ def classify(props: Mapping[str, str], known_pids: set[int]) -> tuple[int, str] 
     keyboard = props.get("ID_INPUT_KEYBOARD") == "1"
     if iface == "00":
         return (pid, "mouse") if props.get("ID_INPUT_MOUSE") == "1" else None
-    if iface.isdigit():
-        return pid, (f"if{iface}" if keyboard else f"if{iface}_event")
+    if iface.isdigit() and keyboard:
+        return pid, f"if{iface}"
+    if iface == "01":
+        return pid, "if01_event"
     return None
 
 

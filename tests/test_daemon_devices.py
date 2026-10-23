@@ -135,6 +135,13 @@ def test_classify_rejects_foreign_and_non_event_nodes():
     assert classify({"DEVNAME": "/dev/input/event30", "NAME": f'"{VIRTUAL_NAME}"'}, NAGA) is None
 
 
+def test_classify_fallback_is_conservative():
+    assert classify(_props("02"), NAGA) is None  # non-keyboard, no by-id link
+    assert classify(_props("03", ID_INPUT_KEYBOARD="1"), NAGA) == (0xA7, "if03")
+    assert classify(_props("01"), NAGA) == (0xA7, "if01_event")
+    assert classify(_props("00"), NAGA) is None
+
+
 def test_classify_known_pid_from_db_set():
     props = _props("00", pid="0084", links=DA + "if01-event-kbd")
     assert classify(props, {0x84}) == (0x84, "if01")
