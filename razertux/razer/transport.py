@@ -88,6 +88,21 @@ class HidrawTransport:
         return resp
 
 
+def hidraw_pid(path: str) -> int | None:
+    """USB product id of the device behind a hidraw node (None if unknown)."""
+    real = os.path.realpath(path)
+    if not os.path.basename(real).startswith("hidraw"):
+        return None
+    try:
+        dev = pyudev.Devices.from_device_file(pyudev.Context(), real)
+        usb_dev = dev.find_parent("usb", "usb_device")
+        if usb_dev is None:
+            return None
+        return int(usb_dev.attributes.asstring("idProduct"), 16)
+    except (pyudev.DeviceNotFoundError, OSError, KeyError, ValueError):
+        return None
+
+
 def _find_hidraw(interface: str, pid_filter) -> str | None:
     pids = {f"{p:04x}" for p in pid_filter}
     for dev in pyudev.Context().list_devices(subsystem="hidraw"):

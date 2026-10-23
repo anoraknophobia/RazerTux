@@ -289,3 +289,92 @@ def test_cli_restore_old_daemon_prints_version_hint(daemon_devices, monkeypatch,
     err = capsys.readouterr().err
     assert "Dienst-Version passt nicht" in err
     assert "systemctl --user restart razertuxd" in err  # I2: names the real remedy
+
+
+# -- I4: experimental mice: PID of the opened node, probe before writing ------------
+
+BV3 = "basilisk_v3_pro"  # experimental, 0x00aa wired / 0x00ab wireless
+
+
+def _bad_probe_transport():
+    t = FakeTransport.full()
+    t.responses[(0x04, 0x85)] = bytes([0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0])  # DPI 65535
+    return t
+
+
+def _writes(t):
+    return [s for s in t.sent if not s[1] & 0x80]
+
+
+@pytest.fixture
+def bv3(daemon_devices, monkeypatch, tmp_path):
+    """--model basilisk_v3_pro, its hidraw node is /dev/hidraw7 (wireless PID)."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model: None)  # daemon not running
+    monkeypatch.setattr(cli, "find_control_hidraw", lambda pids: "/dev/hidraw7")
+    node = {"pid": 0x00AB, "t": FakeTransport.full(), "made": []}
+    monkeypatch.setattr(cli, "hidraw_pid", lambda path: node["pid"])
+    monkeypatch.setattr(cli, "HidrawTransport", lambda path: _Ctx(node["t"]))
+    real = cli.make_mouse
+
+    def spy(info, t, pid=None):
+        node["made"].append(pid)
+        return real(info, t, pid)
+    monkeypatch.setattr(cli, "make_mouse", spy)
+    return node
+
+
+def test_cli_uses_the_pid_of_the_opened_node(bv3, capsys):
+    assert cli.main(["status", "--model", BV3]) == 0
+    assert bv3["made"] == [0x00AB]  # not the first PID of the model (0x00aa)
+
+
+def test_cli_refuses_when_the_pid_is_unknown_for_a_multi_pid_model(bv3, capsys):
+    bv3["pid"] = None
+    assert cli.main(["backup", "--model", BV3]) == 1
+    assert "Produkt-ID" in capsys.readouterr().err
+    assert bv3["made"] == [] and bv3["t"].sent == []
+
+
+def test_cli_backup_of_experimental_mouse_needs_a_passing_probe(bv3, tmp_path, capsys):
+    bv3["t"] = _bad_probe_transport()
+    assert cli.main(["backup", "--model", BV3]) == 1
+    err = capsys.readouterr().err
+    assert "Probe" in err and "nichts geschrieben" in err
+    assert not cli.default_backup_path(BV3).exists()
+
+
+def test_cli_offline_restore_of_experimental_mouse_needs_a_passing_probe(bv3, tmp_path,
+                                                                         capsys):
+    p = cli.default_backup_path(BV3)
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"dpi": [1600, 1600], "poll_rate": 500}))
+    bv3["t"] = _bad_probe_transport()
+    assert cli.main(["restore", "--model", BV3]) == 1
+    assert "Probe" in capsys.readouterr().err
+    assert _writes(bv3["t"]) == []
+    bv3["t"] = FakeTransport.full()  # a sane mouse: restored
+    assert cli.main(["restore", "--model", BV3]) == 2  # 2: fields missing in this small backup
+    err = capsys.readouterr().err
+    assert "Probe" not in err and "dpi," not in err and "poll_rate" not in err
+    assert (0x04, 0x05) in _writes(bv3["t"])  # DPI written
+
+
+def test_hidraw_pid_reads_the_usb_parent(monkeypatch):
+    from types import SimpleNamespace
+
+    from razertux.razer import transport
+    usb = SimpleNamespace(attributes=SimpleNamespace(asstring=lambda k: {"idProduct": "00ab"}[k]))
+    dev = SimpleNamespace(find_parent=lambda sub, typ: usb if typ == "usb_device" else None)
+    seen = []
+
+    class Devices:
+        @staticmethod
+        def from_device_file(ctx, path):
+            seen.append(path)
+            return dev
+    monkeypatch.setattr(transport.pyudev, "Devices", Devices)
+    assert transport.hidraw_pid("/dev/hidraw7") == 0x00AB
+    assert seen == ["/dev/hidraw7"]
+    assert transport.hidraw_pid("/dev/null") is None  # not a hidraw node: no udev lookup
+    assert seen == ["/dev/hidraw7"]

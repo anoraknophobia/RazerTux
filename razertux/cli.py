@@ -13,7 +13,8 @@ from .config.model import NAGA_MODEL
 from .devices.db import load_devices
 from .razer.mouse import make_mouse
 from .razer.naga_v2_pro import NagaV2Pro
-from .razer.transport import HidrawTransport, find_control_hidraw
+from .razer.probe import probe
+from .razer.transport import HidrawTransport, find_control_hidraw, hidraw_pid
 
 
 VERSION_MISMATCH = "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
@@ -120,21 +121,59 @@ def resolve_model(model: str | None, hidraw: str | None = None) -> str:
     return connected[0] if connected else NAGA_MODEL
 
 
-def _transport_for(args, model: str):
+class WriteRefused(Exception):
+    """An experimental mouse is not written to (message is user-facing)."""
+
+
+def _control_path(args, model: str) -> str | None:
+    """hidraw node of a non-Naga model (the Naga keeps _open_transport)."""
     if model == NAGA_MODEL:
-        return _open_transport(args.hidraw)
+        return None
     info = _device_info(model)
     path = args.hidraw or find_control_hidraw(tuple(info.pids))
     if path is None:
         raise FileNotFoundError(f"Kein {info.name} gefunden (hidraw)")
-    return HidrawTransport(path)
+    return path
 
 
-def _driver(model: str, transport):
+def _transport_for(args, model: str, path: str | None = None):
+    if model == NAGA_MODEL:
+        return _open_transport(args.hidraw)
+    return HidrawTransport(path or _control_path(args, model))
+
+
+def _node_pid(model: str, path: str | None) -> int | None:
+    """USB product id of the opened node; the protocol details differ per PID
+    (wired / wireless), so guessing the first one is only safe for one-PID models."""
+    if model == NAGA_MODEL:
+        return None
+    info = _device_info(model)
+    pid = hidraw_pid(path) if path else None
+    if pid in info.pids:
+        return pid
+    if len(info.pids) == 1:
+        return next(iter(info.pids))
+    raise WriteRefused(f"USB-Produkt-ID von {path} nicht ermittelbar – {info.name} hat "
+                       "mehrere Varianten (Kabel/Funk), bitte die Maus direkt anschließen "
+                       "oder --hidraw angeben")
+
+
+def _driver(model: str, transport, pid: int | None = None):
     if model == NAGA_MODEL:
         return NagaV2Pro(transport)
+    return make_mouse(_device_info(model), transport, pid)
+
+
+def _check_probe(model: str, dev) -> None:
+    """Experimental (unverified) mice: read-only probe before anything is written
+    (Ruling M8, as in the daemon)."""
     info = _device_info(model)
-    return make_mouse(info, transport, next(iter(info.pids)))
+    if info.verified:
+        return
+    result = probe(dev)
+    if not result.ok:
+        raise WriteRefused(f"Probe von {info.name} fehlgeschlagen ("
+                           + "; ".join(result.problems) + ") – nichts geschrieben")
 
 
 def main(argv=None) -> int:
@@ -169,11 +208,14 @@ def main(argv=None) -> int:
     if args.cmd == "restore":
         return _restore(args, model)
     try:
-        with _transport_for(args, model) as t:
-            dev = _driver(model, t)
+        node = _control_path(args, model)
+        pid = _node_pid(model, node)
+        with _transport_for(args, model, node) as t:
+            dev = _driver(model, t, pid)
             if args.cmd == "status":
                 print(json.dumps(dev.snapshot(), indent=2))
             else:
+                _check_probe(model, dev)
                 snap = save_backup(dev, path)
                 missing = [k for k, v in snap.items() if v is None]
                 if missing:
@@ -182,7 +224,7 @@ def main(argv=None) -> int:
                         file=sys.stderr,
                     )
                 print(f"Sicherung geschrieben: {path}")
-    except (OSError, BackupError) as e:
+    except (OSError, BackupError, WriteRefused) as e:
         print(f"Fehler: {e}", file=sys.stderr)
         return 1
     return 0
@@ -211,9 +253,13 @@ def _restore(args, model: str = NAGA_MODEL) -> int:
         except (OSError, ValueError) as e:
             print(f"Fehler: Keine lesbare Sicherung unter {path}: {e}", file=sys.stderr)
             return 1
-        with _transport_for(args, model) as t:
-            return _report_restore(restore_backup(_driver(model, t), data))
-    except (OSError, RestoreError) as e:
+        node = _control_path(args, model)
+        pid = _node_pid(model, node)
+        with _transport_for(args, model, node) as t:
+            dev = _driver(model, t, pid)
+            _check_probe(model, dev)
+            return _report_restore(restore_backup(dev, data))
+    except (OSError, RestoreError, WriteRefused) as e:
         print(f"Fehler: {e}", file=sys.stderr)
         return 1
 
