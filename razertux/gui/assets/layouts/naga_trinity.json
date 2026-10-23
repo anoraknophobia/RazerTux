@@ -1,0 +1,380 @@
+{
+ "template": "naga_trinity",
+ "views": [
+  {
+   "name": "plate",
+   "asset": "template_mmo_plate12.svg",
+   "style": "laser",
+   "scale": 0.74,
+   "variants": {
+    "12": "template_mmo_plate12.svg",
+    "7": "template_mmo_plate7.svg",
+    "2": "template_mmo_plate2.svg"
+   }
+  },
+  {
+   "name": "top",
+   "asset": "template_mmo_top.svg",
+   "style": "laser"
+  }
+ ],
+ "plate_buttons": {
+  "12": {
+   "side_1": {
+    "view": "plate",
+    "element": "side_1",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_2": {
+    "view": "plate",
+    "element": "side_2",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.2794,
+    "via": [
+     [
+      0.5,
+      0.2794
+     ]
+    ]
+   },
+   "side_3": {
+    "view": "plate",
+    "element": "side_3",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.2923,
+    "via": [
+     [
+      0.7903,
+      0.2923
+     ]
+    ]
+   },
+   "side_4": {
+    "view": "plate",
+    "element": "side_4",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_5": {
+    "view": "plate",
+    "element": "side_5",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.4858,
+    "via": [
+     [
+      0.5,
+      0.4858
+     ]
+    ]
+   },
+   "side_6": {
+    "view": "plate",
+    "element": "side_6",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.4987,
+    "via": [
+     [
+      0.7903,
+      0.4987
+     ]
+    ]
+   },
+   "side_7": {
+    "view": "plate",
+    "element": "side_7",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_8": {
+    "view": "plate",
+    "element": "side_8",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.6923,
+    "via": [
+     [
+      0.5,
+      0.6923
+     ]
+    ]
+   },
+   "side_9": {
+    "view": "plate",
+    "element": "side_9",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.7052,
+    "via": [
+     [
+      0.7903,
+      0.7052
+     ]
+    ]
+   },
+   "side_10": {
+    "view": "plate",
+    "element": "side_10",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_11": {
+    "view": "plate",
+    "element": "side_11",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.8987,
+    "via": [
+     [
+      0.5,
+      0.8987
+     ]
+    ]
+   },
+   "side_12": {
+    "view": "plate",
+    "element": "side_12",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7687
+    ],
+    "entry": 0.9116,
+    "via": [
+     [
+      0.7903,
+      0.9116
+     ]
+    ]
+   }
+  },
+  "7": {
+   "side_1": {
+    "view": "plate",
+    "element": "side_1",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_2": {
+    "view": "plate",
+    "element": "side_2",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7755
+    ],
+    "entry": 0.365,
+    "via": [
+     [
+      0.6398,
+      0.365
+     ]
+    ]
+   },
+   "side_3": {
+    "view": "plate",
+    "element": "side_3",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_4": {
+    "view": "plate",
+    "element": "side_4",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7755
+    ],
+    "entry": 0.6037,
+    "via": [
+     [
+      0.5,
+      0.6037
+     ]
+    ]
+   },
+   "side_5": {
+    "view": "plate",
+    "element": "side_5",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7755
+    ],
+    "entry": 0.6179,
+    "via": [
+     [
+      0.7796,
+      0.6179
+     ]
+    ]
+   },
+   "side_6": {
+    "view": "plate",
+    "element": "side_6",
+    "side": "left",
+    "anchor": [
+     0.2481,
+     0.5
+    ]
+   },
+   "side_7": {
+    "view": "plate",
+    "element": "side_7",
+    "side": "left",
+    "anchor": [
+     0.5,
+     0.7755
+    ],
+    "entry": 0.8425,
+    "via": [
+     [
+      0.6398,
+      0.8425
+     ]
+    ]
+   }
+  },
+  "2": {
+   "side_1": {
+    "view": "plate",
+    "element": "side_1",
+    "side": "left",
+    "anchor": [
+     0.2232,
+     0.5
+    ]
+   },
+   "side_2": {
+    "view": "plate",
+    "element": "side_2",
+    "side": "left",
+    "anchor": [
+     0.2232,
+     0.5
+    ]
+   }
+  }
+ },
+ "buttons": {
+  "left": {
+   "view": "top",
+   "element": "left",
+   "side": "right",
+   "anchor": [
+    0.7772,
+    0.076
+   ],
+   "through": [
+    "right"
+   ]
+  },
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right",
+   "anchor": [
+    0.4174,
+    0.3479
+   ]
+  },
+  "wheel_up": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.2069
+   ],
+   "through": [
+    "right"
+   ]
+  },
+  "middle": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "primary": true,
+   "through": [
+    "right"
+   ]
+  },
+  "wheel_down": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.7931
+   ],
+   "through": [
+    "right"
+   ]
+  },
+  "dpi_up": {
+   "view": "top",
+   "element": "dpi_up",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  },
+  "dpi_down": {
+   "view": "top",
+   "element": "dpi_down",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  }
+ }
+}

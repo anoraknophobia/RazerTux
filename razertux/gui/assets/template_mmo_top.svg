@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 244 422" width="244" height="422">
+  <!-- MMO mouse (Naga family) from above, front at the top; the thumb plate is a separate picture (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M60 8 C44 14 24 42 16 78 C10 106 6 134 6 164 C6 204 8 250 14 284 C20 308 30 320 34 332 C40 380 78 414 124 414 C172 414 210 388 224 342 C236 304 240 262 238 224 C236 184 230 148 218 122 C212 110 212 98 210 86 C206 60 198 26 180 8" stroke="@ACC@" stroke-width="2.2"/>
+<path d="M60 8 C72 4 88 4 100 6" stroke="@ACC@" stroke-width="1.5"/>
+<path d="M180 8 C168 4 152 4 142 6" stroke="@ACC@" stroke-width="1.5"/>
+<path d="M6 150 C20 146 36 150 42 160 C48 200 48 250 40 288 C32 298 20 300 12 296" stroke="@ACC@" stroke-width="1.3"/>
+  <g id="left"><path d="M62 12 C74 8 88 8 100 9 L100 136 L18 136 L16 92 C20 56 38 24 62 12 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M178 13 C168 9 154 9 142 10 L142 136 L216 136 L208 108 C204 90 204 62 192 36 C188 26 182 18 178 13 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="108" y="26" width="26" height="70" rx="10" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M114 44 L128 44 M114 56 L128 56 M114 68 L128 68 M114 80 L128 80" stroke="@ACC@" stroke-width="0.7"/>
+  <g id="dpi_up"><rect x="110" y="150" width="22" height="16" rx="5" stroke="@ACC@" stroke-width="1.0"/></g>
+  <g id="dpi_down"><rect x="110" y="172" width="22" height="16" rx="5" stroke="@ACC@" stroke-width="1.0"/></g>
+</svg>

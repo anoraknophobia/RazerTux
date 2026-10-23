@@ -109,7 +109,7 @@ def test_plate_buttons_are_merged_per_plate():
 
 
 def test_unknown_model_falls_back_to_generic():
-    info = load_devices()["abyssus"]
+    info = load_devices()["hyper_polling_wireless"]  # a dongle, not a mouse
     assert layout_for(info, None).template == "generic"
 
 
@@ -132,7 +132,7 @@ def test_plate_variants_swap_the_asset():
 
 
 def test_generic_layout_shows_in_the_laser_look(qapp):
-    view = MouseView(layout_for(load_devices()["abyssus"], None))
+    view = MouseView(layout_for(load_devices()["hyper_polling_wireless"], None))
     view.set_bindings({}, {})
     view.resize(900, 560)
     view.show()
@@ -182,7 +182,7 @@ def test_leader_lines_do_not_cross_other_keys(qapp, path, size, plate):
 
 
 def test_left_labels_on_a_top_view_enter_outside_the_keys_and_mirror_the_right(qapp):
-    view = MouseView(layout_for(load_devices()["abyssus"], None))
+    view = MouseView(layout_for(load_devices()["hyper_polling_wireless"], None))
     view.set_bindings({}, {})
     view.resize(1000, 560)
     view.show()
@@ -197,3 +197,96 @@ def test_left_labels_on_a_top_view_enter_outside_the_keys_and_mirror_the_right(q
         start, elbow, entry, end = view.leader_line(b)
         assert start.x() > elbow.x() > rect.right() > entry.x() > end.x()
     view.close()
+
+
+# -- Task 11: templates, generic fallback with learn dots, per-model layouts --------------
+
+WHEEL3 = {"wheel_up", "middle", "wheel_down"}
+TILT = {"wheel_left", "wheel_right"}
+THUMB = {"forward", "back"}
+BASE = {"left", "right"} | WHEEL3
+EXPECTED = {  # slug -> (template, view names, button set)
+    "death_adder_v2": ("template_ergo", BASE | THUMB | {"dpi_up", "dpi_down"}),
+    "death_adder_v3": ("template_ergo", BASE | THUMB),
+    "death_adder_v3_pro": ("template_ergo", BASE | THUMB),
+    "viper": ("template_ambi", BASE | THUMB),
+    "viper_v2_pro": ("template_ambi", BASE | THUMB),
+    "viper_mini": ("template_ambi", BASE | THUMB),
+    "basilisk_v3": ("template_ergo", BASE | TILT | THUMB),
+    "basilisk_v3_pro": ("template_ergo", BASE | TILT | THUMB),
+    "cobra": ("template_ergo", BASE | THUMB),
+    "cobra_pro": ("template_ergo", BASE | THUMB),
+    "orochi_v2": ("template_compact", BASE | THUMB),
+}
+
+
+@pytest.mark.parametrize("slug", sorted(EXPECTED))
+def test_mouse_models_have_their_own_layout_file(slug):
+    template, buttons = EXPECTED[slug]
+    assert (LAYOUTS / f"{slug}.json").is_file()
+    lay = layout_for(load_devices()[slug], None)
+    assert lay.template == template
+    assert {b.value for b in lay.buttons} == buttons
+    assert [v.style for v in lay.views] == ["laser"]
+    # thumb keys sit on the left flank, clicks and wheel on the right
+    assert {b.value for b in lay.buttons_on("left")} >= THUMB
+
+
+@pytest.mark.parametrize("slug,plates", [("naga_pro", (12, 6, 2)), ("naga_trinity", (12, 7, 2))])
+def test_swappable_plate_nagas_have_plate_variants(slug, plates):
+    for plate in plates:
+        lay = layout_for(load_devices()[slug], plate)
+        assert lay.template == slug
+        assert [v.name for v in lay.views] == ["plate", "top"]
+        assert lay.view("plate").asset == f"template_mmo_plate{plate}.svg"
+        assert {b.value for b in lay.buttons_on("left")} == {f"side_{n}" for n in range(1, plate + 1)}
+        assert {"left", "right", "middle"} <= {b.value for b in lay.buttons_on("right")}
+
+
+@pytest.mark.parametrize("slug", ["naga_x", "naga_v2_hyper_speed"])
+def test_fixed_twelve_key_nagas(slug):
+    lay = layout_for(load_devices()[slug], None)
+    assert {b.value for b in lay.buttons_on("left")} == {f"side_{n}" for n in range(1, 13)}
+
+
+def test_prefix_rules_map_the_families_to_templates():
+    rules = json.loads((LAYOUTS / "index.json").read_text(encoding="utf-8"))["prefixes"]
+    devices = load_devices()
+    want = {"death_adder_1800": "template_ergo", "basilisk_x_hyper_speed": "template_ergo",
+            "cobra_hyper_speed": "template_ergo", "pro_click_v2": "template_ergo",
+            "viper_ultimate": "template_ambi", "lancehead_te": "template_ambi", "mamba_te": "template_ambi",
+            "taipan": "template_ambi", "orochi_2013": "template_compact", "atheris": "template_compact",
+            "pro_click_mini": "template_compact", "pro_click_v2_vertical_edition": "template_vertical",
+            "naga_epic": "template_mmo", "naga_2014": "template_mmo",
+            "hyper_polling_wireless": "generic", "naga_left_handed_2020": "generic"}
+    for slug, template in want.items():
+        assert layout_for(devices[slug], None).template == template, slug
+    assert all((LAYOUTS / f"{t}.json").is_file() for t in rules.values())
+
+
+def test_generic_fallback_shows_numbered_learn_dots_on_the_flank():
+    lay = layout_for(load_devices()["hyper_polling_wireless"], None)
+    learn = [b for b in lay.buttons if b.value.startswith("learn_")]
+    assert [b.value for b in learn] == [f"learn_{n}" for n in range(1, 9)]
+    assert all(lay.buttons[b].side == "left" for b in learn)
+    assert {"left", "right", "middle"} <= {b.value for b in lay.buttons}
+
+
+def test_the_vertical_template_is_a_side_view_with_thumb_keys():
+    lay = layout_for(load_devices()["pro_click_v2_vertical_edition"], None)
+    assert lay.views[0].asset == "template_vertical_side.svg"
+    assert {"left", "right", "middle", "forward", "back"} <= {b.value for b in lay.buttons}
+
+
+def test_all_laser_assets_follow_the_line_art_format():
+    import xml.etree.ElementTree as ET
+    from razertux.gui.laser import SHAPES
+    for path in sorted(LAYOUTS.parent.glob("*.svg")):
+        if path.name == "razertux.svg":
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert "<image" not in text and "<filter" not in text and "style=" not in text, path.name
+        for el in ET.fromstring(text).iter():
+            tag = el.tag.rpartition("}")[2]
+            if tag in SHAPES:
+                assert el.get("stroke") and "fill" not in el.attrib, (path.name, tag)

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 186 310" width="186" height="310">
+  <!-- thumb plate with 12 keys (numbers as printed) (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M30 10 C70 4 124 4 156 10 C172 14 178 30 178 52 L178 262 C178 284 172 298 156 302 C124 308 70 308 30 302 C14 298 8 284 8 262 L8 52 C8 30 14 14 30 10 Z" stroke="@ACC@" stroke-width="2"/>
+  <g id="side_1"><rect x="17.0" y="37.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="39.0" y="64.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">1</text></g>
+  <g id="side_2"><rect x="71.0" y="37.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="64.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">2</text></g>
+  <g id="side_3"><rect x="125.0" y="37.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="147.0" y="64.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">3</text></g>
+  <g id="side_4"><rect x="17.0" y="101.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="39.0" y="128.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">4</text></g>
+  <g id="side_5"><rect x="71.0" y="101.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="128.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">5</text></g>
+  <g id="side_6"><rect x="125.0" y="101.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="147.0" y="128.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">6</text></g>
+  <g id="side_7"><rect x="17.0" y="165.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="39.0" y="192.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">7</text></g>
+  <g id="side_8"><rect x="71.0" y="165.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="192.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">8</text></g>
+  <g id="side_9"><rect x="125.0" y="165.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="147.0" y="192.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">9</text></g>
+  <g id="side_10"><rect x="17.0" y="229.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="39.0" y="256.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">10</text></g>
+  <g id="side_11"><rect x="71.0" y="229.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="256.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">11</text></g>
+  <g id="side_12"><rect x="125.0" y="229.0" width="44" height="44" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="147.0" y="256.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">12</text></g>
+</svg>

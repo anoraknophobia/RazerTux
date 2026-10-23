@@ -1,1 +1,21 @@
-{"prefixes": {}}
+{
+ "prefixes": {
+  "death_adder": "template_ergo",
+  "basilisk": "template_ergo",
+  "cobra": "template_ergo",
+  "pro_click": "template_ergo",
+  "pro_click_mini": "template_compact",
+  "pro_click_v2_vertical": "template_vertical",
+  "viper": "template_ambi",
+  "lancehead": "template_ambi",
+  "mamba": "template_ambi",
+  "diamondback": "template_ambi",
+  "taipan": "template_ambi",
+  "ouroboros": "template_ambi",
+  "orochi": "template_compact",
+  "atheris": "template_compact",
+  "naga": "template_mmo",
+  "naga_hex": "template_mmo_hex",
+  "naga_left_handed": "generic"
+ }
+}

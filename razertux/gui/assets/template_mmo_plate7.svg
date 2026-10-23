@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 186 310" width="186" height="310">
+  <!-- thumb plate with 7 keys (numbers as printed) (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M30 10 C70 4 124 4 156 10 C172 14 178 30 178 52 L178 262 C178 284 172 298 156 302 C124 308 70 308 30 302 C14 298 8 284 8 262 L8 52 C8 30 14 14 30 10 Z" stroke="@ACC@" stroke-width="2"/>
+  <g id="side_1"><rect x="45.0" y="55.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="67.0" y="86.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">1</text></g>
+  <g id="side_2"><rect x="97.0" y="55.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="119.0" y="86.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">2</text></g>
+  <g id="side_3"><rect x="19.0" y="129.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="41.0" y="160.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">3</text></g>
+  <g id="side_4"><rect x="71.0" y="129.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="160.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">4</text></g>
+  <g id="side_5"><rect x="123.0" y="129.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="145.0" y="160.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">5</text></g>
+  <g id="side_6"><rect x="45.0" y="203.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="67.0" y="234.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">6</text></g>
+  <g id="side_7"><rect x="97.0" y="203.0" width="44" height="52" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="119.0" y="234.25" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">7</text></g>
+</svg>

@@ -1,0 +1,76 @@
+{
+ "template": "template_compact",
+ "views": [
+  {
+   "name": "top",
+   "asset": "template_compact_top.svg",
+   "style": "laser"
+  }
+ ],
+ "buttons": {
+  "wheel_up": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.2266
+   ]
+  },
+  "middle": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "primary": true
+  },
+  "left": {
+   "view": "top",
+   "element": "left",
+   "side": "left",
+   "anchor": [
+    0.5,
+    0.4838
+   ]
+  },
+  "wheel_down": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.7734
+   ]
+  },
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.7506
+   ]
+  },
+  "forward": {
+   "view": "top",
+   "element": "forward",
+   "side": "left",
+   "anchor": [
+    0.418,
+    0.5
+   ]
+  },
+  "back": {
+   "view": "top",
+   "element": "back",
+   "side": "left",
+   "anchor": [
+    0.418,
+    0.5
+   ]
+  }
+ }
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 186 310" width="186" height="310">
+  <!-- thumb plate with 2 keys (numbers as printed) (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M30 10 C70 4 124 4 156 10 C172 14 178 30 178 52 L178 262 C178 284 172 298 156 302 C124 308 70 308 30 302 C14 298 8 284 8 262 L8 52 C8 30 14 14 30 10 Z" stroke="@ACC@" stroke-width="2"/>
+  <g id="side_1"><rect x="43.0" y="43.0" width="100" height="100" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="103.5" font-family="sans-serif" font-size="30" font-weight="600" text-anchor="middle" fill="@ACC@">1</text></g>
+  <g id="side_2"><rect x="43.0" y="167.0" width="100" height="100" rx="6" stroke="@ACC@" stroke-width="1.2"/><text x="93.0" y="227.5" font-family="sans-serif" font-size="30" font-weight="600" text-anchor="middle" fill="@ACC@">2</text></g>
+</svg>

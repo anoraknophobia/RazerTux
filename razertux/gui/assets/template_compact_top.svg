@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 276" width="170" height="276">
+  <!-- Compact mobile mouse from above, front at the top, thumb keys on the left flank (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M85 6 C55 6 36 26 33 62 C30 110 30 160 34 200 C38 242 56 268 85 268 C114 268 132 242 136 200 C140 160 140 110 137 62 C134 26 115 6 85 6 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M74 10 C56 14 42 32 39 60 L38 102 C50 106 63 106 74 104 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M96 10 C114 14 128 32 131 60 L132 102 C120 106 107 106 96 104 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="76" y="22" width="18" height="46" rx="8" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M80 34 L90 34 M80 42 L90 42 M80 50 L90 50" stroke="@ACC@" stroke-width="0.7"/>
+  <g id="forward"><rect x="41" y="118" width="16" height="30" rx="6" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="41" y="156" width="16" height="30" rx="6" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>

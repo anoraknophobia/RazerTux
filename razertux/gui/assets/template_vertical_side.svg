@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 320" width="220" height="320">
+  <!-- Vertical mouse seen from the thumb side, front at the top right (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M52 296 C40 250 40 200 54 160 C72 112 110 62 150 38 C172 24 196 32 198 60 C202 124 200 212 190 262 C184 288 164 298 130 298 Z" stroke="@ACC@" stroke-width="2.2"/>
+<path d="M54 250 C96 266 144 266 190 248" stroke="@ACC@" stroke-width="0.7"/>
+  <g id="left"><path d="M84.6 117.4 C102.3 89.8 125.0 64.8 148.8 48.6 L163.8 61.6 C140.0 77.8 117.3 102.8 99.6 130.4 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M103.6 134.4 C121.3 106.8 144.0 81.8 167.8 65.6 L182.8 78.6 C159.0 94.8 136.3 119.8 118.6 147.4 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="158" y="22" width="16" height="26" rx="7" stroke="@ACC@" stroke-width="1.6"/></g>
+  <g id="forward"><rect x="74" y="176" width="44" height="22" rx="10" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="70" y="212" width="44" height="22" rx="10" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>
