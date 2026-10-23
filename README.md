@@ -5,7 +5,7 @@
 >
 > Project: <https://github.com/anoraknophobia/RazerTux>
 
-RazerTux (formerly *naga-config*) is an unofficial Linux replacement for Razer Synapse. It
+RazerTux is an unofficial Linux replacement for Razer Synapse. It
 supports the Razer Naga V2 Pro and, experimentally, other Razer mice (tested on CachyOS/Arch,
 KDE Plasma Wayland). It consists of a background service (`razertuxd`), a command line tool
 (`razertux`) and a Qt GUI with a tray icon (`razertux-gui`). The current version is 0.3.0.
@@ -62,23 +62,6 @@ systemctl --user restart razertuxd.service
 
 The configuration lives in `~/.config/razertux`. On first start it is migrated to schema 2
 automatically; the old files are kept unchanged in the `pre-schema2/` subfolder there.
-
-## Switching from naga-config
-
-RazerTux replaces the package `naga-config` (`replaces`/`conflicts` in the PKGBUILD);
-`makepkg -si` or pacman removes it. Afterwards, **as a normal user** (not with sudo),
-disable the old service and enable the new one once:
-
-```
-systemctl --user disable --now naga-configd.service 2>/dev/null
-systemctl --user enable --now razertuxd.service
-```
-
-On first start of the service or GUI, `~/.config/naga-config/` is copied completely to
-`~/.config/razertux/` (profiles, macros, settings, backup `mouse-backup.json`). The old
-folder stays untouched and can be deleted by hand afterwards; an existing
-`~/.config/razertux/` is never overwritten. Just quit a still-running old tray icon (or log
-out and back in).
 
 ## Getting started
 
