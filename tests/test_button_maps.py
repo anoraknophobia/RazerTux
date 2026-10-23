@@ -49,3 +49,21 @@ def test_map_for_selection_and_learned():
     assert identify(m, "if01", E.EV_KEY, E.KEY_F13, 1) == ButtonId.LEARN_1
     over = InputSignal("mouse", E.EV_KEY, E.BTN_SIDE)
     assert identify(map_for(plain, {ButtonId.DPI_UP: over}), "mouse", E.EV_KEY, E.BTN_SIDE, 1) == ButtonId.DPI_UP
+
+
+def test_plate_tables_are_a_subset_of_the_12_key_plate_and_marked_unverified():
+    naga = load_devices()["naga_v2_pro"]
+    full = map_for(naga, {})
+    assert map_for(naga, {}, plate=12) == full
+    for plate in (6, 2):
+        table = map_for(naga, {}, plate=plate)
+        sides = {b for b in table.values() if b.value.startswith("side_")}
+        assert sides == {ButtonId(f"side_{n}") for n in range(1, plate + 1)}
+        assert identify(table, "if02", E.EV_KEY, E.KEY_1, 1) == ButtonId.SIDE_1
+        assert identify(table, "mouse", E.EV_KEY, E.BTN_LEFT, 1) == ButtonId.LEFT
+    assert identify(map_for(naga, {}, plate=6), "if02", E.EV_KEY, E.KEY_7, 1) is None
+    # learned signals still win, other models ignore the plate
+    sig = InputSignal("if02", E.EV_KEY, E.KEY_F13)
+    assert identify(map_for(naga, {ButtonId.SIDE_8: sig}, plate=6), "if02", E.EV_KEY, E.KEY_F13, 1) == ButtonId.SIDE_8
+    plain = next(d for d in load_devices().values() if not d.model.startswith("naga"))
+    assert map_for(plain, {}, plate=6) == GENERIC

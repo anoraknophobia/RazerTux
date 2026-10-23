@@ -35,10 +35,14 @@
   },
   "ButtonsTab": {
     "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen.": "Désactivé : le bouton supérieur avant change le niveau de la molette et le bouton arrière le niveau de sensibilité. Activé : les deux boutons sont librement affectables.",
+    "Belegung ungeprüft – falls eine Taste nicht stimmt: Taste anlernen": "Attribution non vérifiée : si un bouton ne correspond pas, apprenez le bouton",
     "Hypershift": "Hypershift",
     "Hypershift-Ebene: gilt, solange die Hypershift-Taste gehalten wird": "Couche Hypershift : active tant que la touche Hypershift est maintenue",
     "Normale Belegung": "Affectations standard",
     "Obere Tasten frei belegen": "Affecter librement les boutons supérieurs",
+    "Seitenplatte: 12 Tasten": "Plaque latérale : 12 boutons",
+    "Seitenplatte: 2 Tasten": "Plaque latérale : 2 boutons",
+    "Seitenplatte: 6 Tasten": "Plaque latérale : 6 boutons",
     "Standard": "Standard"
   },
   "DaemonClient": {

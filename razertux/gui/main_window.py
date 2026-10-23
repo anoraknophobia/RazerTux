@@ -84,7 +84,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self.errors_dismiss.clicked.connect(lambda _=False: self._dismiss_errors())
         self.errors_banner.layout().addWidget(self.errors_dismiss)
 
-        self.buttons_tab = ButtonsTab()
+        self.buttons_tab = ButtonsTab(self.store.for_model(NAGA_MODEL))
         self.buttons_tab.bindingClicked.connect(self.edit_binding)
         self.buttons_tab.layerChanged.connect(self.set_layer)
         self.buttons_tab.remapToggled.connect(self.set_remap)

@@ -355,7 +355,7 @@ class DeviceSession:
 
     def _refresh_map(self) -> None:
         learned = self.device_settings.learned
-        self.router.set_map(map_for(self.info, learned))
+        self.router.set_map(map_for(self.info, learned, self.device_settings.plate))
         self.mapper.set_defaults({b: s.code for b, s in learned.items()
                                   if s.ev_type == E.EV_KEY})  # the key it sends
 

@@ -29,6 +29,14 @@ NAGA_V2_PRO: ButtonMap = {
     **_key_table("if02", _SIDE_KEYS),
     **_key_table("mouse", _MOUSE_KEYS),
 }
+# Naga V2 Pro side plates. UNVERIFIED ASSUMPTION (the plates are no longer available to
+# test): the 6-key plate sends the same codes as keys 1-6 of the 12-key plate and the
+# 2-key plate those of keys 1-2. If a key turns out different, "Taste anlernen" fixes it.
+NAGA_V2_PRO_PLATES: dict[int, ButtonMap] = {
+    plate: {sig: b for sig, b in NAGA_V2_PRO.items()
+            if not b.value.startswith("side_") or int(b.value[5:]) <= plate}
+    for plate in (12, 6, 2)
+}
 # Unverified: other Nagas presumably share the number-row side keys on if02.
 NAGA_FAMILY: ButtonMap = _key_table("if02", _SIDE_KEYS)
 GENERIC: ButtonMap = _key_table("mouse", {
@@ -38,9 +46,9 @@ GENERIC: ButtonMap = _key_table("mouse", {
 })
 
 
-def map_for(info: DeviceInfo, learned: dict[ButtonId, InputSignal]) -> ButtonMap:
+def map_for(info: DeviceInfo, learned: dict[ButtonId, InputSignal], plate: int = 12) -> ButtonMap:
     if info.model == "naga_v2_pro":
-        table = dict(NAGA_V2_PRO)
+        table = dict(NAGA_V2_PRO_PLATES.get(plate, NAGA_V2_PRO))
     elif info.model.startswith("naga"):
         table = {**NAGA_FAMILY, **GENERIC}
     else:

@@ -19,24 +19,24 @@ from razertux.gui.mouse_view import MouseView
 from razertux.gui.theme import dark_palette
 from razertux.hw.buttons import ButtonId
 
-NAGA = layout_for(load_devices()["naga_v2_pro"], None)
+NAGA = layout_for(load_devices()["naga_v2_pro"], 12)
 SIDE_BUTTONS = NAGA.buttons_on("left")
 OTHER_BUTTONS = NAGA.buttons_on("right")
 ALL = [*SIDE_BUTTONS, *OTHER_BUTTONS]
-SIDE_SVG, TOP_SVG = (NAGA.view("side").asset, NAGA.view("top").asset)
-SIDE_IDS, TOP_IDS = NAGA.elements("side"), NAGA.elements("top")
+SIDE_SVG, TOP_SVG = (NAGA.view("plate").asset, NAGA.view("top").asset)
+SIDE_IDS, TOP_IDS = NAGA.elements("plate"), NAGA.elements("top")
 
 
 # -- SVG assets ---------------------------------------------------------------------
 @pytest.mark.parametrize("asset, ids", [(SIDE_SVG, SIDE_IDS),
                                         (TOP_SVG, TOP_IDS)])
 def test_svgs_are_valid_and_have_the_key_elements(qapp, asset, ids):
-    r = QSvgRenderer(QByteArray(mouse_scene.themed_svg(asset, dark_palette())))
+    r = QSvgRenderer(QByteArray(mouse_scene.laser_svg(asset, dark_palette())))
     assert r.isValid()
     for element in ids:
         assert r.elementExists(element), element
         assert not r.boundsOnElement(element).isEmpty()
-    filled = re.sub(r"<!--.*?-->", "", mouse_scene.themed_svg(asset, dark_palette()).decode(), flags=re.S)
+    filled = re.sub(r"<!--.*?-->", "", mouse_scene.laser_svg(asset, dark_palette()).decode(), flags=re.S)
     assert "@" not in filled  # every token filled
 
 
@@ -56,14 +56,6 @@ def test_svg_colours_dark_and_system(qapp):
     sys_colours = mouse_scene.svg_colours(light)
     assert sys_colours["@ACC@"] == "#3daee9"
     assert sys_colours["@BODY_A@"] != "#1a1a1a"  # derived from the palette
-
-
-def test_hot_and_keys_only_tokens(qapp):
-    hot = mouse_scene.themed_svg(SIDE_SVG, dark_palette(), hot="side_3").decode()
-    assert hot.count(f'fill-opacity="{mouse_scene.HOT_OPACITY}"') == 1
-    keys = mouse_scene.themed_svg(SIDE_SVG, dark_palette(), keys_only=True).decode()
-    assert '<g opacity="0">' in keys and '<g opacity="0">' not in mouse_scene.themed_svg(
-        SIDE_SVG, dark_palette()).decode()
 
 
 # -- view geometry ------------------------------------------------------------------
@@ -95,7 +87,7 @@ def test_leader_lines_end_on_their_key_after_resize(view, qapp, size):
 
 
 def test_labels_and_pictures_do_not_overlap(view):
-    pictures = view.drawings["side"].rect.united(view.drawings["top"].rect)
+    pictures = view.drawings["plate"].rect.united(view.drawings["top"].rect)
     for b in ALL:
         assert not view.label_rect(b).intersects(pictures), b
 
@@ -124,7 +116,7 @@ def test_hover_on_label_lights_key(view):
     btn = view._buttons[ButtonId.SIDE_5]
     QApplication.sendEvent(btn, QEvent(QEvent.Type.Enter))
     assert view.hot == ButtonId.SIDE_5
-    assert view.drawings["side"]._loaded[1] == "side_5"  # the drawing shows the key green
+    assert view.drawings["plate"]._loaded[1] == "side_5"  # the drawing shows the key green
     assert btn.property("hot") is True
     QApplication.sendEvent(btn, QEvent(QEvent.Type.Leave))
     assert view.hot is None and btn.property("hot") is False
@@ -312,7 +304,7 @@ def test_leader_lines_never_cross_and_keep_clear_of_dots(window, qapp, size):
             assert not any(_rect_hit(wheel, seg) for seg in _segments(pts)), (size, b)
 
 
-@pytest.mark.parametrize("asset", [SIDE_SVG, TOP_SVG])
+@pytest.mark.parametrize("asset", [f"naga_v2_pro_plate{n}.svg" for n in (12, 6, 2)] + [TOP_SVG])
 def test_svg_ids_are_unique(asset):
     ids = re.findall(r'\bid="([^"]+)"', (mouse_scene.ASSETS / asset).read_text(encoding="utf-8"))
     assert len(ids) == len(set(ids)), sorted(i for i in ids if ids.count(i) > 1)
@@ -343,9 +335,9 @@ def test_release_counts_only_when_pressed_on_the_same_key(view):
 
 def test_themed_svgs_are_cached_per_hover_state(view, monkeypatch):
     calls = []
-    real = mouse_scene.themed_svg
-    monkeypatch.setattr(mouse_scene, "themed_svg", lambda *a, **k: calls.append(a) or real(*a, **k))
+    real = mouse_scene.laser_svg
+    monkeypatch.setattr(mouse_scene, "laser_svg", lambda *a, **k: calls.append(a) or real(*a, **k))
     for _ in range(2):
         view.set_hot(ButtonId.SIDE_3)
         view.set_hot(ButtonId.SIDE_4)
-    assert len(calls) <= 4  # each state built once (side: full + keys layer), then reused
+    assert len(calls) <= 4  # each state built once, then reused

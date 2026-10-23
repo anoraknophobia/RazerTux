@@ -29,6 +29,9 @@ class ButtonSpec:
     side: str                                  # label column: "left" | "right"
     anchor: tuple[float, float] | None = None  # leader line end inside the element rect
     primary: bool = False                      # the button a click on a shared element opens
+    entry: float | None = None                 # y (fraction of the view) where the line meets the key column
+    via: tuple[tuple[float, float], ...] = ()  # waypoints (fractions of the view) between entry and end
+    through: tuple[str, ...] = ()              # elements the line may run over (a key it cannot get around)
 
 
 @dataclass(frozen=True)
@@ -70,11 +73,16 @@ def parse(data: dict, plate: int | None = None) -> Layout:
         if style not in STYLES:
             raise ValueError(f"unknown view style {style!r}")
         views.append(View(v["name"], asset, style, float(v.get("scale", 1.0))))
+    # per-plate key tables (e.g. the Naga's side plates) come first, then the fixed buttons
+    tables = data.get("plate_buttons", {})
+    chosen = tables.get(str(plate), next(iter(tables.values()), {}) if plate is None else {})
     buttons = {}
-    for key, s in data["buttons"].items():
+    for key, s in {**chosen, **data["buttons"]}.items():
         anchor = tuple(s["anchor"]) if "anchor" in s else None
-        buttons[ButtonId(key)] = ButtonSpec(s["view"], s["element"], s["side"], anchor,
-                                            bool(s.get("primary", False)))
+        buttons[ButtonId(key)] = ButtonSpec(
+            s["view"], s["element"], s["side"], anchor, bool(s.get("primary", False)),
+            s.get("entry"), tuple((float(x), float(y)) for x, y in s.get("via", ())),
+            tuple(s.get("through", ())))
     return Layout(data["template"], tuple(views), buttons)
 
 

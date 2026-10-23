@@ -39,6 +39,7 @@ class MouseView(QWidget):
         self._texts: dict[ButtonId, str] = {}
         self._tips: dict[ButtonId, str] = {}
         self._hot: ButtonId | None = None
+        self._bindings: tuple | None = None  # last set_bindings() arguments, replayed on a layout change
         self._pressed: ButtonId | None = None
         self._dots: QPixmap | None = None
         self._cols: dict[str, QRectF] = {}
@@ -51,6 +52,8 @@ class MouseView(QWidget):
     def set_layout(self, layout: Layout) -> None:
         """Show another mouse: new pictures, one label per button of the layout."""
         for btn in self._buttons.values():
+            btn.hide()
+            btn.setParent(None)  # gone at once, not only after the event loop ran
             btn.deleteLater()
         self._buttons, self._texts, self._tips, self._hot, self._pressed = {}, {}, {}, None, None
         self.device_layout = layout
@@ -58,6 +61,8 @@ class MouseView(QWidget):
         for b, spec in layout.buttons.items():
             self._make(b, "right" if spec.side == "left" else "left")
         self._load()
+        if self._bindings is not None:
+            self.set_bindings(*self._bindings[:2], **self._bindings[2])
         self._relayout()
 
     def _make(self, b: ButtonId, align: str) -> None:
@@ -80,6 +85,7 @@ class MouseView(QWidget):
                      layout: str | None = None, top_locked: bool = False) -> None:
         """top_locked: the firmware owns the top buttons (normal device mode); their
         labels show what the mouse does and are greyed out, not clickable."""
+        self._bindings = (actions, macros, {"layout": layout, "top_locked": top_locked})
         for b, btn in self._buttons.items():
             a = actions.get(b, DefaultAction())
             locked = top_locked and b in TOP_BUTTONS
@@ -114,7 +120,7 @@ class MouseView(QWidget):
         return QRectF(self._buttons[b].geometry())
 
     def leader_line(self, b: ButtonId) -> list[QPointF]:
-        """Start dot (next to the label), elbow, entry, end dot (on the key).
+        """Start dot (next to the label), elbow, entry, [waypoints], end dot (on the key).
 
         Label -> horizontal to a common elbow column -> straight to an entry column
         just outside the keys -> horizontal into the key. End heights grow in label
@@ -132,7 +138,11 @@ class MouseView(QWidget):
             rect = self.drawing_of(b).rect
             entry_x = max(rect.left() + rect.width() * RIGHT_ENTRY,
                           max(self.key_rect(k).right() for k in self.device_layout.buttons_on("right")) + 8)
-        return [start, elbow, QPointF(entry_x, end.y()), end]
+        spec = self.device_layout.buttons[b]
+        rect = self.drawing_of(b).rect
+        entry_y = end.y() if spec.entry is None else rect.top() + rect.height() * spec.entry
+        via = [QPointF(rect.left() + rect.width() * x, rect.top() + rect.height() * y) for x, y in spec.via]
+        return [start, elbow, QPointF(entry_x, entry_y), *via, end]
 
     def _end_point(self, b: ButtonId) -> QPointF:
         spec = self.device_layout.buttons[b]

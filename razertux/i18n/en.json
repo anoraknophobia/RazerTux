@@ -35,10 +35,14 @@
   },
   "ButtonsTab": {
     "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen.": "Off: the front top button cycles the scroll wheel stage and the rear one the sensitivity stage. On: both buttons can be assigned freely.",
+    "Belegung ungeprüft – falls eine Taste nicht stimmt: Taste anlernen": "Assignment unverified – if a button is wrong: learn the button",
     "Hypershift": "Hypershift",
     "Hypershift-Ebene: gilt, solange die Hypershift-Taste gehalten wird": "Hypershift layer: active while the Hypershift key is held",
     "Normale Belegung": "Standard assignments",
     "Obere Tasten frei belegen": "Assign top buttons freely",
+    "Seitenplatte: 12 Tasten": "Side plate: 12 buttons",
+    "Seitenplatte: 2 Tasten": "Side plate: 2 buttons",
+    "Seitenplatte: 6 Tasten": "Side plate: 6 buttons",
     "Standard": "Standard"
   },
   "DaemonClient": {

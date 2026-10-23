@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 186 310" width="186" height="310">
+  <!-- side plate with 6 keys (left column 6,5,4 / right column 1,2,3 as printed) (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M40 10 C90 4 140 14 160 40 C176 64 178 120 176 170 C174 220 166 262 144 282 C116 304 64 300 36 282 C14 266 8 230 8 170 C8 110 10 40 40 10 Z" stroke="@ACC@" stroke-width="2"/>
+  <g id="side_6"><path d="M40 58 Q40 50 48 50 L84 50 L92 80 L84 110 L48 110 Q40 110 40 102 Z" stroke="@ACC@" stroke-width="1.2"/><text x="64" y="86" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">6</text></g>
+  <g id="side_1"><path d="M96 50 L134 50 Q142 50 142 58 L142 102 Q142 110 134 110 L96 110 L104 80 Z" stroke="@ACC@" stroke-width="1.2"/><text x="122" y="86" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">1</text></g>
+  <g id="side_5"><path d="M40 132 Q40 124 48 124 L84 124 L92 154 L84 184 L48 184 Q40 184 40 176 Z" stroke="@ACC@" stroke-width="1.2"/><text x="64" y="160" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">5</text></g>
+  <g id="side_2"><path d="M96 124 L134 124 Q142 124 142 132 L142 176 Q142 184 134 184 L96 184 L104 154 Z" stroke="@ACC@" stroke-width="1.2"/><text x="122" y="160" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">2</text></g>
+  <g id="side_4"><path d="M40 206 Q40 198 48 198 L84 198 L92 228 L84 258 L48 258 Q40 258 40 250 Z" stroke="@ACC@" stroke-width="1.2"/><text x="64" y="234" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">4</text></g>
+  <g id="side_3"><path d="M96 198 L134 198 Q142 198 142 206 L142 250 Q142 258 134 258 L96 258 L104 228 Z" stroke="@ACC@" stroke-width="1.2"/><text x="122" y="234" font-family="sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="@ACC@">3</text></g>
+</svg>

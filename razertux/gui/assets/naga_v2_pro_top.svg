@@ -1,74 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 390" width="220" height="390">
-  <!-- Naga V2 Pro von oben, Vorderseite oben. Eigene Zeichnung.
-       Platzhalter @..@ werden zur Laufzeit durch Theme-/Palettenfarben ersetzt (mouse_scene.themed_svg);
-       @HOT:<id>@ ist die Deckkraft der grünen Hervorhebung einer Taste. -->
-  <defs>
-    <linearGradient id="g_body" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="@BODY_D@"/>
-      <stop offset="0.35" stop-color="@BODY_A@"/>
-      <stop offset="0.7" stop-color="@BODY_B@"/>
-      <stop offset="1" stop-color="@BODY_A@"/>
-    </linearGradient>
-    <linearGradient id="g_btn" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="@BODY_A@"/>
-      <stop offset="1" stop-color="@BODY_B@"/>
-    </linearGradient>
-    <linearGradient id="g_key" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="@KEY_A@"/>
-      <stop offset="1" stop-color="@KEY_B@"/>
-    </linearGradient>
-    <linearGradient id="g_wheel" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="@BODY_D@"/>
-      <stop offset="0.5" stop-color="@BODY_C@"/>
-      <stop offset="1" stop-color="@BODY_D@"/>
-    </linearGradient>
-    <radialGradient id="g_shine" cx="128" cy="262" r="90" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.11"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-
-  <!-- body and palm -->
-  <path d="M110 26 C120 14 150 10 162 22 C176 38 182 70 184 110 C186 150 182 180 186 212 C192 252 198 292 186 328 C172 364 140 376 110 376 C76 376 46 366 36 332 C26 298 26 252 30 202 C32 162 34 122 44 86 C50 52 58 26 72 18 C88 12 104 16 110 26 Z" fill="url(#g_body)" stroke="@EDGE@" stroke-width="1.5" stroke-linejoin="round"/>
-  <path d="M110 26 C120 14 150 10 162 22 C176 38 182 70 184 110 C186 150 182 180 186 212 C192 252 198 292 186 328 C172 364 140 376 110 376 C76 376 46 366 36 332 C26 298 26 252 30 202 C32 162 34 122 44 86 C50 52 58 26 72 18 C88 12 104 16 110 26 Z" fill="url(#g_shine)"/>
-  <path d="M184 110 C186 150 182 180 186 212 C192 252 198 292 186 328" fill="none"
-        stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.6"/>
-  <!-- thumb plate edge with the side keys peeking out -->
-  <path d="M38 120 C32 160 31 200 34 236" fill="none" stroke="@BODY_D@" stroke-width="3"/>
-  <g fill="@ACC@" fill-opacity="0.85">
-    <rect x="31" y="140" width="5" height="15" rx="2.5"/>
-    <rect x="31" y="162" width="5" height="15" rx="2.5"/>
-    <rect x="31" y="184" width="5" height="15" rx="2.5"/>
-    <rect x="31" y="206" width="5" height="15" rx="2.5"/>
-  </g>
-
-  <!-- main buttons -->
-  <g id="left">
-    <path d="M107 24 C98 14 84 12 72 18 C58 26 50 52 44 86 C40 112 38 138 37 162 C62 170 88 174 107 174 Z" fill="url(#g_btn)" stroke="@BODY_D@" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M107 24 C98 14 84 12 72 18 C58 26 50 52 44 86 C40 112 38 138 37 162 C62 170 88 174 107 174 Z" fill="@ACC@" fill-opacity="@HOT:left@"/>
-  </g>
-  <g id="right">
-    <path d="M113 24 C122 14 148 10 162 22 C176 38 182 70 184 110 C185 132 185 150 184 164 C160 172 134 174 113 174 Z" fill="url(#g_btn)" stroke="@BODY_D@" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M113 24 C122 14 148 10 162 22 C176 38 182 70 184 110 C185 132 185 150 184 164 C160 172 134 174 113 174 Z" fill="@ACC@" fill-opacity="@HOT:right@"/>
-  </g>
-  <path d="M37 162 C62 170 88 174 110 174 C134 174 160 172 184 164" fill="none" stroke="@BODY_D@" stroke-width="2"/>
-
-  <!-- wheel well, scroll wheel and the two top buttons -->
-  <rect x="96" y="40" width="28" height="134" rx="13" fill="@BODY_D@" stroke="@EDGE@" stroke-width="1"/>
-  <g id="wheel">
-    <rect x="100" y="50" width="20" height="64" rx="9" fill="none" stroke="@ACC@" stroke-opacity="0.25" stroke-width="6"/>
-    <rect x="100" y="50" width="20" height="64" rx="9" fill="url(#g_wheel)" stroke="@ACC@" stroke-width="2"/>
-    <path d="M103 58 H117 M103 64 H117 M103 70 H117 M103 76 H117 M103 82 H117 M103 88 H117 M103 94 H117 M103 100 H117 M103 106 H117" stroke="@BODY_D@" stroke-width="1.6"/>
-    <rect x="100" y="50" width="20" height="64" rx="9" fill="@ACC@" fill-opacity="@HOT:wheel@"/>
-  </g>
-  <g id="top_1">
-    <rect x="101" y="122" width="18" height="18" rx="5" fill="url(#g_key)" stroke="#5a5a5a" stroke-width="1.2"/>
-    <rect x="104" y="124" width="12" height="3" rx="1.5" fill="#ffffff" fill-opacity="0.08"/>
-    <rect x="101" y="122" width="18" height="18" rx="5" fill="@ACC@" fill-opacity="@HOT:top_1@"/>
-  </g>
-  <g id="top_2">
-    <rect x="101" y="146" width="18" height="18" rx="5" fill="url(#g_key)" stroke="#5a5a5a" stroke-width="1.2"/>
-    <rect x="104" y="148" width="12" height="3" rx="1.5" fill="#ffffff" fill-opacity="0.08"/>
-    <rect x="101" y="146" width="18" height="18" rx="5" fill="@ACC@" fill-opacity="@HOT:top_2@"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 244 422" width="244" height="422">
+  <!-- Naga V2 Pro from above, front at the top (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M58 8 C40 14 22 40 14 76 C8 104 4 132 3 160 C2 200 4 250 10 284 C16 306 26 318 30 330 C36 380 76 416 122 416 C170 416 210 390 226 344 C238 306 242 262 240 222 C238 180 232 146 220 120 C214 108 214 96 212 84 C208 60 200 26 180 6" stroke="@ACC@" stroke-width="2.2"/>
+<path d="M58 8 C70 4 88 4 98 6" stroke="@ACC@" stroke-width="1.5"/>
+<path d="M180 6 C168 3 150 3 140 5" stroke="@ACC@" stroke-width="1.5"/>
+<rect x="96" y="136" width="46" height="92" rx="8" stroke="@ACC@" stroke-width="1.2"/>
+<path d="M110 40 L128 40 M110 52 L128 52 M110 64 L128 64 M110 76 L128 76" stroke="@ACC@" stroke-width="0.7"/>
+<path d="M100 46 L94 52 L100 58 M138 46 L144 52 L138 58" stroke="@ACC@" stroke-width="1.0"/>
+<path d="M3 150 C18 146 34 150 40 160 C46 200 46 250 38 286 C30 296 18 298 10 294" stroke="@ACC@" stroke-width="1.3"/>
+<rect x="6.0" y="160.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="17.0" y="162.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="28.0" y="164.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="7.5" y="191.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="18.5" y="193.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="29.5" y="195.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="9.0" y="222.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="20.0" y="224.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="31.0" y="226.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="10.5" y="253.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="21.5" y="255.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+<rect x="32.5" y="257.0" width="9" height="26" rx="3" stroke="@ACC@" stroke-width="0.8"/>
+  <g id="left"><path d="M62 12 C74 8 88 8 98 9 L98 136 L18 136 L16 92 C20 56 38 24 62 12 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M176 13 C166 9 152 9 140 10 L140 136 L216 136 L208 108 C204 90 204 62 192 36 C188 26 182 18 176 13 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="106" y="26" width="26" height="70" rx="10" stroke="@ACC@" stroke-width="1.6"/></g>
+  <g id="top_1"><rect x="107" y="146" width="24" height="30" rx="5" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="top_2"><rect x="107" y="186" width="24" height="30" rx="5" stroke="@ACC@" stroke-width="1.2"/></g>
 </svg>
