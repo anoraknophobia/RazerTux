@@ -90,3 +90,8 @@ def test_scroll_tab_for_any_mouse_with_scroll_options():
     from razertux.devices.db import load_devices
     assert "scroll" in tab_keys(load_devices()["basilisk_v3"])
     assert "scroll" not in tab_keys(load_devices()["death_adder_v2"])
+
+
+def test_read_only_hint_only_while_connected(bar):
+    bar.set_status({**EXPERIMENTAL, "writable": False, "connected": False}, remap_enabled=True)
+    assert bar.banner.isVisible() and not bar.readonly_label.isVisible()

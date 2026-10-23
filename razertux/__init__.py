@@ -1,4 +1,5 @@
-"""RazerTux: unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro).
+"""RazerTux: unofficial Linux replacement for Razer Synapse
+(Razer Naga V2 Pro and other Razer mice).
 
 Not an official Razer product; not affiliated with Razer Inc."""
 

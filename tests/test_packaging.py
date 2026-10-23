@@ -245,3 +245,21 @@ def test_build_artifacts_are_ignored():
     ignored = (ROOT / ".gitignore").read_text().splitlines()
     for pattern in ("packaging/src/", "packaging/pkg/", "*.pkg.tar.zst"):
         assert pattern in ignored
+
+
+def test_descriptions_name_all_razer_mice_like_the_pkgbuild():
+    """Cheap fix: no description claims the Naga V2 Pro is the only mouse."""
+    import razertux
+    from razertux.daemon.main import build_parser
+    pkgdesc = re.search(r"pkgdesc='([^']*)'", _read("PKGBUILD")).group(1)
+    assert "other Razer mice" in pkgdesc
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+    assert "Razer Naga V2 Pro and other Razer mice" in project["description"]
+    assert "(Razer Naga V2 Pro and other Razer mice)" in " ".join(razertux.__doc__.split())
+    assert build_parser().description == "RazerTux-Dienst (Razer-Mäuse)"
+
+
+def test_readme_wording_and_line_width():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "kein Gewähr" not in readme and "keine Gewähr" in readme
+    assert all(len(line) <= 100 for line in readme.splitlines()[16:21])

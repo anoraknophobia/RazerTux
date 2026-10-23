@@ -14,10 +14,11 @@
 > `systemctl --user enable --now razertuxd.service`. The GUI is available in German,
 > English, Spanish and French (*View → Language*, see below); this README is in German.
 
-Inoffizieller Linux-Ersatz für Razer Synapse, derzeit für die Razer Naga V2 Pro und experimentell weitere Razer-Mäuse (getestet
-unter CachyOS/Arch, KDE Plasma Wayland). Besteht aus einem Hintergrunddienst
-(`razertuxd`), einer Kommandozeile (`razertux`) und einer Qt-Oberfläche mit Tray-Symbol
-(`razertux-gui`). Früherer Name: *naga-config* (siehe „Umstieg von naga-config“).
+Inoffizieller Linux-Ersatz für Razer Synapse, derzeit für die Razer Naga V2 Pro und
+experimentell weitere Razer-Mäuse (getestet unter CachyOS/Arch, KDE Plasma Wayland).
+Besteht aus einem Hintergrunddienst (`razertuxd`), einer Kommandozeile (`razertux`) und
+einer Qt-Oberfläche mit Tray-Symbol (`razertux-gui`). Früherer Name: *naga-config*
+(siehe „Umstieg von naga-config“).
 
 ## Funktionen
 
@@ -128,7 +129,7 @@ von `~/.config/razertux` löscht auch die Sicherung und die Profile.
   `razertux/devices/openrazer_mice.json`): **experimentell**. RazerTux liest zuerst nur
   (Lese-Probe) und legt eine Sicherung des Gerätezustands an, bevor etwas geschrieben
   wird. Auf diesen Mäusen sind DPI, Abfragerate und Ähnliches abhängig vom Modell
-  verfügbar; ungetestet heißt: kein Gewähr.
+  verfügbar; ungetestet heißt: keine Gewähr.
 - Probleme melden: In der Oberfläche **„Diagnose kopieren“** wählen und den Text in ein
   GitHub-Issue (<https://github.com/anoraknophobia/razertux/issues>) einfügen.
 - Die Datenbank stammt aus OpenRazer (GPL-2.0), siehe `OPENRAZER-NOTICE` (installiert

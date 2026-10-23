@@ -268,3 +268,15 @@ def test_osd_toggle_in_menu(tray):
     assert seen == [False]
     tr.set_osd_checked(False)
     assert not next(a for a in tr.menu.actions() if a.text() == "Bildschirmanzeige").isChecked()
+
+
+def test_daemon_vanishing_mid_rebuild_does_not_interleave_a_second_rebuild(tray):
+    """Cheap fix: available(False), emitted while the menu is being built, must not
+    rebuild the menu in the middle of the outer rebuild (duplicated entries)."""
+    tr, t = tray
+    assert tr.client.is_available
+    t.up = False  # the next call inside rebuild_menu fails and emits available(False)
+    tr.rebuild_menu()
+    texts = tr.menu_texts()
+    assert texts.count("Beenden") == 1 and texts.count("Fenster öffnen") == 1
+    assert texts[0] == "Dienst läuft nicht"

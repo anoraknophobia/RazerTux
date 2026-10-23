@@ -61,6 +61,7 @@ class TrayIcon(QSystemTrayIcon):
         self.setContextMenu(self.menu)
         self.activated.connect(self._on_activated)
         self._restore_model = NAGA_MODEL  # whose backup the flat menu entry restores
+        self._rebuilding = self._rebuild_again = False
         client.profileChanged.connect(lambda *_: self.rebuild_menu())
         client.statusChanged.connect(lambda *_: self.rebuild_menu())
         client.devicesChanged.connect(self.rebuild_menu)
@@ -92,6 +93,22 @@ class TrayIcon(QSystemTrayIcon):
 
     # -- menu -----------------------------------------------------------------
     def rebuild_menu(self) -> None:
+        # a daemon call inside the rebuild can emit available(False) and so call us
+        # again synchronously: run that rebuild after this one instead of in between
+        if self._rebuilding:
+            self._rebuild_again = True
+            return
+        self._rebuilding = True
+        try:
+            for _ in range(3):  # bounded: a flapping daemon must not hang the GUI
+                self._rebuild_again = False
+                self._rebuild_menu()
+                if not self._rebuild_again:
+                    break
+        finally:
+            self._rebuilding = False
+
+    def _rebuild_menu(self) -> None:
         m = self.menu
         if self._language_menu is not None:  # clear() keeps submenus alive
             try:

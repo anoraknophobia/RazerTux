@@ -129,7 +129,8 @@ class DeviceBar(QWidget):
     def set_status(self, status: dict, remap_enabled: bool) -> None:
         experimental = bool(status.get("experimental"))
         self.banner.setVisible(experimental)
-        self.readonly_label.setVisible(experimental and status.get("writable") is False)
+        self.readonly_label.setVisible(experimental and bool(status.get("connected"))
+                                       and status.get("writable") is False)
         self.remap_toggle.blockSignals(True)
         self.remap_toggle.setChecked(remap_enabled)
         self.remap_toggle.blockSignals(False)

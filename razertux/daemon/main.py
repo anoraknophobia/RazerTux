@@ -167,7 +167,7 @@ async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="razertuxd",
-                                 description="RazerTux-Dienst (Razer Naga V2 Pro)")
+                                 description="RazerTux-Dienst (Razer-Mäuse)")
     ap.add_argument("--debug", action="store_true", help="ausführliches Protokoll")
     ap.add_argument("--config-dir", type=Path, default=None,
                     help="Konfigurationsordner (Standard: ~/.config/razertux)")
