@@ -57,7 +57,7 @@ def test_sanitize_scrubs_values():
 
 def test_hex_fields_not_mangled():
     r = make()
-    r.reads["x"] = {"raw": "aabbccddeeff", "value": 1, "status": "ok"}
+    r.reads["dpi"] = {"raw": "aabbccddeeff", "value": 1, "status": "ok"}
     assert "aabbccddeeff" in to_json(r)
 
 
@@ -93,7 +93,7 @@ def test_yaml_form_attributes():
 
 
 def test_url_too_long_drops_json_keeps_summary():
-    r = make(reads={f"r{i}": {"raw": "ab" * 40, "value": i, "status": "ok"} for i in range(200)})
+    r = make(interfaces=[{"number": i, "class": 3, "hid_descriptor_hex": "ab" * 2000} for i in range(3)])
     url, full = issue_url(r)
     assert not full and len(url) <= 8000
     q = parse_qs(urlparse(url).query)
@@ -103,3 +103,76 @@ def test_url_too_long_drops_json_keeps_summary():
 def test_url_length_bound_always():
     url, _ = issue_url(make(notes="é" * 2000))
     assert len(url) <= 8000
+
+
+def _leaks(s):
+    return re.search(r"(?i)/home/|00:11:22|PM2012H|bob\b|/mnt|/tmp|/media|/run/user", s)
+
+
+def test_read_name_whitelist_and_key_variants():
+    bad = {"raw": "00", "value": "PM2012H12345678 /home/bob 00:11:22:33:44:55", "status": "ok"}
+    r = make(reads={"get_serial_number": bad, "SerialNumber": bad, "dpi_mac": bad, "unknown": bad,
+                    "dpi": bad, "serial_present": {"value": 1, "status": "ok"}, "brightness:logo": {"value": 5}})
+    out = sanitize(r)["reads"]
+    assert set(out) == {"dpi", "serial_present", "brightness:logo"}
+    assert out["serial_present"]["value"] is True
+    assert "value" not in out["dpi"]
+
+
+def test_hex_validation_and_caps():
+    r = make(interfaces=[{"number": 0, "hid_descriptor_hex": "zz/home/bob", "descriptor_sha1": "ab" * 5,
+                          "evdev": {"mouse": ["BTN_LEFT", "/home/bob", "x y"], "evil": ["KEY_A"], "uniq": ["a"]}}],
+             reads={"dpi": {"raw": "/home/bob", "value": 1}, "poll_rate": {"raw": "ab" * 300, "value": 2}})
+    s = sanitize(r)
+    i = s["interfaces"][0]
+    assert "hid_descriptor_hex" not in i and "descriptor_sha1" not in i
+    assert i["evdev"] == {"mouse": ["BTN_LEFT"]}
+    assert "raw" not in s["reads"]["dpi"]
+    assert "raw" not in s["reads"]["poll_rate"] and s["reads"]["poll_rate"]["truncated"] is True
+    assert not _leaks(json.dumps(s))
+
+
+def test_value_types():
+    r = make(reads={"dpi": {"value": {"a": 1}}, "poll_rate": {"value": "x" * 100}, "battery": {"value": 55.5}})
+    out = sanitize(r)["reads"]
+    assert "value" not in out["dpi"] and "value" not in out["poll_rate"] and out["battery"]["value"] == 55.5
+
+
+def test_non_dict_sections_no_crash():
+    r = make(device="x", system=5, buttons=[1], light=None, reads=[], interfaces=["a", None, 3])
+    r.buttons = {"results": "oops", "signals": 4}
+    sanitize(r)
+    to_json(r)
+    summary_text(r)
+    issue_url(r)
+    sanitize(make(buttons=None, device=None, light=[]))
+    sanitize("nonsense")
+
+
+def test_user_scrub_whole_word(monkeypatch):
+    monkeypatch.setenv("LOGNAME", "alice")
+    s = to_json(make(notes="alice said malice at /mnt/a /tmp/b /media/c /run/user/1000/x"))
+    assert "alice said" not in s and "malice" in s and not _leaks(s)
+
+
+def test_summary_rich():
+    t = summary_text(make())
+    for needle in ("#0", "class 3/1/2", "aaaaaaaa", "BTN_LEFT", "Standard keys seen", "Read dpi", "800", "logo=yes"):
+        assert needle in t
+
+
+def test_yaml_ids_unique_lowercase():
+    ids = re.findall(r"^\s+id: (\w+)$", YML.read_text(), re.M)
+    assert len(ids) == len(set(ids)) and all(i == i.lower() for i in ids)
+
+
+def test_long_product_and_notes_terminate():
+    r = make(notes="é" * 2000)
+    r.device["usb_product"] = "P" * 5000
+    r.interfaces = [{"number": i, "hid_descriptor_hex": "ab" * 2000} for i in range(10)]
+    url, full = issue_url(r)
+    assert len(url) <= 8000 and not full
+    r2 = make(notes="n")
+    r2.device["usb_product"] = "é" * 5000
+    url2, _ = issue_url(r2)
+    assert len(url2) <= 8000
