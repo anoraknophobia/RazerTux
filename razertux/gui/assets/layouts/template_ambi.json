@@ -8,6 +8,15 @@
   }
  ],
  "buttons": {
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right",
+   "anchor": [
+    0.2643,
+    0.1235
+   ]
+  },
   "wheel_up": {
    "view": "top",
    "element": "wheel",
@@ -43,15 +52,6 @@
    "anchor": [
     0.5,
     0.7833
-   ]
-  },
-  "right": {
-   "view": "top",
-   "element": "right",
-   "side": "right",
-   "anchor": [
-    0.5103,
-    0.7036
    ]
   },
   "forward": {

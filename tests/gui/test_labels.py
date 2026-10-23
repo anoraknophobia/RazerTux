@@ -32,3 +32,13 @@ def test_macro_label_and_missing():
 def test_top_default_shows_dpi():
     assert L(DefaultAction(), ButtonId.TOP_1) == "DPI hoch"
     assert L(DefaultAction(), ButtonId.TOP_2) == "DPI-Stufe weiter"  # = default_profile (R20)
+
+
+def test_every_button_has_a_human_name():
+    from razertux.hw.buttons import ButtonId
+    from razertux.gui.labels import button_name
+    for b in ButtonId:
+        name = button_name(b)
+        for raw in ("forward", "back", "dpi_", "learn_", "clutch", "profile", "side_", "top_", "wheel_"):
+            assert raw not in name, (b, name)
+    assert button_name(ButtonId.LEARN_3) == "Angelernte Taste 3"

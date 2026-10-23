@@ -5,8 +5,6 @@
   <g id="right"><path d="M127 11 C152 16 174 38 182 76 C186 100 187 120 186 134 C170 141 146 141 127 137 Z" stroke="@ACC@" stroke-width="1.4"/></g>
   <g id="wheel"><rect x="101" y="26" width="22" height="60" rx="10" stroke="@ACC@" stroke-width="1.6"/></g>
 <path d="M105 40 L119 40 M105 50 L119 50 M105 60 L119 60 M105 70 L119 70" stroke="@ACC@" stroke-width="0.7"/>
-  <g id="dpi_up"><rect x="104" y="156" width="16" height="11" rx="4" stroke="@ACC@" stroke-width="1.0"/></g>
-  <g id="dpi_down"><rect x="104" y="172" width="16" height="11" rx="4" stroke="@ACC@" stroke-width="1.0"/></g>
   <g id="forward"><rect x="46" y="158" width="22" height="40" rx="8" stroke="@ACC@" stroke-width="1.2"/></g>
   <g id="back"><rect x="46" y="206" width="22" height="40" rx="8" stroke="@ACC@" stroke-width="1.2"/></g>
 </svg>

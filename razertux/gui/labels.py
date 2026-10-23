@@ -24,12 +24,21 @@ _BUTTON_NAMES: dict[ButtonId, str] = {
     ButtonId.WHEEL_RIGHT: QT_TRANSLATE_NOOP("labels", "Rad rechts"),
     ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Obere Taste vorn"),
     ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Obere Taste hinten"),
+    ButtonId.BACK: QT_TRANSLATE_NOOP("labels", "Seitentaste hinten"),
+    ButtonId.FORWARD: QT_TRANSLATE_NOOP("labels", "Seitentaste vorn"),
+    ButtonId.DPI_UP: QT_TRANSLATE_NOOP("labels", "DPI hoch"),
+    ButtonId.DPI_DOWN: QT_TRANSLATE_NOOP("labels", "DPI runter"),
+    ButtonId.CLUTCH: QT_TRANSLATE_NOOP("labels", "Sniper-Taste"),
+    ButtonId.PROFILE: QT_TRANSLATE_NOOP("labels", "Profiltaste"),
 }
+LEARN_NAME = QT_TRANSLATE_NOOP("labels", "Angelernte Taste %1")
 
 
 def button_name(b: ButtonId) -> str:
     if b in _BUTTON_NAMES:
         return _tr(_BUTTON_NAMES[b])
+    if b.value.startswith("learn_"):
+        return _tr(LEARN_NAME).replace("%1", b.value.removeprefix("learn_"))
     return _tr("Taste %1").replace("%1", b.value.removeprefix("side_"))
 
 

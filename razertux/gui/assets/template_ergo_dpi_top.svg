@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 380" width="220" height="380">
+  <!-- Ergonomic right-hand mouse from above, front at the top, thumb keys on the left flank (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M92 6 C62 12 44 38 40 74 C36 112 36 150 40 188 C44 214 34 232 36 262 C40 318 70 372 118 374 C166 374 196 330 200 270 C204 220 204 150 196 104 C190 56 164 14 132 6 C118 3 106 3 92 6 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M97 11 C72 16 54 38 50 72 L49 134 C66 140 84 140 97 137 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M127 11 C152 16 174 38 182 76 C186 100 187 120 186 134 C170 141 146 141 127 137 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="101" y="26" width="22" height="60" rx="10" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M105 40 L119 40 M105 50 L119 50 M105 60 L119 60 M105 70 L119 70" stroke="@ACC@" stroke-width="0.7"/>
+  <g id="dpi_up"><rect x="104" y="156" width="16" height="11" rx="4" stroke="@ACC@" stroke-width="1.0"/></g>
+  <g id="dpi_down"><rect x="104" y="172" width="16" height="11" rx="4" stroke="@ACC@" stroke-width="1.0"/></g>
+  <g id="forward"><rect x="46" y="158" width="22" height="40" rx="8" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="46" y="206" width="22" height="40" rx="8" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>

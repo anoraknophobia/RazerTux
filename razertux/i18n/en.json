@@ -317,8 +317,8 @@
     "Akku: %1 %": "Battery: %1 %",
     "Akku: –": "Battery: –",
     "Aus": "Off",
-    "DPI hoch": "Sensitivity up",
-    "DPI runter": "Sensitivity down",
+    "DPI hoch": "DPI up",
+    "DPI runter": "DPI down",
     "DPI-Stufe weiter": "Sensitivity stage cycle",
     "DPI-Stufe weiter (Maus)": "Sensitivity stage cycle (mouse)",
     "Hypershift": "Hypershift",
@@ -338,7 +338,12 @@
     "Rechtsklick": "Right Click",
     "Standard": "Default",
     "Taste %1": "Button %1",
-    "lädt": "charging"
+    "lädt": "charging",
+    "Seitentaste hinten": "Side button rear",
+    "Seitentaste vorn": "Side button front",
+    "Sniper-Taste": "Sniper button",
+    "Profiltaste": "Profile button",
+    "Angelernte Taste %1": "Learned button %1"
   },
   "store": {
     "Profil {profile} nicht lesbar: {error}": "Profile {profile} not readable: {error}",

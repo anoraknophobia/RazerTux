@@ -317,8 +317,8 @@
     "Akku: %1 %": "Batería: %1 %",
     "Akku: –": "Batería: –",
     "Aus": "Desactivado",
-    "DPI hoch": "Subir sensibilidad",
-    "DPI runter": "Bajar sensibilidad",
+    "DPI hoch": "DPI más",
+    "DPI runter": "DPI menos",
     "DPI-Stufe weiter": "Siguiente nivel de sensibilidad",
     "DPI-Stufe weiter (Maus)": "Siguiente nivel de sensibilidad (ratón)",
     "Hypershift": "Hypershift",
@@ -338,7 +338,12 @@
     "Rechtsklick": "Clic derecho",
     "Standard": "Predeterminado",
     "Taste %1": "Botón %1",
-    "lädt": "cargando"
+    "lädt": "cargando",
+    "Seitentaste hinten": "Botón lateral trasero",
+    "Seitentaste vorn": "Botón lateral delantero",
+    "Sniper-Taste": "Botón sniper",
+    "Profiltaste": "Botón de perfil",
+    "Angelernte Taste %1": "Botón aprendido %1"
   },
   "store": {
     "Profil {profile} nicht lesbar: {error}": "No se puede leer el perfil {profile}: {error}",

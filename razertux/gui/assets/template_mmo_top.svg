@@ -8,6 +8,4 @@
   <g id="right"><path d="M178 13 C168 9 154 9 142 10 L142 136 L216 136 L208 108 C204 90 204 62 192 36 C188 26 182 18 178 13 Z" stroke="@ACC@" stroke-width="1.4"/></g>
   <g id="wheel"><rect x="108" y="26" width="26" height="70" rx="10" stroke="@ACC@" stroke-width="1.6"/></g>
 <path d="M114 44 L128 44 M114 56 L128 56 M114 68 L128 68 M114 80 L128 80" stroke="@ACC@" stroke-width="0.7"/>
-  <g id="dpi_up"><rect x="110" y="150" width="22" height="16" rx="5" stroke="@ACC@" stroke-width="1.0"/></g>
-  <g id="dpi_down"><rect x="110" y="172" width="22" height="16" rx="5" stroke="@ACC@" stroke-width="1.0"/></g>
 </svg>
