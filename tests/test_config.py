@@ -36,7 +36,7 @@ def test_default_profile_leaves_device_untouched():
     assert p.poll_rate is None and p.lighting == {} and p.remap_top_buttons is False
     assert p.hypershift == {}
     assert p.standard[ButtonId.TOP_1] == DpiStageAction("up")
-    assert p.standard[ButtonId.TOP_2] == DpiStageAction("cycle")  # R20
+    assert p.standard[ButtonId.TOP_2] == DpiStageAction("cycle")
     assert set(p.standard) == set(ButtonId)
     assert p.standard[ButtonId.LEFT] == DefaultAction()
     assert validate(p) == []
@@ -267,7 +267,7 @@ SYNAPSE_ORDER = {1: "Ultra-fine", 2: "Standard", 3: "Distinct", 4: "Adaptive", 5
 
 def test_settings_scroll_stage_names(tmp_path):
     s = Settings("default")
-    assert s.scroll_stage_names == SYNAPSE_ORDER  # R25: Synapse list order, user-verified
+    assert s.scroll_stage_names == SYNAPSE_ORDER  # Synapse list order, user-verified
     assert Settings("x").scroll_stage_names is not s.scroll_stage_names  # no shared default
     s.scroll_stage_names = {1: "Fein", 6: "Ultra-fine"}
     store = ConfigStore(tmp_path)
@@ -309,7 +309,7 @@ def test_settings_active_profile_maps_to_naga():
     s.active_profile = "y"
     d = s.to_dict()
     assert d["schema"] == 2 and d["active_profiles"] == {"naga_v2_pro": "y"}
-    assert d["active_profile"] == "y"  # I1: still readable by a running 0.2.x process
+    assert d["active_profile"] == "y"  # still readable by a running 0.2.x process
     assert Settings.from_dict(d) == s
     assert Settings.from_dict({"active_profile": "z"}).active_profile == "z"
 

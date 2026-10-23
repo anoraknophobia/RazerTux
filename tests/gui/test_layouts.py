@@ -1,4 +1,4 @@
-"""Task 9: device layouts (JSON) and their lookup by model."""
+"""Device layouts (JSON) and their lookup by model."""
 import json
 
 import pytest
@@ -199,7 +199,7 @@ def test_left_labels_on_a_top_view_enter_outside_the_keys_and_mirror_the_right(q
     view.close()
 
 
-# -- Task 11: templates, generic fallback with learn dots, per-model layouts --------------
+# -- templates, generic fallback with learn dots, per-model layouts --------------
 
 WHEEL3 = {"wheel_up", "middle", "wheel_down"}
 TILT = {"wheel_left", "wheel_right"}

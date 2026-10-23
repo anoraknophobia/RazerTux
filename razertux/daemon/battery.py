@@ -54,7 +54,7 @@ class BatteryMonitor:
         try:
             level, charging = int(self.dev.battery()), bool(self.dev.charging())
         except Exception as e:  # HW gone / asleep / garbage reply: try again next interval
-            logger.debug("Akkustand nicht lesbar: %s", e)
+            logger.debug("Battery level not readable: %s", e)
             self._on_poll(False)
             return
         self._on_poll(True)
@@ -83,7 +83,7 @@ class BatteryMonitor:
             except asyncio.CancelledError:
                 pass
             except Exception:  # never block the caller's cleanup (mode reset)
-                logger.exception("Akku-Abfrage beendet mit Fehler")
+                logger.exception("Battery polling ended with an error")
 
     async def _run(self) -> None:
         while True:
@@ -91,7 +91,7 @@ class BatteryMonitor:
             try:
                 self.poll()
             except Exception:  # callbacks (status signal, notification) must not end the loop
-                logger.exception("Akku-Abfrage fehlgeschlagen")
+                logger.exception("Battery polling failed")
 
 
 async def notify_desktop(bus: Any, summary: str, body: str,

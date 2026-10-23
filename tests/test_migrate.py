@@ -258,7 +258,7 @@ def test_schema2_runs_at_startup(home, monkeypatch):
     assert hasattr(gui_app, "migrate_schema_2") and hasattr(daemon_main, "migrate_schema_2")
 
 
-# --- I1: a still-running 0.2.x process next to schema 2 ---------------------
+# --- a still-running 0.2.x process next to schema 2 ---------------------
 
 def _old_0_2_reader(d):
     """Settings.from_dict of 0.2.x: active_profile strictly, the rest via d.get."""

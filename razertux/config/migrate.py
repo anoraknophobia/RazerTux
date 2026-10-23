@@ -41,9 +41,9 @@ def migrate_legacy_config() -> bool:
     except OSError as e:
         shutil.rmtree(tmp, ignore_errors=True)
         if not new.exists():
-            logger.warning("Konfiguration aus %s nicht übernommen: %s", old, e)
+            logger.warning("Configuration from %s not copied: %s", old, e)
         return False
-    logger.info("Konfiguration aus %s nach %s kopiert (der alte Ordner bleibt unverändert)",
+    logger.info("Configuration copied from %s to %s (the old folder is left unchanged)",
                 old, new)
     return True
 
@@ -76,7 +76,7 @@ def migrate_schema_2(root: Path) -> bool:
         settings = json.loads(settings_path.read_text(encoding="utf-8")) \
             if settings_path.exists() else {}
     except (OSError, ValueError) as e:
-        logger.warning("%s nicht lesbar, Schema-2-Migration übersprungen: %s", settings_path, e)
+        logger.warning("%s not readable, schema 2 migration skipped: %s", settings_path, e)
         return False
     if not isinstance(settings, dict) or settings.get("schema") == 2:
         return False
@@ -102,7 +102,7 @@ def migrate_schema_2(root: Path) -> bool:
         if isinstance(active, str):
             active_profiles.setdefault(NAGA_MODEL, active)
         new["active_profiles"] = active_profiles
-        # I1: a still-running 0.2.x process reads this key strictly
+        # a still-running 0.2.x process reads this key strictly
         new["active_profile"] = active_profiles.get(NAGA_MODEL, "default")
         settings.pop("active_profiles", None)
         new.update(settings)
@@ -110,11 +110,11 @@ def migrate_schema_2(root: Path) -> bool:
         tmp.write_text(json.dumps(new, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         os.replace(tmp, settings_path)
     except OSError as e:
-        logger.warning("Schema-2-Migration von %s fehlgeschlagen: %s", root, e)
+        logger.warning("Schema 2 migration of %s failed: %s", root, e)
         return False
     if rerun:
-        logger.info("%s wurde von einer alten RazerTux-Version neu geschrieben, wieder auf "
-                    "Schema 2 gebracht (Profile unverändert)", settings_path)
+        logger.info("%s was rewritten by an old RazerTux version, brought back to "
+                    "schema 2 (profiles unchanged)", settings_path)
     else:
-        logger.info("Konfiguration %s auf Schema 2 migriert (Originale in pre-schema2/)", root)
+        logger.info("Configuration %s migrated to schema 2 (originals in pre-schema2/)", root)
     return True

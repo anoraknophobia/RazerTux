@@ -1,4 +1,4 @@
-"""Tab "Tasten": the mouse view with the "Standard | Hypershift" pill below it and
+"""Tab "Buttons": the mouse view with the "Standard | Hypershift" pill below it and
 the switch for the top buttons (top right), like Synapse's Customize page."""
 from __future__ import annotations
 

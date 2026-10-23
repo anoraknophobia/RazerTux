@@ -80,7 +80,7 @@ class MacroPlayer:
                 self._out.key(code, 0)
             self._out.sync()
         except Exception:
-            logger.exception("Fehler beim Loslassen von Makro-Tasten")
+            logger.exception("Error releasing macro keys")
         run.pressed.clear()
 
     async def _run(self, key: ButtonId, run: _Run, macro: Macro,
@@ -102,7 +102,7 @@ class MacroPlayer:
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.exception("Makro %r ist fehlgeschlagen", macro.id)
+            logger.exception("Macro %r failed", macro.id)
         finally:
             if self._runs.get(key) is run:
                 del self._runs[key]

@@ -1,8 +1,8 @@
-"""Tab "Leistung": DPI (single value or 1-5 stages) and polling rate (Synapse style).
+"""Tab "Performance": DPI (single value or 1-5 stages) and polling rate (Synapse style).
 
 The tab edits the profile it was given in place and emits `changed` after each
-user edit. Unchecked "DPI dieses Profils festlegen" / "Nicht ändern" keep the
-profile's empty values, so the mouse keeps its own settings (R9)."""
+user edit. Unchecked "Set DPI for this profile" / "Don't change" keep the
+profile's empty values, so the mouse keeps its own settings."""
 from __future__ import annotations
 
 import math

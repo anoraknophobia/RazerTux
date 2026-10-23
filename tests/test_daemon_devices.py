@@ -812,7 +812,7 @@ async def test_router_close_releases_before_ungrab():
     assert order == ["release", "ungrab", "close"]
 
 
-# -- Task 7: device settings, DPI stepping, restore ----------------------------
+# -- device settings, DPI stepping, restore ----------------------------
 
 
 from razertux.config.model import LightingZone, Profile  # noqa: E402
@@ -873,14 +873,14 @@ def test_apply_each_command_guarded(caplog):
     with caplog.at_level(logging.WARNING):
         apply_device_settings(NagaV2Pro(t), full_profile())
     assert (0x04, 0x05) in t.sent and (0x0F, 0x04) in t.sent
-    assert "Abfragerate" in caplog.text and "DPI-Stufen" in caplog.text
+    assert "Polling rate" in caplog.text and "DPI stages" in caplog.text
 
 
 def test_apply_bad_profile_value_is_logged_not_raised(caplog):
     t = FakeTransport.full()
     with caplog.at_level(logging.WARNING):
         apply_device_settings(NagaV2Pro(t), full_profile(poll_rate=250))
-    assert "Abfragerate" in caplog.text
+    assert "Polling rate" in caplog.text
     assert (0x04, 0x06) in t.sent
 
 
@@ -974,7 +974,7 @@ async def test_dpi_stepping_error_is_logged_and_index_kept(tmp_path, caplog):
     t.responses[(0x04, 0x05)] = lambda a: (_ for _ in ()).throw(OSError("weg"))
     with caplog.at_level(logging.WARNING):
         naga(d)._on_dpi_stage("up")
-    assert "nicht gesetzt" in caplog.text
+    assert "not set" in caplog.text
     t.responses[(0x04, 0x05)] = ok
     naga(d)._on_dpi_stage("up")  # still goes to stage 3, index was not advanced on failure
     assert dpi_writes(t)[-1] == 3200
@@ -1038,7 +1038,7 @@ async def test_dpi_cycle_single_stage_writes_nothing(tmp_path):
     await d.shutdown()
 
 
-# -- R17: write persistent values back on clean shutdown --------------------------
+# -- write persistent values back on clean shutdown --------------------------
 
 BACKUP = {"poll_rate": 500, "dpi": [1800, 1800],
           "dpi_stages": {"active": 1, "stages": [[2500, 2500]]},
@@ -1066,7 +1066,7 @@ async def test_shutdown_writes_back_dpi_stages_and_poll_rate(tmp_path, caplog):
                            (0x04, 0x06, bytes([1, 1, 1, 1, 0x09])),        # VARSTORE, 2500 (id 1)
                            (0x04, 0x05, bytes([1, 0x07, 0x08, 0x07, 0x08]))]  # VARSTORE 1800
     assert modes(t)[-1] == NORMAL_MODE
-    assert "zurückgeschrieben" in caplog.text
+    assert "written back" in caplog.text
 
 
 async def test_shutdown_after_dpi_stepping_writes_back_dpi(tmp_path):
@@ -1093,7 +1093,7 @@ async def test_shutdown_without_backup_logs_warning(tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         await d.shutdown()
     assert since(t, n) == []
-    assert "Sicherung" in caplog.text
+    assert "No readable backup" in caplog.text
 
 
 async def test_restore_clears_pending_write_back(tmp_path):
@@ -1135,7 +1135,7 @@ async def test_backup_failure_on_connect_is_logged_not_fatal(tmp_path, caplog):
         d, _ = await connected(tmp_path, transport=t)
     assert not naga_backup(tmp_path).exists()
     assert d.hw_status()["connected"] is True
-    assert "Sicherung" in caplog.text
+    assert "not created" in caplog.text
     await d.shutdown()
 
 
@@ -1223,7 +1223,7 @@ async def test_low_battery_not_repeated_after_reconnect(tmp_path):
     await d.shutdown()
 
 
-# -- Task 11: device mode follows the profile, scroll stage / DPI notifications ----
+# -- device mode follows the profile, scroll stage / DPI notifications ----
 
 def _remap_profile(pid="remap", on=True):
     from razertux.config.model import Profile

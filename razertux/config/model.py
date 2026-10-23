@@ -208,7 +208,7 @@ IDLE_MIN_S, IDLE_MAX_S = 60, 900
 LOW_POWER_MIN, LOW_POWER_MAX = 5, 25
 SCROLL_FEATURES = frozenset({"scroll_mode", "scroll_acceleration", "scroll_smart_reel"})
 SCROLL_STAGES = 6  # firmware slots 1-6 (05 3a notifications)
-# R25 (user-verified: slot 5 = free-spinning Smooth Scroll): slots follow Synapse's list order
+# Scroll stages (user-verified: slot 5 = free-spinning Smooth Scroll): slots follow Synapse's list order
 _SYNAPSE_STAGE_ORDER = ("Ultra-fine", "Standard", "Distinct", "Adaptive", "Smooth Scroll",
                         "Custom")
 # what older versions stored as the default; replaced on load (the user never named these)
@@ -274,7 +274,7 @@ class Settings:
     def to_dict(self) -> dict[str, Any]:
         return {"schema": SCHEMA,
                 "active_profiles": dict(self.active_profiles),
-                # I1: a 0.2.x process still running after the update reads this key
+                # a 0.2.x process still running after the update reads this key
                 # strictly (unknown keys are ignored there)
                 "active_profile": self.active_profile,
                 "low_battery_notify": self.low_battery_notify,

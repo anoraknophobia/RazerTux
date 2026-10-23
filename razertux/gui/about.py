@@ -1,4 +1,4 @@
-"""Hilfe → Über RazerTux: version, description, disclaimer, licence and credits."""
+"""Help → About RazerTux: version, description, disclaimer, licence and credits."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt

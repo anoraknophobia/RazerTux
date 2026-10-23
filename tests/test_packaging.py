@@ -155,7 +155,7 @@ def test_install_script_only_prints_the_switch_commands():
     assert run("post_install 0.2.0-1").count(SWITCH_CMD) == 1
     assert run("post_upgrade 0.2.0-1 0.1.0-1").count(SWITCH_CMD) == 1  # from the naga-config era
     assert "restart razertuxd" not in run("post_install 0.3.0-1")
-    # I2: from < 0.3.0 the running daemon and tray are old -> restart hint
+    # from < 0.3.0 the running daemon and tray are old -> restart hint
     for old in ("0.2.0-1", "0.2.9-1"):
         out = run(f"post_upgrade 0.3.0-1 {old}")
         assert "systemctl --user restart razertuxd.service" in out

@@ -1,4 +1,4 @@
-"""Task 14: mouse drawings, leader lines, hover/click mapping, header, footer language."""
+"""Mouse drawings, leader lines, hover/click mapping, header, footer language."""
 import re
 
 import pytest

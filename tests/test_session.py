@@ -1,4 +1,4 @@
-"""One DeviceSession per connected mouse (Task 7). Fakes only: no /dev, no uinput."""
+"""One DeviceSession per connected mouse. Fakes only: no /dev, no uinput."""
 import asyncio
 import json
 import logging
@@ -89,7 +89,7 @@ def make_session(tmp_path, model=DA, transport=None, **kw):
     return s, store, t
 
 
-# -- needs_grab (spec §6b.1, Ruling M8) ---------------------------------------------
+# -- needs_grab ---------------------------------------------
 
 def test_needs_grab_verified_mouse_always_grabbed():
     """The Naga keeps today's behaviour: grabbed while connected, whatever the profile."""
@@ -147,7 +147,7 @@ async def test_failed_probe_makes_experimental_mouse_read_only(tmp_path, caplog)
     assert (0x04, 0x05) not in t.sent
     assert not (tmp_path / "backups" / f"{DA}.json").exists()  # backup only after a good probe
     assert "Result: FAILED" in s.diagnostics()
-    assert sum("schreibgeschützt" in r.getMessage() for r in caplog.records) == 1
+    assert sum("write-protected" in r.getMessage() for r in caplog.records) == 1
     await s.close()
     assert writes(t) == []
 
@@ -404,7 +404,7 @@ async def test_no_write_back_after_replug_with_failed_probe(tmp_path):
     await s.settle()
     assert s.status()["writable"] is False
     await s.close()
-    assert writes(bad) == []  # no R17 write-back to a mouse that failed the probe
+    assert writes(bad) == []  # no write-back to a mouse that failed the probe
 
 
 async def test_power_settings_never_reach_experimental_mice(tmp_path):
@@ -417,7 +417,7 @@ async def test_power_settings_never_reach_experimental_mice(tmp_path):
     await s.settle()
     assert s.status()["writable"] is True
     await s.reload()
-    assert (0x07, 0x03) not in t.sent and (0x07, 0x01) not in t.sent  # Ruling M9
+    assert (0x07, 0x03) not in t.sent and (0x07, 0x01) not in t.sent
     await s.close()
 
 
@@ -453,7 +453,7 @@ async def test_reload_picks_up_a_plate_change(tmp_path):
     await s.close()
 
 
-# -- scroll options (Task 13) -----------------------------------------------------------
+# -- scroll options -----------------------------------------------------------
 
 BV3, BV3_PID = "basilisk_v3", 0x0099
 
@@ -503,7 +503,7 @@ async def test_scroll_options_not_sent_when_read_only(tmp_path):
     await s.close()
 
 
-# -- I3: overlapping connects (cable + dongle re-enumerating) ------------------------
+# -- overlapping connects (cable + dongle re-enumerating) ------------------------
 
 async def test_overlapping_connects_leave_exactly_one_transport_reader_monitor(tmp_path,
                                                                                 monkeypatch):

@@ -147,7 +147,7 @@ async def test_default_top_buttons_call_dpi_callback_on_press_only():
     await m.handle(B.TOP_1, 0)
     await m.handle(B.TOP_2, 1)
     await m.handle(B.TOP_2, 0)
-    assert dpi == ["up", "cycle"]  # same as default_profile() (R20)
+    assert dpi == ["up", "cycle"]  # same as default_profile()
     assert out.events == []
 
 

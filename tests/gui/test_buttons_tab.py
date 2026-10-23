@@ -1,4 +1,4 @@
-"""Task 10: the TASTEN tab's side-plate choice (Naga V2 Pro)."""
+"""The Buttons tab's side-plate choice (Naga V2 Pro)."""
 import pytest
 
 from razertux.config import ConfigStore, DefaultAction, Settings, default_profile
@@ -101,7 +101,7 @@ def test_main_window_wires_the_reload(qapp, tmp_path):
     w.close()
 
 
-# -- Task 12: the tab follows the selected device -----------------------------------
+# -- the tab follows the selected device -----------------------------------
 
 def test_other_device_hides_the_plate_choice(qapp, store):
     from razertux.devices.db import load_devices

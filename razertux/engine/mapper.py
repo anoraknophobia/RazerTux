@@ -43,7 +43,7 @@ DEFAULT_OUTPUT: dict[ButtonId, int | tuple[int, int, int]] = {
     ButtonId.WHEEL_RIGHT: (E.REL_HWHEEL, E.REL_HWHEEL_HI_RES, 1),
 }
 _WHEEL = {ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT}
-# Naga V2 Pro only, same as default_profile() (R20): front top button = DPI up,
+# Naga V2 Pro only, same as default_profile(): front top button = DPI up,
 # back = cycle through the stages. Other mice pass default_dpi={}.
 NAGA_DEFAULT_DPI: Mapping[ButtonId, str] = {ButtonId.TOP_1: "up", ButtonId.TOP_2: "cycle"}
 
@@ -199,6 +199,6 @@ class Mapper:
     def _start_macro(self, button: ButtonId, action: MacroAction, mode: MacroMode) -> None:
         macro = self._macros.get(action.macro_id)
         if macro is None:
-            logger.warning("Makro %r nicht gefunden (Taste %s)", action.macro_id, button)
+            logger.warning("Macro %r not found (button %s)", action.macro_id, button)
             return
         self._player.start(macro, mode, action.count, button)

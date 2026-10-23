@@ -1,12 +1,12 @@
 """One connected mouse model: driver, input routing, mapper, profile, probe, status.
 
 The daemon keeps one DeviceSession per device model (cable and dongle of the same
-model share it; the node connected last is the one we talk to, spec §6b.5). Everything
+model share it; the node connected last is the one we talk to). Everything
 the Naga V2 Pro needs beyond the generic driver (device mode, top buttons and firmware
 notifications on the if01 hidraw node, scroll-wheel stage, invalid-DPI repair) only runs
 when the driver is a NagaV2Pro.
 
-Write protection (Ruling M8): every connect starts with the read-only probe. An
+Write protection: every connect starts with the read-only probe. An
 experimental (unverified) mouse whose probe fails gets no device setting at all (DPI,
 lighting, poll rate, power) until it is reconnected; a verified model only logs a
 warning and behaves as before.
@@ -94,7 +94,7 @@ def _guarded(what: str, fn: Callable[..., Any], *args: Any) -> None:
     try:
         fn(*args)
     except Exception as e:  # HW errors, but also ValueError from bad profile data
-        logger.warning("%s nicht gesetzt: %s", what, e)
+        logger.warning("%s not set: %s", what, e)
 
 
 def apply_device_settings(dev: NagaV2Pro, profile: Profile,
@@ -106,50 +106,50 @@ def apply_device_settings(dev: NagaV2Pro, profile: Profile,
     Zones in absent_zones (LED not present) are skipped. Every command is guarded
     individually: a failure is logged and the next one still runs."""
     if profile.poll_rate is not None:
-        _guarded("Abfragerate", dev.set_poll_rate, profile.poll_rate)
+        _guarded("Polling rate", dev.set_poll_rate, profile.poll_rate)
     if profile.dpi_stages:
         idx = _stage_index(profile)
         stages = [tuple(s) for s in profile.dpi_stages]
-        _guarded("DPI-Stufen", dev.set_dpi_stages, idx + 1, stages)
+        _guarded("DPI stages", dev.set_dpi_stages, idx + 1, stages)
         _guarded("DPI", dev.set_dpi, *stages[idx])
     for zone, led in ZONE_LED.items():
         cfg = profile.lighting.get(zone)
         if cfg is None or zone in absent_zones:
             continue
-        _guarded(f"Licht {zone}", dev.set_effect, led, cfg)
-        _guarded(f"Helligkeit {zone}", dev.set_brightness, led, cfg.brightness)
+        _guarded(f"Lighting {zone}", dev.set_effect, led, cfg)
+        _guarded(f"Brightness {zone}", dev.set_brightness, led, cfg.brightness)
 
 
 def apply_generic_settings(dev: RazerMouse, profile: Profile) -> set[str]:
     """Same order as apply_device_settings, for any database mouse: only what
     dev.supports() is sent, the rest is skipped. Returns the persistent backup fields
-    written (for the R17 write-back)."""
+    written (for the write-back)."""
     written: set[str] = set()
     if profile.poll_rate is not None and dev.supports("set_poll_rate"):
         written.add("poll_rate")
-        _guarded("Abfragerate", dev.set_poll_rate, profile.poll_rate)
+        _guarded("Polling rate", dev.set_poll_rate, profile.poll_rate)
     if profile.dpi_stages:
         idx = _stage_index(profile)
         stages = [tuple(s) for s in profile.dpi_stages]
         if dev.supports("set_dpi_stages"):
             written |= {"dpi_stages", "dpi"}
-            _guarded("DPI-Stufen", dev.set_dpi_stages, idx + 1, stages)
+            _guarded("DPI stages", dev.set_dpi_stages, idx + 1, stages)
         if dev.supports("set_dpi"):
             written.add("dpi")
             _guarded("DPI", dev.set_dpi, *stages[idx])
     for zone, cfg in profile.lighting.items():
         if dev.supports(f"set_effect:{zone}:{cfg.effect}"):
-            _guarded(f"Licht {zone}", dev.set_effect, zone, cfg)
+            _guarded(f"Lighting {zone}", dev.set_effect, zone, cfg)
         else:
-            logger.debug("Licht %s/%s: von %s nicht unterstützt", zone, cfg.effect,
+            logger.debug("Lighting %s/%s: not supported by %s", zone, cfg.effect,
                          dev.info.model)
         if dev.supports(f"set_brightness:{zone}"):
-            _guarded(f"Helligkeit {zone}", dev.set_brightness, zone, cfg.brightness)
+            _guarded(f"Brightness {zone}", dev.set_brightness, zone, cfg.brightness)
     for key, setter, convert in (("mode", "scroll_mode", int), ("acceleration", "scroll_acceleration", bool),
                                  ("smart_reel", "scroll_smart_reel", bool)):
         if key in profile.scroll and dev.supports(f"set_{setter}"):
-            written.add(setter)  # persistent (VARSTORE): the R17 write-back covers it
-            _guarded(f"Mausrad {key}", getattr(dev, f"set_{setter}"), convert(profile.scroll[key]))
+            written.add(setter)  # persistent (VARSTORE): the write-back covers it
+            _guarded(f"Scroll wheel {key}", getattr(dev, f"set_{setter}"), convert(profile.scroll[key]))
     return written
 
 
@@ -170,9 +170,9 @@ def _remaps(profile: Profile) -> bool:
 
 def needs_grab(profile: Profile | None, device_settings: DeviceSettings,
                info: DeviceInfo) -> bool:
-    """Grab the mouse's input nodes only when we must (spec §6b.1).
+    """Grab the mouse's input nodes only when we must.
 
-    Rule 1 (Ruling M8): a verified model (Naga V2 Pro) is always grabbed while connected,
+    Rule 1: a verified model (Naga V2 Pro) is always grabbed while connected,
     exactly as before multi-device support. Rule 2: an experimental mouse is grabbed
     only if the profile binds any button to something other than DefaultAction (macro
     and Hypershift included) and remapping is switched on for it."""
@@ -250,7 +250,7 @@ class DeviceSession:
         # DPI stepping state, in memory only (reset on connect / profile switch)
         self._stages: list[tuple[int, int]] = []
         self._stage_idx = 0
-        # backup fields of persistent settings we changed on the mouse (R17)
+        # backup fields of persistent settings we changed on the mouse
         self._written: set[str] = set()
         self._power_applied: dict[str, int] = {}  # skip rewriting unchanged values
         self._battery: BatteryMonitor | None = None
@@ -299,7 +299,7 @@ class DeviceSession:
             await asyncio.gather(*list(self._tasks))
 
     async def close(self) -> None:
-        """Clean shutdown: R17 write-back, normal mode, release and ungrab."""
+        """Clean shutdown: write-back, normal mode, release and ungrab."""
         await self.settle()
         self._write_back()
         await self._disconnect(reset_mode=True)
@@ -356,7 +356,7 @@ class DeviceSession:
         try:
             self._take(profile)
         except Exception:
-            logger.exception("Geräteeinstellungen für %s nicht angewendet", profile.id)
+            logger.exception("Device settings for %s not applied", profile.id)
         await self._update_grab()
 
     def _refresh_map(self) -> None:
@@ -372,8 +372,8 @@ class DeviceSession:
     async def _update_grab(self) -> None:
         want = self._wants_grab()
         if want != self.router.grabbed:
-            logger.info("%s: Eingabegeräte %s", self.info.name,
-                        "gegriffen" if want else "freigegeben")
+            logger.info("%s: input devices %s", self.info.name,
+                        "grabbed" if want else "released")
             await self.router.set_grab(want)
 
     # -- learning --------------------------------------------------------------------
@@ -396,7 +396,7 @@ class DeviceSession:
         try:
             self.on_learned(signal)
         except Exception:
-            logger.exception("Anlern-Rückmeldung fehlgeschlagen")
+            logger.exception("Learning feedback failed")
 
     # -- status ----------------------------------------------------------------------
 
@@ -444,7 +444,7 @@ class DeviceSession:
         if self._mouse is None:
             return False
         if not self._write_ok:
-            logger.debug("%s schreibgeschützt: Einstellung verworfen", self.info.name)
+            logger.debug("%s write-protected: setting discarded", self.info.name)
             return False
         return True
 
@@ -465,7 +465,7 @@ class DeviceSession:
 
     def apply_power(self, settings: Settings) -> None:
         """Idle time and the mouse's low power threshold (both persistent; None = keep).
-        Ruling M9: these settings are global, so only verified mice (the Naga) get them;
+        These settings are global, so only verified mice (the Naga) get them;
         experimental mice never do."""
         m = self._mouse
         if m is None or not self.info.verified:
@@ -481,10 +481,10 @@ class DeviceSession:
             try:
                 getattr(m, f"set_{field}")(value)
             except Exception as e:
-                logger.warning("%s nicht gesetzt: %s", field, e)
+                logger.warning("%s not set: %s", field, e)
 
     def _write_back(self) -> None:
-        """R17: persistent values we changed go back to the backup's (VARSTORE), so
+        """Write-back: persistent values we changed go back to the backup's (VARSTORE), so
         other systems (Windows/Synapse) find the mouse as it was."""
         if self._mouse is None or not self._write_ok or not self._written:
             return
@@ -494,12 +494,12 @@ class DeviceSession:
         try:
             backup = load_backup(self.backup_path)
         except (OSError, ValueError) as e:
-            logger.warning("Keine lesbare Sicherung (%s), %s bleiben in der Maus: %s",
+            logger.warning("No readable backup (%s), %s stay in the mouse: %s",
                            self.backup_path, ", ".join(sorted(fields)), e)
             return
         failed = restore_backup(self._mouse, backup, fields=fields)
-        logger.info("Originalwerte zurückgeschrieben: %s%s", ", ".join(sorted(fields - set(failed))),
-                    f" (fehlgeschlagen: {', '.join(failed)})" if failed else "")
+        logger.info("Original values written back: %s%s", ", ".join(sorted(fields - set(failed))),
+                    f" (failed: {', '.join(failed)})" if failed else "")
         self._written.clear()
 
     def _sync_mode(self, profile: Profile | None) -> None:
@@ -513,11 +513,11 @@ class DeviceSession:
             naga.set_device_mode(mode)
         except _HW_ERRORS as e:
             self._mode = None
-            logger.warning("Gerätemodus %#04x nicht gesetzt: %s", mode, e)
+            logger.warning("Device mode %#04x not set: %s", mode, e)
             return
         self._mode = mode
-        logger.info("Gerätemodus: %s", "Treiber (obere Tasten frei belegbar)"
-                    if mode == DRIVER_MODE else "normal (obere Tasten ab Werk)")
+        logger.info("Device mode: %s", "driver (top buttons freely assignable)"
+                    if mode == DRIVER_MODE else "normal (top buttons as shipped)")
 
     async def _vendor_report(self, report: bytes) -> None:
         """Naga if01 hidraw: firmware notifications in both modes; top-button reports
@@ -539,7 +539,7 @@ class DeviceSession:
     def _fix_invalid_dpi(self, bad: int) -> None:
         """The Naga reported a DPI beyond its range (an invalid onboard stage):
         re-activate a valid stage and set that stage's DPI."""
-        logger.warning("Maus meldet ungültige DPI %d (erlaubt %d-%d) – wird korrigiert",
+        logger.warning("Mouse reports invalid DPI %d (allowed %d-%d) - correcting",
                        bad, DPI_MIN, DPI_MAX)
         naga = self._naga
         if naga is None or not self._writes_allowed():
@@ -548,13 +548,13 @@ class DeviceSession:
         if xy is None:
             last = self._hw["dpi"]
             if not DPI_MIN <= last <= DPI_MAX:
-                logger.warning("Keine gültige DPI bekannt – bitte DPI im Reiter Leistung setzen")
+                logger.warning("No valid DPI known - please set the DPI in the Performance tab")
                 return
             xy = (last, last)
         try:
             naga.set_dpi(*xy)
         except _HW_ERRORS as e:
-            logger.warning("DPI %dx%d nicht gesetzt: %s", xy[0], xy[1], e)
+            logger.warning("DPI %dx%d not set: %s", xy[0], xy[1], e)
             return
         self._hw["dpi"] = xy[0]
         self._on_status()
@@ -566,7 +566,7 @@ class DeviceSession:
         try:
             save_scroll_stage(self._state_path, stage)
         except OSError as e:
-            logger.warning("Mausrad-Stufe nicht gespeichert (%s): %s", self._state_path, e)
+            logger.warning("Scroll wheel stage not saved (%s): %s", self._state_path, e)
         self._on_status()
 
     def _apply_active(self) -> None:
@@ -577,7 +577,7 @@ class DeviceSession:
             self._reset_stages(profile)
             self._apply_profile(profile)
         except Exception:
-            logger.exception("Geräteeinstellungen für %s nicht angewendet", profile.id)
+            logger.exception("Device settings for %s not applied", profile.id)
 
     def _reset_stages(self, profile: Profile) -> None:
         """Stage list to step through: the profile's, else the mouse's onboard stages."""
@@ -598,7 +598,7 @@ class DeviceSession:
         """DPI up/down button: step through the stages, clamped at both ends;
         cycle: next stage, wrapping from the last to the first."""
         if self._mouse is None or not self._stages or not self._can("set_dpi"):
-            logger.info("DPI-Stufe %s: keine Stufen bekannt oder Maus nicht verbunden", direction)
+            logger.info("DPI stage %s: no stages known or mouse not connected", direction)
             return
         if direction == "cycle":
             idx = (self._stage_idx + 1) % len(self._stages)
@@ -612,7 +612,7 @@ class DeviceSession:
         try:
             self._mouse.set_dpi(x, y)
         except Exception as e:
-            logger.warning("DPI %dx%d nicht gesetzt: %s", x, y, e)
+            logger.warning("DPI %dx%d not set: %s", x, y, e)
             return
         self._stage_idx = idx
         self._hw["dpi"] = x
@@ -656,7 +656,7 @@ class DeviceSession:
         await self.mapper.release_all()
 
     def _probe(self, mouse: RazerMouse) -> None:
-        """Read-only probe before anything is written (Ruling M8)."""
+        """Read-only probe before anything is written."""
         try:
             result = probe(mouse)
         except Exception as e:  # never let a probe bug take the session down
@@ -666,15 +666,15 @@ class DeviceSession:
             self._write_ok = True
         elif self.info.verified:
             self._write_ok = True
-            logger.warning("Probe von %s fehlgeschlagen (%s) – geprüftes Modell, Einstellungen "
-                           "werden trotzdem geschrieben", self.info.name, "; ".join(result.problems))
+            logger.warning("Probe of %s failed (%s) - verified model, settings "
+                           "are written anyway", self.info.name, "; ".join(result.problems))
         else:
             self._write_ok = False
-            logger.warning("Probe von %s fehlgeschlagen (%s) – Maus bleibt bis zum Neuverbinden "
-                           "schreibgeschützt", self.info.name, "; ".join(result.problems))
+            logger.warning("Probe of %s failed (%s) - mouse stays write-protected "
+                           "until reconnected", self.info.name, "; ".join(result.problems))
 
     async def _connect(self, pid: int) -> None:
-        # I3: two nodes of one model (cable + dongle) can start overlapping connects;
+        # two nodes of one model (cable + dongle) can start overlapping connects;
         # only the newest may open anything. Everything after the last await below
         # runs without yielding, so a superseded run never opens a transport.
         self._connect_gen += 1
@@ -698,12 +698,12 @@ class DeviceSession:
             if superseded():
                 return
         if not path:
-            logger.warning("Steuerkanal (hidraw) von %s nicht gefunden", self.info.name)
+            logger.warning("Control channel (hidraw) of %s not found", self.info.name)
             return
         try:
             self._transport = self._transport_factory(path)
         except OSError as e:
-            logger.warning("Kann %s nicht öffnen: %s", path, e)
+            logger.warning("Cannot open %s: %s", path, e)
             return
         mouse = make_mouse(self.info, self._transport, pid)
         self._pid = pid
@@ -714,8 +714,8 @@ class DeviceSession:
             if not self.info.verified and not self.backup_path.exists():
                 # experimental mouse: nothing to restore from -> never write to it
                 self._write_ok = False
-                logger.warning("Keine Sicherung von %s – Maus bleibt bis zum Neuverbinden "
-                               "schreibgeschützt", self.info.name)
+                logger.warning("No backup of %s - mouse stays write-protected "
+                               "until reconnected", self.info.name)
         self._power_applied = {}
         self._poll_failed = False
         self._mode = None
@@ -729,7 +729,7 @@ class DeviceSession:
                     reader.start()
                     self._vendor = reader
                 except OSError as e:
-                    logger.warning("Kann %s nicht lesen: %s", vendor_path, e)
+                    logger.warning("Cannot read %s: %s", vendor_path, e)
             self._absent_zones = {z for z, led in ZONE_LED.items()
                                   if _safe(lambda led=led: naga.brightness(led), None) is None}
         self._hw = {"connected": True, "connection": self.info.pids.get(pid, ""),
@@ -737,7 +737,7 @@ class DeviceSession:
                     "charging": bool(_safe(mouse.charging, False)) if self._can("charging")
                     else False,
                     "dpi": -1}
-        logger.info("Maus verbunden: %s %s", self.info.name, self._hw)
+        logger.info("Mouse connected: %s %s", self.info.name, self._hw)
         self._warn_openrazer()
         self._apply_active()
         dpi = _safe(mouse.dpi, None) if self._can("dpi") else None
@@ -757,15 +757,15 @@ class DeviceSession:
 
     def _ensure_backup(self, mouse: RazerMouse) -> None:
         """One-time backup of the mouse's own values on the first connect (never
-        overwrites an existing one), so the R17 write-back and Restore have a source."""
+        overwrites an existing one), so the write-back and Restore have a source."""
         if self.backup_path.exists():
             return
         try:
             save_backup(mouse, self.backup_path)
         except (BackupError, OSError, ValueError) as e:
-            logger.warning("Sicherung %s nicht angelegt: %s", self.backup_path, e)
+            logger.warning("Backup %s not created: %s", self.backup_path, e)
             return
-        logger.info("Ausgangszustand der Maus gesichert: %s", self.backup_path)
+        logger.info("Original mouse state backed up: %s", self.backup_path)
 
     def _after_poll(self, ok: bool) -> None:
         """Wireless poll: after sleep the mouse answers again but has dropped the device
@@ -784,7 +784,7 @@ class DeviceSession:
             mode = _safe(naga.device_mode, None)
             if mode is None or mode == device_mode_for(self.profile):
                 return
-        logger.info("Maus wieder erreichbar – Gerätemodus und Profil werden neu gesetzt")
+        logger.info("Mouse reachable again - re-applying device mode and profile")
         self._mode = None
         self._sync_mode(self.profile)
         self._apply_active()
@@ -822,7 +822,7 @@ class DeviceSession:
             try:
                 naga.set_device_mode(NORMAL_MODE)
             except _HW_ERRORS as e:
-                logger.warning("Normalmodus nicht zurückgesetzt: %s", e)
+                logger.warning("Normal mode not restored: %s", e)
         if self._transport is not None:
             close = getattr(self._transport, "close", None)
             if close:

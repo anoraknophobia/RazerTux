@@ -31,7 +31,7 @@ def test_macro_label_and_missing():
 
 def test_top_default_shows_dpi():
     assert L(DefaultAction(), ButtonId.TOP_1) == "DPI up"
-    assert L(DefaultAction(), ButtonId.TOP_2) == "Sensitivity stage cycle"  # = default_profile (R20)
+    assert L(DefaultAction(), ButtonId.TOP_2) == "Sensitivity stage cycle"  # = default_profile
 
 
 def test_every_button_has_a_human_name():

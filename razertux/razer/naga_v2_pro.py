@@ -31,10 +31,10 @@ REACTIVE_SPEED = 2  # OpenRazer: 0x01 (fast) .. 0x04 (slow)
 # Set commands whose effect survives a replug: either they have NO varstore/storage
 # argument in their layout, or the firmware ignores NOSTORE (set_dpi, see
 # docs/hardware-notes.md). The daemon writes the backup's values back on a clean
-# shutdown (R17); restore_backup() writes them back on request.
+# shutdown; restore_backup() writes them back on request.
 PERSISTENT_COMMANDS = {
-    "set_dpi": True,                   # NOSTORE not honoured on hardware (Task 7, R17)
-    "set_dpi_stages": True,            # untested, treated like set_dpi (R17)
+    "set_dpi": True,                   # NOSTORE not honoured on hardware
+    "set_dpi_stages": True,            # untested, treated like set_dpi
     "set_poll_rate": True,             # class 0x00 id 0x05, 1 arg (rate byte)
     "set_idle_time": True,             # class 0x07 id 0x03, 2 args (seconds BE16)
     "set_low_battery_threshold": True,  # class 0x07 id 0x01, 1 arg (raw 0x0C..0x3F)

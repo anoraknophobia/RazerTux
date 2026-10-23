@@ -38,7 +38,7 @@ _MODES = [
 
 
 class KeyCapture(QPushButton):
-    """Button that records a key or key combination ("Drücken zum Aufnehmen").
+    """Button that records a key or key combination ("Click to record").
 
     press()/release() take evdev codes so tests can drive it without events.
     """

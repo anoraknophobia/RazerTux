@@ -154,7 +154,7 @@ class DeviceWatcher:
                     del self._known[path]
                     self._on_removed(path)
         except Exception:
-            logger.exception("Fehler bei udev-Ereignis")
+            logger.exception("Error handling udev event")
 
     def _retry(self, udev_dev: Any, attempt: int) -> bool:
         """Schedule another _add; False once the retries are used up."""
@@ -176,24 +176,24 @@ class DeviceWatcher:
             dev = self._open(path)
         except OSError as e:
             if e.errno in _RETRY_ERRNOS and self._retry(udev_dev, attempt):
-                logger.info("Kann %s noch nicht öffnen (%s), neuer Versuch …", path, e)
+                logger.info("Cannot open %s yet (%s), retrying ...", path, e)
             else:
-                logger.warning("Kann %s nicht öffnen: %s", path, e)
+                logger.warning("Cannot open %s: %s", path, e)
             return
         if dev.name in VIRTUAL_NAMES:
             dev.close()
             return
         self._known[path] = source
-        logger.info("Razer-Gerät gefunden: %s (%s, %#06x)", path, source, found[0])
+        logger.info("Razer device found: %s (%s, %#06x)", path, source, found[0])
         try:
             ok = self._on_added(source, dev)
         except Exception:
-            logger.exception("Fehler beim Hinzufügen von %s", path)
+            logger.exception("Error adding %s", path)
             return
         if ok is False:  # not grabbed (e.g. EBUSY): forget it, try again later
             del self._known[path]
             if not self._retry(udev_dev, attempt):
-                logger.warning("Gebe %s auf: nicht exklusiv nutzbar", path)
+                logger.warning("Giving up on %s: cannot be used exclusively", path)
 
 
 class InputRouter:
@@ -250,7 +250,7 @@ class InputRouter:
             try:
                 dev.grab()
             except OSError as e:
-                logger.warning("Kann %s nicht exklusiv öffnen (grab): %s", dev.path, e)
+                logger.warning("Cannot grab %s exclusively: %s", dev.path, e)
                 dev.close()
                 return False
             self._grabbed.add(dev.path)
@@ -270,7 +270,7 @@ class InputRouter:
                 try:
                     dev.grab()
                 except OSError as e:
-                    logger.warning("Kann %s nicht exklusiv öffnen (grab): %s", path, e)
+                    logger.warning("Cannot grab %s exclusively: %s", path, e)
                     continue
                 self._grabbed.add(path)
             elif not on and path in self._grabbed:
@@ -343,7 +343,7 @@ class InputRouter:
                 try:
                     pending = await self._dispatch(source, event, pending)
                 except Exception:
-                    logger.exception("Fehler bei Ereignis von %s", dev.path)
+                    logger.exception("Error handling event from %s", dev.path)
         except OSError as e:
             if e.errno == errno.ENODEV:
                 logger.info("%s entfernt", dev.path)
@@ -451,7 +451,7 @@ class HidrawReader:
             try:
                 await self._on_report(data)
             except Exception:
-                logger.exception("Fehler bei hidraw-Report von %s", self.path)
+                logger.exception("Error handling hidraw report from %s", self.path)
 
     def _stop_reading(self) -> None:
         if self._fd >= 0:

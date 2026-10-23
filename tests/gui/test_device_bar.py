@@ -1,4 +1,4 @@
-"""Task 12: device selector pills and the "Experimentell" banner."""
+"""Device selector pills and the experimental banner."""
 import pytest
 from fake_daemon import DA, NAGA, FakeTransport
 from PySide6.QtGui import QGuiApplication

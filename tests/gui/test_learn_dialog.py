@@ -1,4 +1,4 @@
-"""Task 12: "Taste anlernen" (LearnDialog) and its entry in the action dialog."""
+"""Learn-a-button dialog (LearnDialog) and its entry in the action dialog."""
 import pytest
 from fake_daemon import DA, FakeTransport
 from PySide6.QtWidgets import QDialog

@@ -1,4 +1,4 @@
-"""Generic RazerMouse driver: commands from the device database (Task 3).
+"""Generic RazerMouse driver: commands from the device database.
 
 Expected bytes are derived from OpenRazer driver/razermouse_driver.c (sysfs handlers)
 and driver/razerchromacommon.c (builders); see the comments per test.
@@ -159,7 +159,7 @@ def test_make_mouse_returns_naga_subclass_for_naga():
 
 
 def test_make_mouse_flattens_for_pid():
-    # a model whose PIDs differ (Ruling M3): the per-PID entries become visible
+    # a model whose PIDs differ: the per-PID entries become visible
     devs = load_devices()
     model = next(d for d in devs.values() if d.pid_protocol)
     pid, extra = next(iter(model.pid_protocol.items()))
@@ -176,7 +176,7 @@ def test_naga_keeps_old_constructor():
     assert n.dpi() == (800, 800)
 
 
-# -- executability (Rulings M1/M2) --------------------------------------------
+# -- executability --------------------------------------------
 
 def test_unknown_builder_is_unsupported():
     info = make_info(extra={"set_dpi": cmd(0x3F, "razer_chroma_misc_set_dpi_from_the_future"),

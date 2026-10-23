@@ -1,4 +1,4 @@
-"""Task 9: laser glow for line-art SVGs."""
+"""Laser glow for line-art SVGs."""
 import re
 
 import pytest

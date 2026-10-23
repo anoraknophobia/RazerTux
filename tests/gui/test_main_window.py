@@ -116,7 +116,7 @@ def test_banner_shows_version_hint_for_old_daemon(env):
     assert w.client.status() == {}  # does not raise
     assert w.banner.isVisible()
     assert w.banner.label.text() == "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again"
-    assert "systemctl --user restart razertuxd" in w.banner.label.text()  # I2: real remedy
+    assert "systemctl --user restart razertuxd" in w.banner.label.text()  # real remedy
 
 
 def test_import_corrupt_file_shows_german_message(env, tmp_path):
@@ -178,7 +178,7 @@ def test_openrazer_warning(env):
     assert not w.openrazer_banner.isVisible()
 
 
-# -- Task 10: tabs, power settings, theme, battery ----------------------------------
+# -- tabs, power settings, theme, battery ----------------------------------
 
 def tab_names(w):
     return [w.tabs.tabText(i) for i in range(w.tabs.count())]
@@ -307,7 +307,7 @@ def test_scroll_tab_status_and_names_saved(env):
     assert w.dpi_label.text() == ""
 
 
-# -- Task 12: device selector, capability tabs, experimental banner, learning ----------
+# -- device selector, capability tabs, experimental banner, learning ----------
 
 DA = "death_adder_v2"
 DA_STATUS = {"connected": True, "experimental": True, "writable": True, "model": DA,

@@ -32,7 +32,7 @@ def test_enable_dpi_writes_single_stage(tab):
     assert p.dpi_stages == [(1800, 1800)] and p.active_stage == 1
     assert not tab.stages_toggle.isChecked() and len(tab.rows) == 1
     assert tab.changes and validate(p) == []
-    tab.set_dpi_box.setChecked(False)  # back to "Nicht ändern"
+    tab.set_dpi_box.setChecked(False)  # back to "Don't change"
     assert p.dpi_stages == [] and p.active_stage == 0
 
 
@@ -177,7 +177,7 @@ def test_added_stage_stays_within_limit(tab):
     assert p.dpi_stages[-1] == (10000, 10000)
 
 
-# -- Task 12: limits from the device database ---------------------------------------
+# -- limits from the device database ---------------------------------------
 
 def test_device_dpi_max_caps_the_slider_limit(tab):
     from dataclasses import replace

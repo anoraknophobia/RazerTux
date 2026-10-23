@@ -1,4 +1,4 @@
-"""App name, icon and the About dialog (Hilfe → Über RazerTux)."""
+"""App name, icon and the About dialog (Help → About RazerTux)."""
 import pytest
 from fake_daemon import FakeTransport
 from PySide6.QtWidgets import QLabel

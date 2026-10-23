@@ -4,14 +4,14 @@
 (``devices.db.Command``: builder name(s) + transaction id) and builds the packets with
 ``commands.BUILDERS``. What cannot be executed exactly as OpenRazer does is
 unsupported (``supports()`` is False, the method raises ``UnsupportedFeature`` before
-anything is sent) – never guessed (spec §6b.4):
+anything is sent) – never guessed:
 
 - a Command is executable only if every entry of ``steps`` is a known builder
-  (no ``raw:*`` packet, nothing from ``commands.NOT_PORTABLE``; Rulings M1/M2);
+  (no ``raw:*`` packet, nothing from ``commands.NOT_PORTABLE``);
 - each method accepts only the builders whose argument mapping is written down here
   (taken from the razer_attr_* handlers in OpenRazer's razermouse_driver.c);
 - lighting: ``steps`` is either a packet SEQUENCE or a set of ALTERNATIVES picked by
-  the number of colours (Ruling M4); ``EFFECT_PATTERNS`` spells out every supported
+  the number of colours; ``EFFECT_PATTERNS`` spells out every supported
   steps tuple, anything else is unsupported;
 - ``dpi_max == 0`` hides dpi/dpi_stages.
 
@@ -138,7 +138,7 @@ Built = C.Built
 @dataclass(frozen=True)
 class _OwnTxn:
     """A packet the OpenRazer handler sends with its own transaction id instead of the
-    Command's (Ruling M5), e.g. one whose transaction_id is set to 0xFF explicitly."""
+    Command's, e.g. one whose transaction_id is set to 0xFF explicitly."""
     built: Built
     txn: int
 
