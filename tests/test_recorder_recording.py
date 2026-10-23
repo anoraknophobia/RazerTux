@@ -215,3 +215,16 @@ def test_start_resets_everything():
     r.next()
     r.start()
     assert r.current.button == ButtonId.LEFT and r.finish()["results"] == {}
+
+
+def test_no_signal_drops_what_the_step_caught():
+    """A wizard button clicked with the recorded mouse must not leave its BTN_LEFT behind."""
+    steps = GuidedSteps([(ButtonId.TOP_1, "t1"), (ButtonId.TOP_2, "t2")])
+    r = Recording("mouse", "generic", steps, clock=Clock())
+    r.start()
+    r.record(*key(MOUSE, E.BTN_LEFT))
+    assert r.caught == ["if0:mouse:BTN_LEFT"]
+    r.no_signal()
+    assert r.caught == []
+    assert r.current.button == ButtonId.TOP_2
+    assert r.finish()["results"] == {"top_1": []}

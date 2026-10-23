@@ -195,3 +195,14 @@ def test_buttons_timeout_and_duplicates_roundtrip():
     out = sanitize(make(buttons=b))["buttons"]
     assert out == b
     assert "timed out at side_2" in summary_text(make(buttons=b))
+
+
+def test_system_section(tmp_path):
+    from razertux.recorder.report import system_section
+    osr = tmp_path / "os-release"
+    osr.write_text('NAME="Arch Linux"\nID=arch\nVERSION_ID=2026.10\nPRETTY_NAME="x"\n')
+    s = system_section(str(osr), release=lambda: "7.2.10-1-cachyos")
+    assert s == {"razertux": __import__("razertux").__version__, "kernel": "7.2.10-1-cachyos",
+                 "distro": "Arch Linux 2026.10"}
+    assert system_section(str(tmp_path / "missing"), release=lambda: "6.1")["distro"] == "unknown"
+    assert sanitize({"system": s})["system"] == s

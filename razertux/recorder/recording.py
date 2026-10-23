@@ -147,6 +147,11 @@ class Recording:
     def finished(self) -> bool:
         return self._t0 is not None and (self.expired or (self.steps is not None and self.current is None))
 
+    @property
+    def caught(self) -> list[str]:
+        """Signal names of the current step (or of the free recording) so far."""
+        return self._set.names()
+
     def _require_started(self) -> None:
         if self._t0 is None:
             raise RuntimeError("recording not started")
@@ -178,6 +183,13 @@ class Recording:
         self._require_started()
         if not self.finished:
             self._close_step("absent")
+
+    def no_signal(self) -> None:
+        """The current button gave no signal: drop what the step caught (e.g. the click on the
+        wizard's own button with the recorded mouse) and move on."""
+        self._require_started()
+        if not self.finished:
+            self._close_step([])
 
     def finish(self, standard_keys_seen: int = 0) -> dict:
         """The ``buttons`` report section. ``standard_keys_seen`` is the helper's source count."""

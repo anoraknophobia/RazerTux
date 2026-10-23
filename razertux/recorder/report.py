@@ -4,8 +4,10 @@ from __future__ import annotations
 import getpass
 import json
 import os
+import platform
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import quote
 
 SCHEMA = "razertux-device-report"
@@ -243,6 +245,21 @@ def sanitize(data):
     out = {"schema": SCHEMA, "version": VERSION, "device": device, "system": sysd, "interfaces": ifaces,
            "buttons": buttons, "reads": reads, "light": light, "notes": _scrub(data.get("notes") or "")[:NOTES_MAX]}
     return {k: out[k] for k in _TOP}
+
+
+def system_section(os_release: str = "/etc/os-release", release=platform.release) -> dict:
+    """The ``system`` section: RazerTux version, kernel release, distribution NAME + VERSION_ID."""
+    from razertux import __version__
+    fields: dict[str, str] = {}
+    try:
+        for line in Path(os_release).read_text(encoding="utf-8", errors="replace").splitlines():
+            k, sep, v = line.partition("=")
+            if sep and k in ("NAME", "VERSION_ID"):
+                fields[k] = v.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    distro = " ".join(fields[k] for k in ("NAME", "VERSION_ID") if fields.get(k)) or "unknown"
+    return {"razertux": __version__, "kernel": str(release())[:64], "distro": distro[:64]}
 
 
 def to_json(report: Report) -> str:

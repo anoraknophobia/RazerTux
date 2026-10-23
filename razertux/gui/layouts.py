@@ -86,6 +86,11 @@ def parse(data: dict, plate: int | None = None) -> Layout:
     return Layout(data["template"], tuple(views), buttons)
 
 
+def by_name(name: str, plate: int | None = None) -> Layout:
+    """A layout file by name (e.g. a template such as "template_ergo")."""
+    return parse(_read(name), plate)
+
+
 def layout_for(info: DeviceInfo, plate: int | None = None) -> Layout:
     """Model file, else the template of the longest matching prefix rule, else generic."""
     candidates = [info.model]
