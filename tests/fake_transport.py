@@ -21,9 +21,11 @@ class FakeTransport:
         self.default = default
         self.sent = []  # [(cmd_class, cmd_id)]
         self.requests = []  # parsed request RazerResponse objects
+        self.raw = []  # full 90-byte request reports (byte 1 = transaction id)
 
     def query(self, report: bytes) -> RazerResponse:
         req = parse_report(report)
+        self.raw.append(bytes(report))
         key = (req.cmd_class, req.cmd_id)
         self.sent.append(key)
         self.requests.append(req)

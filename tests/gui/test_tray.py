@@ -61,6 +61,13 @@ def _all_restore_fields():
     from razertux.backup import restore_backup
 
     class Broken:
+        # capabilities (RazerMouse.supports/brightness_zones): everything, every write fails
+        def supports(self, feature):
+            return True
+
+        def brightness_zones(self):
+            return ["logo", "scroll", "thumb"]
+
         def __getattr__(self, name):
             def fail(*a, **kw):
                 raise OSError("weg")

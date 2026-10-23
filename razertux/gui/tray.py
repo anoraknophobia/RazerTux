@@ -21,6 +21,9 @@ _FIELD_NAMES = {
     "brightness.thumb": QT_TRANSLATE_NOOP("TrayIcon", "Helligkeit Daumenfeld"),
     "idle_time": QT_TRANSLATE_NOOP("TrayIcon", "Leerlaufzeit"),
     "low_battery_threshold": QT_TRANSLATE_NOOP("TrayIcon", "Akku-Energiesparschwelle"),
+    "scroll_mode": QT_TRANSLATE_NOOP("TrayIcon", "Mausrad-Modus"),
+    "scroll_acceleration": QT_TRANSLATE_NOOP("TrayIcon", "Mausrad-Beschleunigung"),
+    "scroll_smart_reel": QT_TRANSLATE_NOOP("TrayIcon", "Mausrad Smart Reel"),
 }
 
 

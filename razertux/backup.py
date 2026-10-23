@@ -3,7 +3,7 @@ import json
 import logging
 from pathlib import Path
 
-from .razer.naga_v2_pro import VARSTORE, ZONE_LED, NagaV2Pro
+from .razer.mouse import VARSTORE, RazerMouse
 from .razer.transport import RazerError
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,9 @@ def load_backup(path: Path) -> dict:
     return json.loads(Path(path).read_text())
 
 
-def save_backup(dev: NagaV2Pro, path: Path) -> dict:
-    """Write dev.snapshot() to path unless it exists; returns the file's content."""
+def save_backup(dev: RazerMouse, path: Path) -> dict:
+    """Write dev.snapshot() (supported fields only) to path unless it exists;
+    returns the file's content."""
     path = Path(path)
     if path.exists():
         return load_backup(path)
@@ -43,19 +44,21 @@ def save_backup(dev: NagaV2Pro, path: Path) -> dict:
 _RESTORE_ERRORS = (RazerError, OSError, ValueError, IndexError, KeyError, TypeError)
 
 
-def restore_backup(dev: NagaV2Pro, data: dict, fields: set[str] | None = None) -> list[str]:
+def restore_backup(dev: RazerMouse, data: dict, fields: set[str] | None = None) -> list[str]:
     """Write the backed-up values back with VARSTORE (they are what the mouse stored
     before we touched it). Never changes the device mode; effects were not backed up
     (not readable), only brightness. Returns the fields that could not be restored,
     in write order: poll_rate, dpi_stages, dpi (after the stages, which reset it),
-    brightness.<zone>, idle_time, low_battery_threshold.
+    brightness.<zone>, idle_time, low_battery_threshold, scroll_mode,
+    scroll_acceleration, scroll_smart_reel.
 
-    fields limits the restore to these names ("brightness" covers every zone);
-    None restores everything."""
+    Only fields the mouse can write (dev.supports("set_<field>")) are considered;
+    the others are skipped, not reported. fields limits the restore to these names
+    ("brightness" covers every zone); None restores everything."""
     failed: list[str] = []
 
     def wanted(name: str) -> bool:
-        return fields is None or name in fields
+        return (fields is None or name in fields) and dev.supports(f"set_{name}")
 
     def run(name: str, fn, *args, **kw) -> None:
         try:
@@ -80,12 +83,15 @@ def restore_backup(dev: NagaV2Pro, data: dict, fields: set[str] | None = None) -
             v["active"], [tuple(s) for s in v["stages"]], store=VARSTORE))
     if (v := need("dpi")) is not None:
         run("dpi", lambda: dev.set_dpi(v[0], v[1], store=VARSTORE))
-    for zone, led in ZONE_LED.items():
-        level = (data.get("brightness") or {}).get(zone) if wanted("brightness") else None
-        if level is not None:  # None: LED not present / never readable
-            run(f"brightness.{zone}", dev.set_brightness, led, level, store=VARSTORE)
-    if (v := need("idle_time")) is not None:
-        run("idle_time", dev.set_idle_time, v)
-    if (v := need("low_battery_threshold")) is not None:
-        run("low_battery_threshold", dev.set_low_battery_threshold, v)
+    if fields is None or "brightness" in fields:
+        levels = data.get("brightness") or {}
+        for zone in dev.brightness_zones():
+            level = levels.get(zone)
+            if level is not None and dev.supports(f"set_brightness:{zone}"):
+                # None: LED not present / never readable
+                run(f"brightness.{zone}", dev.set_brightness, zone, level, store=VARSTORE)
+    for name in ("idle_time", "low_battery_threshold", "scroll_mode",
+                 "scroll_acceleration", "scroll_smart_reel"):
+        if (v := need(name)) is not None:
+            run(name, getattr(dev, f"set_{name}"), v)
     return failed
