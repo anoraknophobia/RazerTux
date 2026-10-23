@@ -28,5 +28,5 @@ asyncio_mode = "auto"
 
 [tool.setuptools.package-data]
 "razertux.gui" = ["assets/*.svg", "assets/layouts/*.json"]
-"razertux.devices" = ["openrazer_mice.json"]
+"razertux.devices" = ["openrazer_mice.json", "openrazer_other.json"]
 "razertux.i18n" = ["*.json"]

@@ -1,0 +1,8648 @@
+{
+ "_source": {
+  "commit": "477f4d6d3ab7e9deb6310d5bd3742560c5cbe80d",
+  "license": "GPL-2.0-only (OpenRazer)",
+  "repo": "https://github.com/openrazer/openrazer"
+ },
+ "devices": [
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "anansi",
+   "name": "Razer Anansi",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x010F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "base_station_chroma",
+   "name": "Razer Base Station Chroma (Headphone Stand)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F08": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "base_station_v2_chroma",
+   "name": "Razer Base Station V2 Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F20": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_2019",
+   "name": "Razer BlackWidow 2019",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0241": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_chroma",
+   "name": "Razer BlackWidow Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0203": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_chroma_overwatch",
+   "name": "Razer BlackWidow Chroma (Overwatch)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0211": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_chroma_tournament_edition",
+   "name": "Razer BlackWidow Tournament Edition Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0209": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_chroma_v2",
+   "name": "Razer Black Widow Chroma V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0221": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_elite",
+   "name": "Razer BlackWidow Elite",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0228": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_essential",
+   "name": "Razer BlackWidow Essential",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0237": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_lite",
+   "name": "Razer BlackWidow Lite",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0235": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_stealth",
+   "name": "Razer BlackWidow (Classic)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x011B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      4
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      4,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_stealth_edition",
+   "name": "Razer BlackWidow Stealth Edition",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x010E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      4
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      4,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_tournament_edition_2014",
+   "name": "Razer BlackWidow Tournament Edition 2014",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x011C": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      4
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      4,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_ultimate_2012",
+   "name": "Razer BlackWidow Ultimate 2012",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x010D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      4
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      4,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_ultimate_2013",
+   "name": "Razer BlackWidow Ultimate 2013",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x011A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      4
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      4,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_ultimate_2016",
+   "name": "Razer BlackWidow Ultimate 2016",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0214": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v3",
+   "name": "Razer BlackWidow V3",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x024E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v3_mini_hyper_speed",
+   "name": "Razer BlackWidow V3 Mini HyperSpeed",
+   "pid_features": {},
+   "pid_protocol": {
+    "0x0258": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 31
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 31
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 31
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 31
+     }
+    },
+    "0x0271": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 159
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 159
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 159
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 159
+     }
+    }
+   },
+   "pids": {
+    "0x0258": "wired",
+    "0x0271": "wireless"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "low_battery_threshold",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v3_pro",
+   "name": "Razer BlackWidow V3 Pro Wired",
+   "pid_features": {},
+   "pid_protocol": {
+    "0x025A": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 63
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 63
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 63
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 63
+     }
+    },
+    "0x025C": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 159
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 159
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 159
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 159
+     }
+    }
+   },
+   "pids": {
+    "0x025A": "wired",
+    "0x025C": "wireless"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v3tk",
+   "name": "Razer BlackWidow V3 TK",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0A24": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "poll_rate",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v4",
+   "name": "Razer BlackWidow V4",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0287": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "poll_rate",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v4_75pct",
+   "name": "Razer BlackWidow V4 75%",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02A5": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v4_mini_hyper_speed",
+   "name": "Razer BlackWidow V4 Mini HyperSpeed",
+   "pid_features": {},
+   "pid_protocol": {
+    "0x02B9": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 31
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 31
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 31
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 31
+     }
+    },
+    "0x02BA": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 159
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 159
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 159
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 159
+     }
+    }
+   },
+   "pids": {
+    "0x02B9": "wired",
+    "0x02BA": "wireless"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "poll_rate",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v4_pro",
+   "name": "Razer BlackWidow V4 Pro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x028D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "poll_rate",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v4_tenkeyless_hyper_speed",
+   "name": "Razer BlackWidow V4 Tenkeyless HyperSpeed",
+   "pid_features": {},
+   "pid_protocol": {
+    "0x02D5": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 159
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 159
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 159
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 159
+     }
+    },
+    "0x02D7": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 31
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 31
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 31
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 31
+     }
+    }
+   },
+   "pids": {
+    "0x02D5": "wireless",
+    "0x02D7": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_v4x",
+   "name": "Razer BlackWidow V4 X",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0293": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_x_chroma",
+   "name": "Razer BlackWidow X Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0216": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_x_tournament_edition_chroma",
+   "name": "Razer BlackWidow X Tournament Edition Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x021A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "black_widow_x_ultimate",
+   "name": "Razer BlackWidow X Ultimate",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0217": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_142021",
+   "name": "Razer Blade 14 (2021)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0270": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_142022",
+   "name": "Razer Blade 14 (2022)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x028C": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_142023",
+   "name": "Razer Blade 14 (2023)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x029D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_142024",
+   "name": "Razer Blade 14 (2024)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02B6": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_142025",
+   "name": "Razer Blade 14 (2025)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02C5": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_152023",
+   "name": "Razer Blade 15 (2023)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x029E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_15_advanced_2020",
+   "name": "Razer Blade 15 Advanced (2020)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0253": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_15_advanced_2021",
+   "name": "Razer Blade 15 Advanced (Mid 2021)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0276": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_15_advanced_early_2021",
+   "name": "Razer Blade 15 Advanced (Early 2021)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x026D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_15_advanced_early_2022",
+   "name": "Razer Blade 15 Advanced (Early 2022)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x028A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_162023",
+   "name": "Razer Blade 16 (2023)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x029F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_162025",
+   "name": "Razer Blade 16 (2025)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02C6": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_162026",
+   "name": "Razer Blade 16 (2026)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02E0": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_172022",
+   "name": "Razer Blade 17 (2022)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x028B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_17_pro_2021",
+   "name": "Razer Blade 17 Pro (Mid 2021)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0279": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_17_pro_early_2021",
+   "name": "Razer Blade 17 Pro (Early 2021)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x026E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_182023",
+   "name": "Razer Blade 18 (2023)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02A0": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_182024",
+   "name": "Razer Blade 18 (2024)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02B8": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_182025",
+   "name": "Razer Blade 18 (2025)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02C7": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_182026",
+   "name": "Razer Blade 18 (2026)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02E1": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_2018",
+   "name": "Razer Blade 15 (2018)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0233": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_2018_base",
+   "name": "Razer Blade 15 (2018) Base Model",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x023B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_2018_mercury",
+   "name": "Razer Blade 15 (2018) Mercury",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0240": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_2019_adv",
+   "name": "Razer Blade 15 (2019) Advanced",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x023A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_2019_base",
+   "name": "Razer Blade 15 (Mid 2019) Base Model",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0246": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_2019_studio_edition",
+   "name": "Razer Blade 15 Studio Edition (2019)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x024D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_advanced_late_2019",
+   "name": "Razer Blade Advanced (Late 2019)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x024B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_early_2020_base",
+   "name": "Razer Blade Base (Early 2020)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0255": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_early_2021_base",
+   "name": "Razer Blade Base (Early 2021)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x026F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_early_2022_base",
+   "name": "Razer Blade Base (Early 2022)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x027A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_late_2016",
+   "name": "Razer Blade (Late 2016)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0224": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_late_2020_base",
+   "name": "Razer Blade Late 2020 Base",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0268": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_mid_2019_mercury",
+   "name": "Razer Blade 15 (Mid 2019) Mercury",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0245": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_pro_2017",
+   "name": "Razer Blade Pro (2017)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0225": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_pro_2017_full_hd",
+   "name": "Razer Blade Pro FullHD (2017)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x022F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_pro_2019",
+   "name": "Razer Blade Pro 17 (2019)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0234": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_pro_early_2020",
+   "name": "Razer Blade Pro (Early 2020)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0256": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_pro_late_2016",
+   "name": "Razer Blade Pro (Late 2016)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0210": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_pro_late_2019",
+   "name": "Razer Blade Pro (Late 2019)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x024C": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_qhd",
+   "name": "Razer Blade (QHD)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x020F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth",
+   "name": "Razer Blade Stealth",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0205": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_2019",
+   "name": "Razer Blade Stealth (2019)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0239": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_early_2020",
+   "name": "Razer Blade Stealth (Early 2020)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0252": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_late_2016",
+   "name": "Razer Blade Stealth (Late 2016)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0220": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_late_2017",
+   "name": "Razer Blade Stealth (Late 2017)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0232": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_late_2019",
+   "name": "Razer Blade Stealth (Late 2019)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x024A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_late_2020",
+   "name": "Razer Blade Stealth (Late 2020)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0259": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "blade_stealth_mid_2017",
+   "name": "Razer Blade Stealth (Mid 2017)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x022D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "book_2020",
+   "name": "Razer Book (2020)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x026A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_blade_brightness",
+     "steps": [
+      "razer_chroma_misc_get_blade_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "charging_pad_chroma",
+   "name": "Razer Charging Pad Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F26": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "chroma_argb",
+   "name": "Razer Chroma Addressable RGB Controller",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F1F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "chroma_hdk",
+   "name": "Razer Chroma Hardware Development Kit (HDK)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F09": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "chroma_mug_holder",
+   "name": "Razer Chroma Mug Holder",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F07": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "other",
+   "model": "core",
+   "name": "Razer Core",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0215": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "other",
+   "model": "core_x_chroma",
+   "name": "Razer Core X Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F1A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "cynosa_chroma",
+   "name": "Razer Cynosa Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x022A": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "cynosa_chroma_pro",
+   "name": "Razer Cynosa Chroma Pro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x022C": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "cynosa_lite",
+   "name": "Razer Cynosa Lite",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x023F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "cynosa_v2",
+   "name": "Razer Cynosa V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x025E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "death_stalker_chroma",
+   "name": "Razer DeathStalker Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0204": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "death_stalker_essential",
+   "name": "Razer DeathStalker/DeathStalker Essential",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0118": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "death_stalker_expert",
+   "name": "Razer DeathStalker Expert",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0202": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "death_stalker_v2",
+   "name": "Razer DeathStalker V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0295": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "death_stalker_v2_pro",
+   "name": "Razer DeathStalker V2 Pro",
+   "pid_features": {},
+   "pid_protocol": {
+    "0x0290": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 159
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 159
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 159
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 159
+     }
+    },
+    "0x0292": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 31
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 63
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 31
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 63
+     }
+    }
+   },
+   "pids": {
+    "0x0290": "wireless",
+    "0x0292": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "death_stalker_v2_pro_tkl",
+   "name": "Razer DeathStalker V2 Pro TKL",
+   "pid_features": {},
+   "pid_protocol": {
+    "0x0296": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 159
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 159
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 159
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 159
+     }
+    },
+    "0x0298": {
+     "get_battery": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_battery_level",
+      "steps": [
+       "razer_chroma_misc_get_battery_level"
+      ],
+      "txn": 31
+     },
+     "get_brightness:matrix": {
+      "args": [
+       1,
+       5
+      ],
+      "fn": "razer_chroma_extended_matrix_get_brightness",
+      "steps": [
+       "razer_chroma_extended_matrix_get_brightness"
+      ],
+      "txn": 63
+     },
+     "get_charging": {
+      "args": [],
+      "fn": "razer_chroma_misc_get_charging_status",
+      "steps": [
+       "razer_chroma_misc_get_charging_status"
+      ],
+      "txn": 31
+     },
+     "set_effect:matrix:static": {
+      "args": [
+       1,
+       5,
+       "*"
+      ],
+      "fn": "razer_chroma_extended_matrix_effect_static",
+      "steps": [
+       "razer_chroma_extended_matrix_effect_static"
+      ],
+      "txn": 63
+     }
+    }
+   },
+   "pids": {
+    "0x0296": "wireless",
+    "0x0298": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "firefly",
+   "name": "Razer Firefly (2013)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C00": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "firefly_hyperflux",
+   "name": "Razer Firefly Hyperflux (2018)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0068": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "firefly_v2",
+   "name": "Razer Firefly V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C04": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "firefly_v2_pro",
+   "name": "Razer Firefly V2 Pro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C08": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "goliathus",
+   "name": "Razer Goliathus (2018)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C01": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "goliathus_chroma_3xl",
+   "name": "Razer Goliathus Chroma 3XL",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C06": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "goliathus_extended",
+   "name": "Razer Goliathus Extended (2018)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C02": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman",
+   "name": "Razer Huntsman",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0227": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_elite",
+   "name": "Razer Huntsman Elite",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0226": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_mini",
+   "name": "Razer Huntsman Mini",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0257": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_mini_analog",
+   "name": "Razer Huntsman Mini Analog",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0282": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_mini_jp",
+   "name": "Razer Huntsman Mini JP",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0269": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_tournament_edition",
+   "name": "Razer Huntsman Tournament Edition",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0243": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "poll_rate",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v2",
+   "name": "Razer Huntsman V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x026C": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v2_analog",
+   "name": "Razer Huntsman V2 Analog",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0266": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "poll_rate",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v2_tenkeyless",
+   "name": "Razer Huntsman V2 Tenkeyless",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x026B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v3_pro",
+   "name": "Razer Huntsman V3 Pro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02A6": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v3_pro_8k_hz",
+   "name": "Razer Huntsman V3 Pro 8KHz",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02CF": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*",
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v3_pro_mini",
+   "name": "Razer Huntsman V3 Pro Mini",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02B0": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "huntsman_v3_pro_tkl",
+   "name": "Razer Huntsman V3 Pro TKL",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02A7": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "battery",
+    "brightness",
+    "charging",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "joro",
+   "name": "Razer Joro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02CD": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_battery": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_battery_level",
+     "steps": [
+      "razer_chroma_misc_get_battery_level"
+     ],
+     "txn": 31
+    },
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_charging": {
+     "args": [],
+     "fn": "razer_chroma_misc_get_charging_status",
+     "steps": [
+      "razer_chroma_misc_get_charging_status"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_71",
+   "name": "Razer Kraken 7.1",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0501": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_71_alternate",
+   "name": "Razer Kraken 7.1 (Alternate)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0506": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_71_chroma",
+   "name": "Razer Kraken 7.1 Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0504": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_71v2",
+   "name": "Razer Kraken 7.1 V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0510": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_kitty_edition",
+   "name": "Razer Kraken Kitty Edition",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F19": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_kitty_v2",
+   "name": "Razer Kraken Kitty V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0560": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_tournament_edition",
+   "name": "Razer Kraken Tournament Edition",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0520": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [],
+   "interface": 0,
+   "kind": "headset",
+   "model": "kraken_ultimate",
+   "name": "Razer Kraken Ultimate",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0527": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {},
+   "verified": false,
+   "zones": {}
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "laptop_stand_chroma",
+   "name": "Razer Laptop Stand Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F0D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "laptop_stand_chroma_v2",
+   "name": "Razer Laptop Stand Chroma V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F2B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "lian_li_o11_dynamic",
+   "name": "Razer Lian Li O11 Dynamic",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F13": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "mouse_bungee_v3_chroma",
+   "name": "Razer Mouse Bungee V3 Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F1D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "dock",
+   "model": "mouse_dock",
+   "name": "Razer Mouse Dock",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x007E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "dock",
+   "model": "mouse_dock_pro",
+   "name": "Razer Mouse Dock Pro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x00A4": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "nommo_chroma",
+   "name": "Razer Nommo Chroma (Speakers)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0517": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "nommo_pro",
+   "name": "Razer Nommo Pro (Speakers)",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0518": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "nostromo",
+   "name": "Razer Nostromo",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0111": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "orbweaver",
+   "name": "Razer Orbweaver",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0113": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      0
+     ],
+     "fn": "razer_chroma_standard_set_led_effect",
+     "steps": [
+      "razer_chroma_standard_set_led_effect"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "orbweaver_chroma",
+   "name": "Razer Orbweaver Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0207": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "ornata",
+   "name": "Razer Ornata",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x021F": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "ornata_chroma",
+   "name": "Razer Ornata Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x021E": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 63
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 63
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "ornata_v2",
+   "name": "Razer Ornata V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x025D": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "ornata_v3",
+   "name": "Razer Ornata V3",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x028F": "wired",
+    "0x02A1": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "ornata_v3_tenkeyless",
+   "name": "Razer Ornata V3 Tenkeyless",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x02A3": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keyboard",
+   "model": "ornata_v3x",
+   "name": "Razer Ornata V3 X",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0294": "wired",
+    "0x02A2": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "raptor_27",
+   "name": "Razer Raptor 27",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F12": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "mousemat",
+   "model": "strider_chroma",
+   "name": "Razer Strider Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0C05": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 63
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "tartarus",
+   "name": "Razer Tartarus",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0201": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "tartarus_chroma",
+   "name": "Razer Tartarus Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0208": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      5
+     ],
+     "fn": "razer_chroma_standard_get_led_brightness",
+     "steps": [
+      "razer_chroma_standard_get_led_brightness"
+     ],
+     "txn": 255
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      "*"
+     ],
+     "fn": "razer_chroma_standard_matrix_effect_static",
+     "steps": [
+      "razer_chroma_standard_matrix_effect_static"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "tartarus_pro",
+   "name": "Razer Tartarus Pro",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0244": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      0
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "keypad",
+   "model": "tartarus_v2",
+   "name": "Razer Tartarus V2",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x022B": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_brightness:matrix": {
+     "args": [
+      1,
+      0
+     ],
+     "fn": "razer_chroma_extended_matrix_get_brightness",
+     "steps": [
+      "razer_chroma_extended_matrix_get_brightness"
+     ],
+     "txn": 31
+    },
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 255
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    },
+    "set_effect:matrix:static": {
+     "args": [
+      1,
+      5,
+      "*"
+     ],
+     "fn": "razer_chroma_extended_matrix_effect_static",
+     "steps": [
+      "razer_chroma_extended_matrix_effect_static"
+     ],
+     "txn": 31
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": [
+     "static"
+    ]
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "dock",
+   "model": "thunderbolt_4_dock_chroma",
+   "name": "Razer Thunderbolt 4 Dock Chroma",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F21": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  },
+  {
+   "dpi_max": 0,
+   "features": [
+    "brightness",
+    "device_mode",
+    "firmware",
+    "serial",
+    "static_effect"
+   ],
+   "interface": 0,
+   "kind": "accessory",
+   "model": "tomahawk_atx",
+   "name": "Razer Tomahawk ATX",
+   "pid_features": {},
+   "pid_protocol": {},
+   "pids": {
+    "0x0F17": "wired"
+   },
+   "poll_rates": [],
+   "protocol": {
+    "get_firmware": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_firmware_version",
+     "steps": [
+      "razer_chroma_standard_get_firmware_version"
+     ],
+     "txn": 31
+    },
+    "get_serial": {
+     "args": [],
+     "fn": "razer_chroma_standard_get_serial",
+     "steps": [
+      "razer_chroma_standard_get_serial"
+     ],
+     "txn": 255
+    }
+   },
+   "verified": false,
+   "zones": {
+    "matrix": []
+   }
+  }
+ ]
+}
