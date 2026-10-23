@@ -5,6 +5,7 @@ from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QObject, Signal
 from PySide6.QtGui import QAction, QActionGroup, QIcon
 from PySide6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon, QWidget
 
+from razertux.config.model import NAGA_MODEL
 from razertux.gui.dbus_client import DaemonClient, DaemonError
 from razertux.gui.labels import battery_text
 from razertux.gui.language import add_language_menu
@@ -57,8 +58,10 @@ class TrayIcon(QSystemTrayIcon):
         self.menu.aboutToShow.connect(self.rebuild_menu)
         self.setContextMenu(self.menu)
         self.activated.connect(self._on_activated)
-        client.profileChanged.connect(lambda _id: self.rebuild_menu())
-        client.statusChanged.connect(lambda _s: self.rebuild_menu())
+        self._restore_model = NAGA_MODEL  # whose backup the flat menu entry restores
+        client.profileChanged.connect(lambda *_: self.rebuild_menu())
+        client.statusChanged.connect(lambda *_: self.rebuild_menu())
+        client.devicesChanged.connect(self.rebuild_menu)
         client.available.connect(lambda _u: self.rebuild_menu())
         self.rebuild_menu()
 
@@ -91,8 +94,9 @@ class TrayIcon(QSystemTrayIcon):
                 pass
             self._language_menu = None
         m.clear()
+        flat = True
         try:
-            self._add_daemon_entries(m)
+            flat = self._add_daemon_entries(m)
         except DaemonError:  # daemon going away mid-rebuild (e.g. restart)
             m.clear()
             m.addAction(self.tr("Dienst läuft nicht")).setEnabled(False)
@@ -103,18 +107,37 @@ class TrayIcon(QSystemTrayIcon):
         colours.triggered.connect(lambda on: self.themeRequested.emit("system" if on else "synapse"))
         self._language_menu = add_language_menu(m, self._language, self.languageRequested.emit)
         m.addAction(self.tr("Fenster öffnen")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
-        m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(lambda _=False: self.restore_original())
+        if flat:  # with several devices every submenu restores its own mouse
+            m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(
+                lambda _=False: self.restore_original())
         m.addSeparator()
         m.addAction(self.tr("Beenden")).triggered.connect(lambda _=False: self.quitRequested.emit())
 
-    def _add_daemon_entries(self, m: QMenu) -> None:
+    def _add_daemon_entries(self, m: QMenu) -> bool:
+        """Fill the daemon part of the menu; False if it is one submenu per device
+        (several connected mice), True for the flat single-device menu."""
         if not self.client.is_available:
-            m.addAction(self.tr("Dienst läuft nicht")).setEnabled(False)
-            return
-        active = self.client.active_profile()
+            m.addAction(self.client.unavailable_text()).setEnabled(False)
+            return True
+        devices = self.client.devices()
+        connected = [d for d in devices if d[3]]
+        if len(connected) >= 2:
+            for model, name, _connection, _up in connected:
+                self._add_profiles(m.addMenu(name), model, restore=True)
+            return False
+        # one connected mouse (or none: show the Naga's state, as before)
+        model = connected[0][0] if connected else (devices[0][0] if devices else NAGA_MODEL)
+        if not connected and any(d[0] == NAGA_MODEL for d in devices):
+            model = NAGA_MODEL
+        self._restore_model = model
+        self._add_profiles(m, model)
+        return True
+
+    def _add_profiles(self, m: QMenu, model: str, restore: bool = False) -> None:
+        active = self.client.active_profile(model)
         group = QActionGroup(m)
         group.setExclusive(True)
-        profiles = self.client.list_profiles()
+        profiles = self.client.list_profiles(model)
         names = dict(profiles)
         m.addAction(self.tr("Aktives Profil: %1").replace("%1", names.get(active, active))).setEnabled(False)
         for pid, name in profiles:
@@ -122,14 +145,18 @@ class TrayIcon(QSystemTrayIcon):
             a.setCheckable(True)
             a.setChecked(pid == active)
             group.addAction(a)
-            a.triggered.connect(lambda _=False, pid=pid: self.client.activate_profile(pid))
+            a.triggered.connect(lambda _=False, pid=pid: self.client.activate_profile(pid, model))
         m.addSeparator()
-        m.addAction(battery_text(self.client.status())).setEnabled(False)
+        m.addAction(battery_text(self.client.status(model))).setEnabled(False)
+        if restore:
+            m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(
+                lambda _=False: self.restore_original(model))
 
     def menu_texts(self) -> list[str]:
         return [a.text() for a in self.menu.actions() if not a.isSeparator()]
 
-    def restore_original(self) -> None:
+    def restore_original(self, model: str | None = None) -> None:
+        model = model or self._restore_model
         if not self._confirm(self.tr("Originalzustand wiederherstellen"),
                              self.tr("Die gesicherten Originalwerte werden auf die Maus zurückgeschrieben: "
                                      "DPI, DPI-Stufen, Abfragerate, Helligkeit und Energie-Einstellungen "
@@ -138,7 +165,7 @@ class TrayIcon(QSystemTrayIcon):
                                      "Fortfahren?")):
             return
         try:
-            failed = self.client.restore_original()
+            failed = self.client.restore_original(model)
         except DaemonError as e:
             self._info(self.tr("Wiederherstellen fehlgeschlagen"), str(e))
             return

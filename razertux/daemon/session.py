@@ -25,7 +25,7 @@ from evdev import ecodes as E
 
 from razertux.backup import BackupError, backup_path, load_backup, restore_backup, save_backup
 from razertux.config.model import (
-    DPI_MAX, DPI_MIN, NAGA_MODEL, DefaultAction, DeviceSettings, Profile, Settings,
+    DPI_MAX, DPI_MIN, NAGA_MODEL, DefaultAction, DeviceSettings, Profile, Settings, validate,
 )
 from razertux.config.store import ModelStore
 from razertux.devices.db import DeviceInfo
@@ -181,9 +181,8 @@ def needs_grab(profile: Profile | None, device_settings: DeviceSettings,
 class DeviceSession:
     """One device model: RazerMouse, InputRouter, Mapper, active profile, probe result.
 
-    owns_profile=False: someone else (the Naga's D-Bus service) drives the profile via
-    profile_changed(); otherwise reload() on every connect reads the device settings,
-    macros and the model's active profile from the store."""
+    The session owns its model's active profile (Settings.active_profiles[model]):
+    reload() on every connect reads the device settings, macros and that profile."""
 
     def __init__(self, info: DeviceInfo, store: ModelStore, out: Any, *,
                  transport_factory: Callable[[str], Any] = HidrawTransport,
@@ -193,7 +192,6 @@ class DeviceSession:
                  retry_delay: float = 0.2,
                  apply_device_settings: Callable[[Profile], None] | None = None,
                  settings: Callable[[], Settings] | None = None,
-                 owns_profile: bool = True,
                  on_status: Callable[[], None] | None = None,
                  on_learned: Callable[[InputSignal], None] | None = None,
                  notify: Callable[[str, str], None] | None = None,
@@ -210,7 +208,6 @@ class DeviceSession:
         self._hidraw_reader = hidraw_reader
         self._retry_delay = retry_delay
         self._apply = apply_device_settings or self._apply_to_mouse
-        self._owns_profile = owns_profile
         self._settings_source = settings or store.config.load_settings
         self._settings_cache: Settings | None = None
         self._on_status_cb = on_status or (lambda: None)
@@ -220,6 +217,8 @@ class DeviceSession:
 
         self.device_settings = store.load_device_settings()
         self.profile: Profile | None = None
+        self._macros: dict = {}
+        self.validation: list[str] = []  # problems of the active profile (macros, ...)
         self.mapper = Mapper(store.default_profile(), {}, out, on_dpi_stage=self._on_dpi_stage,
                              default_dpi=NAGA_DEFAULT_DPI if self._is_naga_model else {})
         self.router = InputRouter(self.mapper, out, grab=needs_grab(None, self.device_settings, info))
@@ -317,7 +316,8 @@ class DeviceSession:
     async def reload(self) -> None:
         """Re-read device settings, macros, settings and the active profile; apply."""
         self.reload_device_settings()
-        self.mapper.set_macros(self.store.config.load_macros())
+        self._macros = self.store.config.load_macros()
+        self.mapper.set_macros(self._macros)
         settings = self._settings_cache = self._settings_source()
         profile = self.store.load_profile(settings.active_profiles.get(self.model, "default"))
         await self._use(profile)
@@ -328,13 +328,14 @@ class DeviceSession:
         self.device_settings = self.store.load_device_settings()
         self._refresh_map()
 
-    def profile_changed(self, profile: Profile) -> None:
-        """The active profile changed (the mapper has it already): device mode, DPI
-        stages and device settings follow when connected, the grab follows the profile.
-        Exceptions of the device settings propagate (the caller logs them)."""
-        if self._wants_grab(profile) != self.router.grabbed:
-            self._spawn(self._update_grab())
-        self._take(profile)
+    @property
+    def active_profile_id(self) -> str:
+        if self.profile is not None:
+            return self.profile.id
+        return self._settings_source().active_profiles.get(self.model, "default")
+
+    def config_errors(self) -> list[str]:
+        return list(dict.fromkeys([*self.store.errors, *self.validation]))
 
     def _take(self, profile: Profile) -> None:
         self.profile = profile
@@ -345,6 +346,7 @@ class DeviceSession:
 
     async def _use(self, profile: Profile) -> None:
         await self.mapper.set_profile(profile)
+        self.validation = validate(profile, self._macros)
         try:
             self._take(profile)
         except Exception:
@@ -421,11 +423,9 @@ class DeviceSession:
         task.add_done_callback(self._tasks.discard)
 
     def _settings(self) -> Settings:
-        if self._owns_profile:
-            if self._settings_cache is None:
-                self._settings_cache = self._settings_source()
-            return self._settings_cache
-        return self._settings_source()
+        if self._settings_cache is None:
+            self._settings_cache = self._settings_source()
+        return self._settings_cache
 
     def _can(self, feature: str) -> bool:
         """The Naga driver keeps its own (verified) commands; others ask the database."""
@@ -637,6 +637,16 @@ class DeviceSession:
                 logger.info("Wechsle auf %s (%s)", self._mouse_path,
                             self.info.pids.get(pid, f"{pid:#06x}"))
                 await self._connect(pid)
+        if not self._paths and not self._is_naga_model:
+            await self._release_resources()
+
+    async def _release_resources(self) -> None:
+        """Last node of an experimental/other mouse gone: the session stays listed
+        (disconnected) but holds no input device, grab, held key or learning state."""
+        self.router.learn(None)
+        self._learning = False
+        await self.router.close()
+        await self.mapper.release_all()
 
     def _probe(self, mouse: RazerMouse) -> None:
         """Read-only probe before anything is written (Ruling M8)."""
@@ -658,8 +668,7 @@ class DeviceSession:
 
     async def _connect(self, pid: int) -> None:
         await self._disconnect(reset_mode=False)
-        if self._owns_profile:
-            await self.reload()  # fresh configuration, nothing touches the mouse yet
+        await self.reload()  # fresh configuration, nothing touches the mouse yet
         path = None
         for _ in range(10):  # hidraw nodes may appear after the input nodes
             path = self._find_control((pid,))  # the node we were told about

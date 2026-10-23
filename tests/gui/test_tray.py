@@ -1,5 +1,5 @@
 import pytest
-from fake_daemon import FakeTransport
+from fake_daemon import DA, NAGA, FakeTransport
 
 from razertux.gui.dbus_client import DaemonClient
 from razertux.gui.tray import TrayIcon
@@ -42,7 +42,7 @@ def test_profile_click_activates(tray):
     tr, t = tray
     tr.rebuild_menu()
     next(a for a in tr.menu.actions() if a.text() == "Standard").trigger()
-    assert ("ActivateProfile", ("default",)) in t.calls
+    assert ("ActivateProfile", (NAGA, "default")) in t.calls
 
 
 def test_restore_asks_first_and_reports_failed_fields(tray):
@@ -150,3 +150,109 @@ def test_daemon_error_mid_rebuild_keeps_menu_usable(tray):
     tr.rebuild_menu()  # must not raise on the old language submenu
     tr.rebuild_menu()
     assert "Aktives Profil: Zwei" in tr.menu_texts() and tr.menu_texts()[-1] == "Beenden"
+
+
+def _two_device_tray(qapp, connected=True):
+    t = FakeTransport()
+    t.add_second_device(connected)
+    c = DaemonClient(t)
+    c.status()
+    tr = TrayIcon(c)
+    tr.infos = []
+    tr._info = lambda title, text: tr.infos.append((title, text))
+    tr._confirm = lambda title, text: True
+    tr.rebuild_menu()
+    return tr, t
+
+
+def _submenus(tr):
+    return {a.text(): a.menu() for a in tr.menu.actions() if a.menu() is not None
+            and a.text() in ("Razer Naga V2 Pro", "Razer DeathAdder V2")}
+
+
+def test_two_devices_get_one_submenu_each(qapp):
+    tr, t = _two_device_tray(qapp)
+    subs = _submenus(tr)
+    assert set(subs) == {"Razer Naga V2 Pro", "Razer DeathAdder V2"}
+    naga_texts = [a.text() for a in subs["Razer Naga V2 Pro"].actions() if not a.isSeparator()]
+    assert "Standard" in naga_texts and "Zwei" in naga_texts and "Akku: 80 %" in naga_texts
+    da_texts = [a.text() for a in subs["Razer DeathAdder V2"].actions() if not a.isSeparator()]
+    assert "Präzision" in da_texts and "Akku: 55 %" in da_texts and "Zwei" not in da_texts
+    checked = {a.text() for a in subs["Razer DeathAdder V2"].actions() if a.isChecked()}
+    assert checked == {"Präzision"}
+    assert "Aktives Profil: Zwei" not in tr.menu_texts()  # not flat any more
+
+
+def test_submenu_click_activates_in_that_device(qapp):
+    tr, t = _two_device_tray(qapp)
+    next(a for a in _submenus(tr)["Razer DeathAdder V2"].actions() if a.text() == "Standard").trigger()
+    assert ("ActivateProfile", (DA, "default")) in t.calls
+    assert not any(c[0] == "ActivateProfile" and c[1][0] == NAGA for c in t.calls)
+
+
+def test_submenu_restore_targets_that_device(qapp):
+    tr, t = _two_device_tray(qapp)
+    next(a for a in _submenus(tr)["Razer DeathAdder V2"].actions()
+         if a.text() == "Originalzustand wiederherstellen").trigger()
+    assert ("RestoreOriginal", (DA,)) in t.calls
+
+
+def test_disconnected_second_device_keeps_flat_menu(qapp):
+    tr, t = _two_device_tray(qapp, connected=False)
+    assert _submenus(tr) == {}
+    assert "Aktives Profil: Zwei" in tr.menu_texts()
+
+
+def test_only_connected_device_is_not_the_naga(qapp):
+    t = FakeTransport()
+    t.devices = [[NAGA, "Razer Naga V2 Pro", "", False], [DA, "Razer DeathAdder V2", "wired", True]]
+    c = DaemonClient(t)
+    c.status()
+    tr = TrayIcon(c)
+    tr._confirm = lambda title, text: True
+    tr._info = lambda title, text: None
+    tr.rebuild_menu()
+    assert "Aktives Profil: Präzision" in tr.menu_texts()
+    assert "Akku: 55 %" in tr.menu_texts()
+    tr.restore_original()
+    assert ("RestoreOriginal", (DA,)) in t.calls
+
+
+def test_device_signals_rebuild_the_menu(qapp):
+    tr, t = _two_device_tray(qapp, connected=False)
+    t.devices[1][3] = True
+    tr.client.handle_signal("DevicesChanged", [])
+    assert set(_submenus(tr)) == {"Razer Naga V2 Pro", "Razer DeathAdder V2"}
+
+
+def test_menu_shows_version_hint_for_old_daemon(qapp):
+    from razertux.gui.dbus_client import VERSION_MISMATCH, DaemonUnavailable
+
+    class Old(FakeTransport):
+        def call(self, member, signature="", args=()):
+            raise DaemonUnavailable(VERSION_MISMATCH)
+
+    c = DaemonClient(Old())
+    c.status()
+    tr = TrayIcon(c)
+    tr.rebuild_menu()
+    assert tr.menu_texts()[0] == "Dienst-Version passt nicht – bitte RazerTux neu starten"
+    assert tr.menu_texts()[-1] == "Beenden"
+
+
+def test_daemon_error_in_device_list_keeps_menu_usable(qapp):
+    from razertux.gui.dbus_client import DaemonError
+    tr, t = _two_device_tray(qapp)
+    orig = t.call
+
+    def failing(member, signature="", args=()):
+        if member == "ListDevices":
+            raise DaemonError("org.freedesktop.DBus.Error.NoReply", "Remote peer disconnected")
+        return orig(member, signature, args)
+
+    t.call = failing
+    tr.rebuild_menu()
+    assert tr.menu_texts()[0] == "Dienst läuft nicht" and tr.menu_texts()[-1] == "Beenden"
+    t.call = orig
+    tr.rebuild_menu()
+    assert set(_submenus(tr)) == {"Razer Naga V2 Pro", "Razer DeathAdder V2"}

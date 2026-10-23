@@ -212,7 +212,7 @@ def test_header_title_and_battery_glyph(window):
     assert window.header.title.text() == "Naga V2 Pro"
     centre = window.header.title.geometry().center().x()
     assert abs(centre - window.header.width() / 2) <= 2
-    window.client.statusChanged.emit({"connected": True, "battery": 80, "charging": False,
+    window.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 80, "charging": False,
                                       "connection": "wireless", "dpi": 1600})
     bat = window.battery_label
     assert (bat.text(), bat.level, bat.charging) == ("80 %", 80, False)

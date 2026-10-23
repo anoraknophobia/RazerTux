@@ -710,7 +710,7 @@ async def test_daemon_start_loads_active_profile(tmp_path):
     store.save_settings(Settings(active_profile="game"))
     d, _ = make_daemon(tmp_path)
     await d.start()
-    assert d.service.active_profile_id == "game"
+    assert d.naga.active_profile_id == "game"
     out = d.out
     await naga(d).mapper.handle(ButtonId.SIDE_1, 1)
     assert ("key", E.KEY_A, 1) in out.events
@@ -760,11 +760,11 @@ async def test_daemon_activate_applies_when_connected(tmp_path):
     from razertux.config.model import Profile
     applied = []
     d, _ = make_daemon(tmp_path, applied=applied)
-    d.service._store.save_profile(Profile(id="game", name="Spiel"))
+    d.store.save_profile(Profile(id="game", name="Spiel"))
     await d.start()
     d.on_added("mouse", FakeDev("/dev/input/event18"))
     await d.settle()
-    await d.service.activate("game")
+    await d.service.activate("naga_v2_pro", "game")
     assert [p.id for p in applied] == ["default", "game"]
     await d.shutdown()
 
@@ -816,7 +816,7 @@ async def test_router_close_releases_before_ungrab():
 
 
 from razertux.config.model import LightingZone, Profile  # noqa: E402
-from razertux.daemon.main import apply_device_settings  # noqa: E402
+from razertux.daemon.session import apply_device_settings  # noqa: E402
 from razertux.razer.naga_v2_pro import LOGO, SCROLL, THUMB  # noqa: E402
 
 
@@ -890,12 +890,12 @@ async def connected(tmp_path, profile=None, transport=None, product=0x00A7, sett
                find_control=lambda pids: "/dev/hidraw2", find_vendor=lambda pids: None,
                openrazer_loaded=lambda: False, retry_delay=0)
     if settings:
-        d.service._store.save_settings(settings)
-        d.service._settings = settings
+        d.store.save_settings(settings)
     if profile:
-        d.service._store.save_profile(profile)
-        d.service._settings.active_profile = profile.id
-        d.service._store.save_settings(d.service._settings)
+        d.store.save_profile(profile)
+        current = d.store.load_settings()
+        current.active_profile = profile.id
+        d.store.save_settings(current)
     await d.start()
     d.on_added("mouse", FakeDev("/dev/input/event18", product=product))
     await d.settle()
@@ -956,13 +956,13 @@ async def test_dpi_stepping_falls_back_to_onboard_stages(tmp_path):
 async def test_dpi_stage_index_resets_on_profile_switch(tmp_path):
     other = Profile(id="o", name="O", dpi_stages=[(400, 400), (500, 500)], active_stage=1)
     d, t = await connected(tmp_path, full_profile())
-    d.service._store.save_profile(other)
+    d.store.save_profile(other)
     naga(d)._on_dpi_stage("up")
-    await d.service.activate("o")
+    await d.service.activate("naga_v2_pro", "o")
     n = len(dpi_writes(t))
     naga(d)._on_dpi_stage("up")
     assert dpi_writes(t)[n:] == [500]
-    await d.service.activate("p")
+    await d.service.activate("naga_v2_pro", "p")
     naga(d)._on_dpi_stage("down")  # reset to profile.active_stage (2) -> 800
     assert dpi_writes(t)[-1] == 800
     await d.shutdown()
@@ -993,18 +993,18 @@ async def test_daemon_restore_writes_backup_with_varstore_keeps_mode(tmp_path):
               "dpi_stages": {"active": 1, "stages": [[2500, 2500]]},
               "brightness": {"logo": 191, "scroll": None, "thumb": 191},
               "idle_time": 300, "low_battery_threshold": 5}
-    assert d._restore_backup(backup) == []
+    assert d.naga.restore_backup(backup) == []
     assert modes(t) == modes_before
     assert all(r.args[0] == 1 for r in t.requests
                if (r.cmd_class, r.cmd_id) in ((0x04, 0x05), (0x04, 0x06), (0x0F, 0x04)))
     await d.shutdown()
 
 
-async def test_daemon_restore_without_mouse_raises_dbus_error(tmp_path):
-    from dbus_next import DBusError
+async def test_daemon_restore_without_mouse_raises_not_connected(tmp_path):
+    from razertux.daemon.session import NotConnected
     d = Daemon(ConfigStore(tmp_path), RecOut(), openrazer_loaded=lambda: False)
-    with pytest.raises(DBusError):
-        d._restore_backup({})
+    with pytest.raises(NotConnected):
+        d.naga.restore_backup({})
 
 
 async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
@@ -1013,7 +1013,7 @@ async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
     stages = bytes([1, 1, 2]) + b"".join(
         bytes([i, v >> 8, v & 0xFF, v >> 8, v & 0xFF, 0, 0]) for i, v in enumerate((400, 500), start=1))
     t.responses[(0x04, 0x83)] = stages  # what the mouse reports after the restore
-    d._restore_backup({})
+    d.naga.restore_backup({})
     assert naga(d)._stages == [(400, 400), (500, 500)] and naga(d)._stage_idx == 0
     naga(d)._on_dpi_stage("up")
     assert dpi_writes(t)[-1] == 500
@@ -1099,7 +1099,7 @@ async def test_shutdown_without_backup_logs_warning(tmp_path, caplog):
 async def test_restore_clears_pending_write_back(tmp_path):
     write_backup(tmp_path)
     d, t = await connected(tmp_path, full_profile(lighting={}))
-    d._restore_backup(BACKUP)
+    d.naga.restore_backup(BACKUP)
     n = len(t.requests)
     await d.shutdown()
     assert since(t, n) == []
@@ -1170,7 +1170,7 @@ async def test_power_settings_none_never_touch_mouse(tmp_path):
 async def test_reload_applies_power_settings(tmp_path):
     from razertux.config.model import Settings
     d, t = await connected(tmp_path)
-    d.service._store.save_settings(Settings(active_profile="default", idle_time=120))
+    d.store.save_settings(Settings(active_profile="default", idle_time=120))
     await d.service.reload()
     await d.service.reload()  # unchanged values are not rewritten (no flash wear)
     assert power_writes(t) == [(0x03, bytes([0x00, 0x78]))]
@@ -1181,7 +1181,7 @@ async def test_wireless_connect_starts_battery_monitor(tmp_path):
     d, t = await connected(tmp_path, product=0x00A8)
     assert naga(d)._battery is not None
     statuses = []
-    d.service.notify_status = lambda: statuses.append(d.hw_status())
+    d.service.notify_status = lambda model: statuses.append(d.hw_status())
     t.responses[(0x07, 0x80)] = bytes([0, 0x80])  # ~50 %
     naga(d)._battery.poll()
     assert statuses and statuses[-1]["battery"] == 50
@@ -1240,7 +1240,7 @@ async def test_mode_follows_active_profile_on_connect_switch_and_reload(tmp_path
     d.on_added("mouse", FakeDev("/dev/input/event18"))
     await d.settle()
     assert modes(t) == [DRIVER_MODE]  # connect
-    await d.service.activate("default")
+    await d.service.activate("naga_v2_pro", "default")
     assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # switch
     await d.service.reload()
     assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # unchanged: nothing written
@@ -1267,7 +1267,7 @@ async def test_top_buttons_ignored_in_normal_mode(tmp_path):
     await reader.report([0x04, 0x57] + [0] * 14)
     await reader.report([0x04, 0x00] + [0] * 14)
     assert calls == []  # firmware handles the top buttons in normal mode
-    d.service._store.save_profile(_remap_profile("default"))
+    d.store.save_profile(_remap_profile("default"))
     await d.service.reload()
     await reader.report([0x04, 0x57] + [0] * 14)
     await reader.report([0x04, 0x00] + [0] * 14)
@@ -1280,10 +1280,10 @@ async def test_notifications_update_status_and_persist(tmp_path, remap):
     readers = []
     d, t = make_daemon(tmp_path, readers=readers)
     if remap:
-        d.service._store.save_profile(_remap_profile("default"))
+        d.store.save_profile(_remap_profile("default"))
     notified = []
     orig = d.service.notify_status
-    d.service.notify_status = lambda: (notified.append(d.hw_status()), orig())
+    d.service.notify_status = lambda model: (notified.append(d.hw_status()), orig(model))
     await d.start()
     d.on_added("mouse", FakeDev("/dev/input/event18"))
     await d.settle()

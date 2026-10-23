@@ -1,5 +1,10 @@
-from fake_daemon import FakeTransport
-from razertux.gui.dbus_client import DaemonClient, DaemonError, DaemonUnavailable
+import asyncio
+
+from fake_daemon import DA, NAGA, FakeTransport
+
+from razertux.gui.dbus_client import (
+    VERSION_MISMATCH, DaemonClient, DaemonError, DaemonUnavailable,
+)
 
 
 def make(t):
@@ -17,7 +22,7 @@ def test_calls_when_up(qapp):
     assert c.status()["battery"] == 80
     assert c.restore_original() == ["dpi_stages"]
     c.activate_profile("p2")
-    assert ("ActivateProfile", ("p2",)) in t.calls
+    assert ("ActivateProfile", (NAGA, "p2")) in t.calls
     assert c.is_available and seen == [True]
 
 
@@ -43,11 +48,11 @@ def test_recovers_and_signals(qapp):
     c.status()
     assert seen == [False, True]
     got = []
-    c.profileChanged.connect(got.append)
-    c.statusChanged.connect(got.append)
-    c.handle_signal("ProfileChanged", ["p3"])
-    c.handle_signal("StatusChanged", [{"battery": 5}])
-    assert got == ["p3", {"battery": 5}]
+    c.profileChanged.connect(lambda *a: got.append(a))
+    c.statusChanged.connect(lambda *a: got.append(a))
+    c.handle_signal("ProfileChanged", [DA, "p3"])
+    c.handle_signal("StatusChanged", [DA, {"battery": 5}])
+    assert got == [(DA, "p3"), (DA, {"battery": 5})]
 
 
 def test_daemon_error_raises_daemon_error(qapp):
@@ -69,10 +74,10 @@ def test_refresh_publishes_status_and_active_profile(qapp):
     t = FakeTransport()
     c, _ = make(t)
     got = []
-    c.statusChanged.connect(lambda s: got.append(("status", s["battery"])))
-    c.profileChanged.connect(lambda p: got.append(("profile", p)))
+    c.statusChanged.connect(lambda m, s: got.append(("status", m, s["battery"])))
+    c.profileChanged.connect(lambda m, p: got.append(("profile", m, p)))
     c.refresh()
-    assert got == [("status", 80), ("profile", "p2")]
+    assert got == [("status", NAGA, 80), ("profile", NAGA, "p2")]
 
 
 def test_real_transport_invalid_bus_address_is_unavailable(qapp, monkeypatch):
@@ -86,3 +91,120 @@ def test_real_transport_invalid_bus_address_is_unavailable(qapp, monkeypatch):
         assert not c.is_available
     finally:
         t.stop()
+
+
+def test_model_parameter_selects_the_device(qapp):
+    t = FakeTransport()
+    t.add_second_device()
+    c, _ = make(t)
+    assert c.devices() == [(NAGA, "Razer Naga V2 Pro", "wireless", True),
+                           (DA, "Razer DeathAdder V2", "wired", True)]
+    assert c.list_profiles(DA) == [("default", "Standard"), ("dpi", "Präzision")]
+    assert c.active_profile(DA) == "dpi" and c.active_profile() == "p2"
+    assert c.status(DA)["battery"] == 55
+    c.activate_profile("dpi", DA)
+    assert ("ActivateProfile", (DA, "dpi")) in t.calls
+    assert c.restore_original(DA) == ["dpi_stages"]
+    assert ("RestoreOriginal", (DA,)) in t.calls
+    assert c.diagnostics(DA) == "probe ok"
+    c.start_learning(DA)
+    c.stop_learning(DA)
+    assert ("StartLearning", (DA,)) in t.calls and ("StopLearning", (DA,)) in t.calls
+
+
+def test_devices_when_daemon_away(qapp):
+    t = FakeTransport()
+    t.up = False
+    c, _ = make(t)
+    assert c.devices() == []
+    assert c.diagnostics() == ""
+
+
+def test_refresh_publishes_every_device(qapp):
+    t = FakeTransport()
+    t.add_second_device()
+    c, _ = make(t)
+    got = []
+    c.statusChanged.connect(lambda m, s: got.append(m))
+    c.refresh()
+    assert got == [NAGA, DA]
+
+
+def test_new_signals(qapp):
+    c, _ = make(FakeTransport())
+    got = []
+    c.devicesChanged.connect(lambda: got.append("devices"))
+    c.buttonLearned.connect(lambda *a: got.append(a))
+    c.handle_signal("DevicesChanged", [])
+    c.handle_signal("ButtonLearned", [DA, "mouse", 1, 272])
+    assert got == ["devices", (DA, "mouse", 1, 272)]
+
+
+def test_old_daemon_without_daemon1_shows_version_hint(qapp):
+    class Old(FakeTransport):
+        def call(self, member, signature="", args=()):
+            raise DaemonUnavailable(VERSION_MISMATCH)
+
+    c, seen = make(Old())
+    assert c.status() == {} and c.devices() == [] and c.list_profiles() == []
+    assert not c.is_available and c.version_mismatch
+    assert c.unavailable_text() == "Dienst-Version passt nicht – bitte RazerTux neu starten"
+    assert seen == [False]
+
+
+def test_version_mismatch_clears_when_daemon_answers(qapp):
+    t = FakeTransport()
+    t.up = False
+    c, _ = make(t)
+    c.status()
+    assert not c.version_mismatch and c.unavailable_text() == "Dienst läuft nicht"
+    t.up = True
+    assert c.version() == "1"
+    assert c.is_available
+
+
+class _Bus:
+    """dbus-next bus whose service has only the old interface."""
+
+    connected = True
+
+    def __init__(self, error):
+        self.error = error
+
+    async def call(self, msg):
+        from dbus_next import Message, MessageType
+        return Message(message_type=MessageType.ERROR, error_name=self.error, reply_serial=1,
+                       signature="s", body=["no such thing"])
+
+
+def _real_call(error):
+    from razertux.gui.dbus_client import DBusNextTransport
+    t = DBusNextTransport()
+
+    async def connect():
+        return _Bus(error)
+    t._connect = connect
+    try:
+        return asyncio.run(t._call("GetVersion", "", ()))
+    finally:
+        t._loop.close()
+
+
+def test_real_transport_maps_missing_daemon1_to_version_hint():
+    for error in ("org.freedesktop.DBus.Error.UnknownMethod",
+                  "org.freedesktop.DBus.Error.UnknownInterface"):
+        try:
+            _real_call(error)
+        except DaemonUnavailable as e:
+            assert str(e) == VERSION_MISMATCH
+        else:
+            raise AssertionError(error)
+
+
+def test_real_transport_other_errors_stay_daemon_errors():
+    try:
+        _real_call("io.github.razertux.Error.UnknownDevice")
+    except DaemonError as e:
+        assert e.name.endswith("UnknownDevice")
+    else:
+        raise AssertionError

@@ -13,21 +13,18 @@ from collections.abc import Awaitable, Callable, Coroutine
 from pathlib import Path
 from typing import Any
 
-from dbus_next import DBusError
-
 from razertux.config.migrate import (
     default_config_dir, migrate_legacy_config, migrate_schema_2,
 )
-from razertux.config.model import NAGA_MODEL, Profile, Settings
+from razertux.config.model import NAGA_MODEL, Profile
 from razertux.config.store import ConfigStore
 from razertux.devices.db import DeviceInfo, by_pid, load_devices
 from razertux.razer.transport import HidrawTransport, find_control_hidraw, find_vendor_hidraw
 
 from .battery import notify_desktop
-from .dbus_service import _ERR, BUS_NAME, OBJECT_PATH, NagaService, openrazer_loaded
+from .dbus_service import BUS_NAME, OBJECT_PATH, Daemon1Service, openrazer_loaded
 from .devices import DeviceWatcher, HidrawReader
-from .session import apply_device_settings  # noqa: F401  (re-export, moved to session)
-from .session import DeviceSession, NotConnected, ReadOnly
+from .session import DeviceSession
 
 logger = logging.getLogger("razertux.daemon")
 
@@ -37,8 +34,8 @@ _STATUS_KEYS = ("connected", "connection", "battery", "charging", "dpi", "scroll
 class Daemon:
     """Hotplug routing to one DeviceSession per model, shutdown, D-Bus service.
 
-    The Naga V2 Pro's session always exists: the D-Bus API (NagaService) is still the
-    single-device one and drives that session's profile until Daemon1 replaces it."""
+    The Naga V2 Pro's session always exists. A session stays in `sessions` (listed as
+    disconnected) after its mouse is unplugged."""
 
     def __init__(self, store: ConfigStore, out: Any, *,
                  transport_factory: Callable[[str], Any] = HidrawTransport,
@@ -58,21 +55,16 @@ class Daemon:
                                 apply_device_settings=apply_device_settings)
         self._tasks: set[asyncio.Task] = set()
         self.sessions: dict[str, DeviceSession] = {}
-        naga = self._session(load_devices()[NAGA_MODEL])
-        self.service = NagaService(store, naga.mapper, self,
-                                   apply_device_settings=naga.profile_changed,
-                                   apply_settings=self._settings_changed,
-                                   restore=self._restore_backup,
-                                   openrazer_loaded=openrazer_loaded,
-                                   backup_path=naga.backup_path)
+        self.service = Daemon1Service(store, lambda: self.sessions,
+                                      openrazer_loaded=openrazer_loaded)
+        self._session(load_devices()[NAGA_MODEL])
 
     @property
     def naga(self) -> DeviceSession:
         return self.sessions[NAGA_MODEL]
 
-    # -- Hardware protocol for the D-Bus service ---------------------------
-
     def hw_status(self) -> dict[str, Any]:
+        """The Naga's hardware state (connected, connection, battery, ...)."""
         status = self.naga.status()
         return {k: status[k] for k in _STATUS_KEYS}
 
@@ -115,17 +107,18 @@ class Daemon:
     # -- internals -------------------------------------------------------------
 
     def _session(self, info: DeviceInfo) -> DeviceSession:
-        naga = info.model == NAGA_MODEL
-        kw: dict[str, Any] = dict(self._session_kw)
-        if naga:  # profile and settings come from the D-Bus service
-            kw.update(owns_profile=False, settings=lambda: self.service.settings,
-                      on_status=lambda: self.service.notify_status())
-        session = DeviceSession(info, self.store.for_model(info.model), self.out,
-                                notify=self._notify, warn_openrazer=self._warn_openrazer, **kw)
-        self.sessions[info.model] = session
-        if not naga:
-            logger.info("Neue Sitzung: %s (%s)%s", info.name, info.model,
+        model = info.model
+        session = DeviceSession(
+            info, self.store.for_model(model), self.out, notify=self._notify,
+            warn_openrazer=self._warn_openrazer,
+            on_status=lambda: self.service.notify_status(model),
+            on_learned=lambda signal: self.service.button_learned(model, signal),
+            **self._session_kw)
+        self.sessions[model] = session
+        if model != NAGA_MODEL:
+            logger.info("Neue Sitzung: %s (%s)%s", info.name, model,
                         "" if info.verified else " – experimentell")
+            self.service.devices_changed()
         return session
 
     def _spawn(self, coro: Coroutine[Any, Any, None]) -> None:
@@ -147,23 +140,6 @@ class Daemon:
         if self._openrazer():
             logger.warning("OpenRazer-Treiber (razermouse) ist geladen und kann mit "
                            "RazerTux kollidieren – bitte entladen oder deaktivieren")
-
-    def _settings_changed(self, settings: Settings) -> None:
-        """D-Bus Reload: power settings and device settings of the Naga; every other
-        connected mouse re-reads its configuration."""
-        self.naga.apply_power(settings)
-        self.naga.reload_device_settings()
-        for session in self.sessions.values():
-            if session is not self.naga and session.connected:
-                self._spawn(session.reload())
-
-    def _restore_backup(self, backup: dict) -> list[str]:
-        try:
-            return self.naga.restore_backup(backup)
-        except NotConnected:
-            raise DBusError(_ERR + "NotConnected", "Maus nicht verbunden") from None
-        except ReadOnly:
-            raise DBusError(_ERR + "ReadOnly", "Maus ist schreibgeschützt") from None
 
 
 async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,

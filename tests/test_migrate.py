@@ -171,7 +171,7 @@ def test_gui_with_explicit_config_dir_does_not_migrate(home, monkeypatch):
 
 def test_cli_restore_finds_the_migrated_backup(home, monkeypatch):
     _old_tree(home)
-    monkeypatch.setattr(cli, "_dbus_restore", lambda: None)
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": None)
     loaded = []
     monkeypatch.setattr(cli, "load_backup", lambda p: loaded.append(p) or (_ for _ in ()).throw(OSError("stop")))
     cli.main(["restore"])

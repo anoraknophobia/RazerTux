@@ -21,3 +21,10 @@ def fake_home(monkeypatch, tmp_path_factory):
     home = tmp_path_factory.mktemp("home")
     monkeypatch.setenv("HOME", str(home))
     return home
+
+
+@pytest.fixture(autouse=True)
+def no_daemon_for_cli(monkeypatch):
+    """The CLI's default model asks the daemon on the session bus: never in tests."""
+    from razertux import cli
+    monkeypatch.setattr(cli, "_connected_models", lambda: [])

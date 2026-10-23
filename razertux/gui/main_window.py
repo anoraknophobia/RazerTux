@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from razertux import APP_NAME
-from razertux.config.model import DefaultAction, Profile, default_profile, validate
+from razertux.config.model import NAGA_MODEL, DefaultAction, Profile, default_profile, validate
 from razertux.config.store import ConfigStore
 from razertux.gui.about import AboutDialog
 from razertux.gui.action_dialog import ActionDialog
@@ -54,8 +54,9 @@ class MainWindow(QMainWindow, ProfileActions):
         self._dismissed_errors: list[str] = []
         self._build()
         self.client.available.connect(self._on_available)
-        self.client.statusChanged.connect(self._on_status)
-        self.client.profileChanged.connect(self._on_active_changed)
+        # until the device selector, the window works on the Naga V2 Pro
+        self.client.statusChanged.connect(lambda m, st: m == NAGA_MODEL and self._on_status(st))
+        self.client.profileChanged.connect(lambda m, pid: m == NAGA_MODEL and self._on_active_changed(pid))
         self.reload_profile_list()
         self._active_id = client.active_profile() or store.load_settings().active_profile
         self.select_profile(self._active_id, force=True)
@@ -72,9 +73,10 @@ class MainWindow(QMainWindow, ProfileActions):
         self.dpi_label, self.battery_label = self.header.dpi_label, self.header.battery_label
         self.profile_combo.activated.connect(lambda _i: self.select_profile(self.profile_combo.currentData()))
 
-        self.banner = self._make_banner(self.tr(
+        self._no_daemon_text = self.tr(
             "Der Dienst (razertuxd) läuft nicht. Änderungen werden gespeichert, "
-            "aber erst nach dem Start des Dienstes angewendet."))
+            "aber erst nach dem Start des Dienstes angewendet.")
+        self.banner = self._make_banner(self._no_daemon_text)
         self.openrazer_banner = self._make_banner(self.tr(
             "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme"))
         self.errors_banner = self._make_banner("", "#8a5a00")
@@ -349,6 +351,8 @@ class MainWindow(QMainWindow, ProfileActions):
 
     # -- daemon state ---------------------------------------------------------
     def _on_available(self, up: bool) -> None:
+        self.banner.label.setText(self.client.unavailable_text() if self.client.version_mismatch
+                                  else self._no_daemon_text)  # old service: version hint
         self.banner.setVisible(not up)
         self._update_dirty()
 

@@ -205,12 +205,12 @@ def test_validation_and_store_errors_follow_the_language(tmp_path):
 
 async def test_service_reload_switches_daemon_language(tmp_path):
     from test_dbus_service import call, make
-    svc, store, *_ = make(tmp_path)
+    d, svc, store, _bus = make(tmp_path)
     store.save_settings(Settings("default", language="fr"))
     (tmp_path / "macros.json").write_text("{kaputt")
     await call(svc, "Reload")
     assert i18n.current_language() == "fr"
-    errors = (await call(svc, "GetStatus"))["config_errors"].value
+    errors = (await call(svc, "GetStatus", "naga_v2_pro"))["config_errors"].value
     assert errors and "macros.json" in errors[0] and "beschädigt" not in errors[0]
 
 

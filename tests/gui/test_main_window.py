@@ -105,6 +105,20 @@ def test_banner_follows_availability(env):
     assert not w.banner.isVisible()
 
 
+def test_banner_shows_version_hint_for_old_daemon(env):
+    from razertux.gui.dbus_client import VERSION_MISMATCH, DaemonUnavailable
+    w, _, transport = env
+    w.show()
+
+    def old(member, signature="", args=()):
+        raise DaemonUnavailable(VERSION_MISMATCH)
+    transport.call = old
+    assert w.client.status() == {}  # does not raise
+    assert w.banner.isVisible()
+    assert w.banner.label.text() == "Dienst-Version passt nicht – bitte RazerTux neu starten"
+    assert "razertuxd" not in w.banner.label.text()
+
+
 def test_import_corrupt_file_shows_german_message(env, tmp_path):
     w, *_ = env
     bad = tmp_path / "kaputt.json"
@@ -125,9 +139,9 @@ def test_import_valid_file_selects_it(env, tmp_path):
 
 def test_battery_label(env):
     w, *_ = env
-    w.client.statusChanged.emit({"connected": True, "battery": 80, "charging": True, "connection": "wireless"})
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 80, "charging": True, "connection": "wireless"})
     assert "80" in w.battery_label.text()
-    w.client.statusChanged.emit({"connected": True, "battery": -1, "charging": False})
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": -1, "charging": False})
     assert "80" not in w.battery_label.text()
 
 
@@ -135,13 +149,13 @@ def test_config_errors_banner_and_dismiss(env):
     w, *_ = env
     w.show()
     assert not w.errors_banner.isVisible()
-    w.client.statusChanged.emit({"config_errors": ["profil x kaputt"], "openrazer_loaded": False})
+    w.client.statusChanged.emit("naga_v2_pro", {"config_errors": ["profil x kaputt"], "openrazer_loaded": False})
     assert w.errors_banner.isVisible() and "profil x kaputt" in w.errors_banner.label.text()
     w.errors_dismiss.click()
     assert not w.errors_banner.isVisible()
-    w.client.statusChanged.emit({"config_errors": ["profil x kaputt"]})
+    w.client.statusChanged.emit("naga_v2_pro", {"config_errors": ["profil x kaputt"]})
     assert not w.errors_banner.isVisible()  # same error stays dismissed
-    w.client.statusChanged.emit({"config_errors": ["profil x kaputt", "neu"]})
+    w.client.statusChanged.emit("naga_v2_pro", {"config_errors": ["profil x kaputt", "neu"]})
     assert w.errors_banner.isVisible()
 
 
@@ -157,10 +171,10 @@ def test_openrazer_warning(env):
     w, *_ = env
     w.show()
     assert not w.openrazer_banner.isVisible()
-    w.client.statusChanged.emit({"openrazer_loaded": True})
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True})
     assert w.openrazer_banner.isVisible()
     assert "OpenRazer-Treiber ist geladen" in w.openrazer_banner.label.text()
-    w.client.statusChanged.emit({"openrazer_loaded": False})
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": False})
     assert not w.openrazer_banner.isVisible()
 
 
@@ -222,14 +236,14 @@ def test_power_settings_dirty_and_saved_without_clobbering(env):
 
 def test_battery_label_wired_and_charging(env):
     w, *_ = env
-    w.client.statusChanged.emit({"connected": True, "battery": 100, "charging": True,
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 100, "charging": True,
                                  "connection": "wired"})
     assert w.battery_label.text() == "Kabel"
-    w.client.statusChanged.emit({"connected": True, "battery": 42, "charging": True,
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 42, "charging": True,
                                  "connection": "wireless"})
     assert w.battery_label.text() == "42 %" and w.battery_label.charging  # drawn bolt, no emoji
     assert w.battery_label.level == 42 and "lädt" in w.battery_label.toolTip()
-    w.client.statusChanged.emit({"connected": False, "battery": -1})
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": False, "battery": -1})
     assert w.battery_label.text() == ""
 
 
@@ -276,7 +290,7 @@ def test_top_buttons_locked_unless_remap(env):
 
 def test_scroll_tab_status_and_names_saved(env):
     w, store, transport = env
-    w.client.statusChanged.emit({"connected": True, "scroll_stage": 6, "dpi": 2500,
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "scroll_stage": 6, "dpi": 2500,
                                  "connection": "wired"})
     assert w.scroll_tab.active_name.text() == "Custom"
     assert w.dpi_label.text() == "2500 DPI"
@@ -287,7 +301,7 @@ def test_scroll_tab_status_and_names_saved(env):
     assert store.load_settings().scroll_stage_names == {
         1: "Fein", 2: "Standard", 3: "Distinct", 4: "Adaptive", 5: "Smooth Scroll", 6: "Custom"}
     assert not w.is_dirty
-    w.client.statusChanged.emit({"connected": True, "dpi": -1})
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "dpi": -1})
     assert w.dpi_label.text() == ""
-    w.client.statusChanged.emit({"connected": False, "dpi": 800})
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": False, "dpi": 800})
     assert w.dpi_label.text() == ""

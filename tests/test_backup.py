@@ -146,7 +146,7 @@ def test_cli_restore_prefers_dbus(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("HOME", str(tmp_path))
     (tmp_path / ".config/razertux").mkdir(parents=True)
     (tmp_path / ".config/razertux/mouse-backup.json").write_text(json.dumps(REAL))
-    monkeypatch.setattr(cli, "_dbus_restore", lambda: [])
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": [])
 
     def no_hidraw(path):
         raise AssertionError("must not open hidraw when the daemon answers")
@@ -157,7 +157,7 @@ def test_cli_restore_prefers_dbus(monkeypatch, tmp_path, capsys):
 
 def test_cli_restore_dbus_reports_partial(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setattr(cli, "_dbus_restore", lambda: ["poll_rate"])
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": ["poll_rate"])
     assert cli.main(["restore"]) == 2
     assert "poll_rate" in capsys.readouterr().err
 
@@ -165,7 +165,7 @@ def test_cli_restore_dbus_reports_partial(monkeypatch, tmp_path, capsys):
 def test_cli_restore_dbus_error(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("HOME", str(tmp_path))
 
-    def boom():
+    def boom(model):
         raise cli.RestoreError("Keine lesbare Sicherung")
     monkeypatch.setattr(cli, "_dbus_restore", boom)
     assert cli.main(["restore"]) == 1
@@ -178,7 +178,7 @@ def test_cli_restore_falls_back_to_hidraw(monkeypatch, tmp_path, capsys):
     d.mkdir(parents=True)
     (d / "mouse-backup.json").write_text(json.dumps(REAL))
     t = FakeTransport.full()
-    monkeypatch.setattr(cli, "_dbus_restore", lambda: None)  # daemon not on the bus
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": None)  # daemon not on the bus
     monkeypatch.setattr(cli, "_open_transport", lambda path: _Ctx(t))
     assert cli.main(["restore"]) == 0
     assert (0x04, 0x06) in t.sent and (0x00, 0x04) not in t.sent
@@ -188,14 +188,14 @@ def test_cli_restore_custom_path_skips_dbus(monkeypatch, tmp_path):
     p = tmp_path / "other.json"
     p.write_text(json.dumps(REAL))
     t = FakeTransport.full()
-    monkeypatch.setattr(cli, "_dbus_restore", lambda: (_ for _ in ()).throw(AssertionError))
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": (_ for _ in ()).throw(AssertionError))
     monkeypatch.setattr(cli, "_open_transport", lambda path: _Ctx(t))
     assert cli.main(["restore", "--path", str(p)]) == 0
     assert (0x04, 0x05) in t.sent
 
 
 def test_cli_restore_missing_backup_direct(monkeypatch, tmp_path, capsys):
-    monkeypatch.setattr(cli, "_dbus_restore", lambda: None)
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": None)
     assert cli.main(["restore", "--path", str(tmp_path / "nope.json")]) == 1
     assert "Sicherung" in capsys.readouterr().err
 
@@ -213,3 +213,77 @@ def test_restore_backup_limited_to_fields():
             "idle_time": 300}
     assert restore_backup(NagaV2Pro(t), data, fields={"dpi", "dpi_stages"}) == ["dpi_stages"]
     assert t.sent == [(0x04, 0x05)]
+
+
+# -- --model ------------------------------------------------------------------
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture
+def daemon_devices(monkeypatch):
+    """Models the (fake) daemon reports as connected."""
+    models = []
+    monkeypatch.setattr(cli, "_connected_models", lambda: list(models))
+    return models
+
+
+def test_cli_model_defaults_to_the_only_connected_device(daemon_devices):
+    daemon_devices.append("death_adder_v2")
+    assert cli.resolve_model(None) == "death_adder_v2"
+
+
+def test_cli_model_defaults_to_naga_without_daemon(daemon_devices):
+    assert cli.resolve_model(None) == "naga_v2_pro"
+
+
+def test_cli_model_explicit_wins(daemon_devices):
+    daemon_devices[:] = ["naga_v2_pro", "death_adder_v2"]
+    assert cli.resolve_model("death_adder_v2") == "death_adder_v2"
+
+
+def test_cli_several_devices_need_model(daemon_devices, capsys):
+    daemon_devices[:] = ["naga_v2_pro", "death_adder_v2"]
+    for argv in (["status"], ["backup"], ["restore"]):
+        assert cli.main(argv) == 1
+        err = capsys.readouterr().err
+        assert "--model" in err and "naga_v2_pro" in err and "death_adder_v2" in err
+
+
+def test_cli_unknown_model(daemon_devices, capsys):
+    assert cli.main(["status", "--model", "nope"]) == 1
+    assert "Unbekanntes Modell" in capsys.readouterr().err
+
+
+def test_cli_status_with_model_uses_that_devices_hidraw(daemon_devices, monkeypatch, capsys):
+    seen = []
+
+    def find(pids):
+        seen.append(pids)
+        return "/dev/null"
+    monkeypatch.setattr(cli, "find_control_hidraw", find)
+    monkeypatch.setattr(cli, "HidrawTransport", lambda path: _Ctx(FakeTransport.full()))
+    assert cli.main(["status", "--model", "death_adder_v2"]) == 0
+    assert seen and 0x0084 in seen[0]
+    assert json.loads(capsys.readouterr().out)["poll_rate"] == 1000
+
+
+def test_cli_backup_path_is_per_model(daemon_devices, monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert cli.default_backup_path("death_adder_v2") == (
+        tmp_path / ".config/razertux/backups/death_adder_v2.json")
+
+
+def test_cli_restore_asks_the_daemon_for_that_model(daemon_devices, monkeypatch, capsys):
+    seen = []
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model: seen.append(model) or [])
+    assert cli.main(["restore", "--model", "death_adder_v2"]) == 0
+    assert seen == ["death_adder_v2"]
+
+
+def test_cli_restore_old_daemon_prints_version_hint(daemon_devices, monkeypatch, capsys):
+    def old(model):
+        raise cli.RestoreError(cli.VERSION_MISMATCH)
+    monkeypatch.setattr(cli, "_dbus_restore", old)
+    assert cli.main(["restore"]) == 1
+    assert "Dienst-Version passt nicht" in capsys.readouterr().err

@@ -13,12 +13,20 @@ import asyncio
 import threading
 from typing import Any
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QObject, Signal
+
+from razertux.config.model import NAGA_MODEL
 
 BUS_NAME = "io.github.razertux"
 OBJECT_PATH = "/io/github/razertux"
-INTERFACE = "io.github.razertux.Daemon"
+INTERFACE = "io.github.razertux.Daemon1"
 CALL_TIMEOUT = 5.0
+# the service on the bus has no Daemon1 interface: it is an older RazerTux
+VERSION_MISMATCH = QT_TRANSLATE_NOOP("DaemonClient", "Dienst-Version passt nicht – bitte RazerTux neu starten")
+NOT_RUNNING = QT_TRANSLATE_NOOP("DaemonClient", "Dienst läuft nicht")
+_OLD_DAEMON_ERRORS = ("org.freedesktop.DBus.Error.UnknownMethod",
+                      "org.freedesktop.DBus.Error.UnknownInterface",
+                      "org.freedesktop.DBus.Error.UnknownObject")
 
 
 class DaemonUnavailable(Exception):
@@ -122,6 +130,8 @@ class DBusNextTransport(QObject):
             if reply.error_name in ("org.freedesktop.DBus.Error.ServiceUnknown",
                                     "org.freedesktop.DBus.Error.NameHasNoOwner"):
                 raise DaemonUnavailable(reply.error_name)
+            if reply.error_name in _OLD_DAEMON_ERRORS:  # only the pre-Daemon1 interface
+                raise DaemonUnavailable(VERSION_MISMATCH)
             raise DaemonError(reply.error_name, str(reply.body[0]) if reply.body else "")
         return _plain(list(reply.body))
 
@@ -134,14 +144,21 @@ class DBusNextTransport(QObject):
 
 
 class DaemonClient(QObject):
-    profileChanged = Signal(str)
-    statusChanged = Signal(dict)
+    """Qt face of the Daemon1 API. Every call takes the device `model` (default: the
+    Naga V2 Pro, the model the main window works on until it has a device selector);
+    signals carry the model."""
+
+    profileChanged = Signal(str, str)  # model, profile id
+    statusChanged = Signal(str, dict)  # model, status
+    devicesChanged = Signal()
+    buttonLearned = Signal(str, str, int, int)  # model, source, type, code
     available = Signal(bool)
 
     def __init__(self, transport: Any | None = None, parent: QObject | None = None):
         super().__init__(parent)
         self._t = transport if transport is not None else DBusNextTransport()
         self._available: bool | None = None
+        self._mismatch = False
         if hasattr(self._t, "signalReceived"):
             self._t.signalReceived.connect(self.handle_signal)
             self._t.ownerChanged.connect(self._owner_changed)
@@ -150,6 +167,16 @@ class DaemonClient(QObject):
     @property
     def is_available(self) -> bool:
         return bool(self._available)
+
+    @property
+    def version_mismatch(self) -> bool:
+        """The service on the bus is too old (no Daemon1 interface)."""
+        return self._mismatch
+
+    def unavailable_text(self) -> str:
+        """Why there is no daemon, ready to show (translated)."""
+        return QCoreApplication.translate("DaemonClient", VERSION_MISMATCH if self._mismatch
+                                          else NOT_RUNNING)
 
     def _set_available(self, up: bool) -> None:
         if self._available is not up:
@@ -164,52 +191,80 @@ class DaemonClient(QObject):
 
     def refresh(self) -> None:
         """Re-read state (e.g. after the daemon appeared) and publish it."""
-        status = self.status()
-        if status:
-            self.statusChanged.emit(status)
-            active = self.active_profile()
-            if active:
-                self.profileChanged.emit(active)
+        self.devicesChanged.emit()
+        for model, *_ in self.devices():
+            status = self.status(model)
+            if status:
+                self.statusChanged.emit(model, status)
+                active = self.active_profile(model)
+                if active:
+                    self.profileChanged.emit(model, active)
 
     def _call(self, member: str, signature: str = "", args: tuple = ()) -> list | None:
         """Result list, or None when the daemon is unreachable."""
         try:
             res = self._t.call(member, signature, args)
-        except DaemonUnavailable:
+        except DaemonUnavailable as e:
+            self._mismatch = str(e) == VERSION_MISMATCH
             self._set_available(False)
             return None
         except DaemonError:
+            self._mismatch = False
             self._set_available(True)
             raise
+        self._mismatch = False
         self._set_available(True)
         return res
 
     def handle_signal(self, member: str, body: list) -> None:
-        if member == "ProfileChanged" and body:
-            self.profileChanged.emit(str(body[0]))
-        elif member == "StatusChanged" and body:
-            self.statusChanged.emit(dict(body[0]))
+        if member == "ProfileChanged" and len(body) >= 2:
+            self.profileChanged.emit(str(body[0]), str(body[1]))
+        elif member == "StatusChanged" and len(body) >= 2:
+            self.statusChanged.emit(str(body[0]), dict(body[1]))
+        elif member == "DevicesChanged":
+            self.devicesChanged.emit()
+        elif member == "ButtonLearned" and len(body) >= 4:
+            self.buttonLearned.emit(str(body[0]), str(body[1]), int(body[2]), int(body[3]))
 
     # -- mirrors of the D-Bus methods; defaults when the daemon is away -------
-    def list_profiles(self) -> list[tuple[str, str]]:
-        res = self._call("ListProfiles")
-        return [tuple(p) for p in res[0]] if res else []
-
-    def active_profile(self) -> str:
-        res = self._call("GetActiveProfile")
+    def version(self) -> str:
+        res = self._call("GetVersion")
         return str(res[0]) if res else ""
 
-    def activate_profile(self, profile_id: str) -> bool:
-        return self._call("ActivateProfile", "s", (profile_id,)) is not None
+    def devices(self) -> list[tuple[str, str, str, bool]]:
+        """(model, name, connection, connected) of every device the daemon knows."""
+        res = self._call("ListDevices")
+        return [(str(m), str(n), str(c), bool(up)) for m, n, c, up in res[0]] if res else []
+
+    def list_profiles(self, model: str = NAGA_MODEL) -> list[tuple[str, str]]:
+        res = self._call("ListProfiles", "s", (model,))
+        return [tuple(p) for p in res[0]] if res else []
+
+    def active_profile(self, model: str = NAGA_MODEL) -> str:
+        res = self._call("GetActiveProfile", "s", (model,))
+        return str(res[0]) if res else ""
+
+    def activate_profile(self, profile_id: str, model: str = NAGA_MODEL) -> bool:
+        return self._call("ActivateProfile", "ss", (model, profile_id)) is not None
 
     def reload(self) -> bool:
         return self._call("Reload") is not None
 
-    def status(self) -> dict:
-        res = self._call("GetStatus")
+    def status(self, model: str = NAGA_MODEL) -> dict:
+        res = self._call("GetStatus", "s", (model,))
         return dict(res[0]) if res else {}
 
-    def restore_original(self) -> list[str] | None:
+    def restore_original(self, model: str = NAGA_MODEL) -> list[str] | None:
         """Fields that could not be restored, or None if the daemon is away."""
-        res = self._call("RestoreOriginal")
+        res = self._call("RestoreOriginal", "s", (model,))
         return list(res[0]) if res else None
+
+    def diagnostics(self, model: str = NAGA_MODEL) -> str:
+        res = self._call("GetDiagnostics", "s", (model,))
+        return str(res[0]) if res else ""
+
+    def start_learning(self, model: str = NAGA_MODEL) -> bool:
+        return self._call("StartLearning", "s", (model,)) is not None
+
+    def stop_learning(self, model: str = NAGA_MODEL) -> bool:
+        return self._call("StopLearning", "s", (model,)) is not None

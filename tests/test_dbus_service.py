@@ -1,5 +1,6 @@
-"""D-Bus service object tested directly (no real bus): methods via dbus-next's
-method table, signals via a fake bus registered on the interface."""
+"""Daemon1 D-Bus service tested directly (no real bus): methods via dbus-next's
+method table, signals via a fake bus registered on the interface. Real sessions
+(no mouse connected), so activation really lands in the right DeviceSession."""
 import inspect
 import json
 
@@ -7,16 +8,17 @@ import pytest
 from dbus_next import DBusError
 from dbus_next.service import ServiceInterface
 from dbus_next.signature import SignatureTree
+from test_daemon_devices import RecOut
 
 from razertux.config.model import KeyAction, Profile, Settings
 from razertux.config.store import ConfigStore
-from razertux.daemon.dbus_service import (
-    BUS_NAME,
-    INTERFACE,
-    OBJECT_PATH,
-    NagaService,
-)
+from razertux.daemon.dbus_service import BUS_NAME, INTERFACE, OBJECT_PATH, VERSION
+from razertux.daemon.main import Daemon
+from razertux.devices.db import load_devices
+from razertux.hw.button_maps import InputSignal
 from razertux.hw.buttons import ButtonId
+
+NAGA, DA = "naga_v2_pro", "death_adder_v2"
 
 
 class FakeBus:
@@ -27,29 +29,6 @@ class FakeBus:
         SignatureTree(signature).verify(body)  # raises on a type mismatch
         assert iface_name == INTERFACE
         self.signals.append((member, body))
-
-
-class FakeMapper:
-    def __init__(self):
-        self.profiles = []
-        self.macros = []
-
-    async def set_profile(self, profile):
-        self.profiles.append(profile)
-
-    def set_macros(self, macros):
-        self.macros.append(macros)
-
-
-class FakeHw:
-    def __init__(self, connected=True, connection="wired", battery=80, charging=False,
-                 scroll_stage=-1, dpi=-1):
-        self.state = {"connected": connected, "connection": connection,
-                      "battery": battery, "charging": charging,
-                      "scroll_stage": scroll_stage, "dpi": dpi}
-
-    def hw_status(self):
-        return dict(self.state)
 
 
 async def call(svc, member, *args):
@@ -63,170 +42,217 @@ async def call(svc, member, *args):
     return result
 
 
-def make(tmp_path, **kw):
+def make(tmp_path):
     store = ConfigStore(tmp_path)
-    store.save_profile(Profile(id="game", name="Spiel",
-                               standard={ButtonId.SIDE_1: KeyAction(30)}))
+    store.for_model(NAGA).save_profile(Profile(id="game", name="Spiel",
+                                               standard={ButtonId.SIDE_1: KeyAction(30)}))
+    store.for_model(DA).save_profile(Profile(id="p", name="Pee"))
     store.save_settings(Settings(active_profile="default"))
-    mapper = FakeMapper()
-    hw = kw.pop("hw", FakeHw())
-    applied = []
-    svc = NagaService(store, mapper, hw, apply_device_settings=applied.append,
-                      openrazer_loaded=lambda: False,
-                      backup_path=tmp_path / "mouse-backup.json", **kw)
+    d = Daemon(store, RecOut(), openrazer_loaded=lambda: False, retry_delay=0)
+    d._session(load_devices()[DA])
+    svc = d.service
     bus = FakeBus()
     ServiceInterface._add_bus(svc, bus)
-    return svc, store, mapper, bus, applied
+    return d, svc, store, bus
 
 
 def test_names():
     assert BUS_NAME == "io.github.razertux"
     assert OBJECT_PATH == "/io/github/razertux"
-    assert INTERFACE == "io.github.razertux.Daemon"
+    assert INTERFACE == "io.github.razertux.Daemon1"
 
 
-async def test_activate_profile_sets_mapper_saves_and_signals(tmp_path):
-    svc, store, mapper, bus, applied = make(tmp_path)
-    await call(svc, "ActivateProfile", "game")
-    assert [p.id for p in mapper.profiles] == ["game"]
-    assert [p.id for p in applied] == ["game"]
-    assert json.loads((tmp_path / "settings.json").read_text())["active_profiles"]["naga_v2_pro"] == "game"
-    assert ("ProfileChanged", ["game"]) in bus.signals
-    assert await call(svc, "GetActiveProfile") == "game"
+async def test_get_version(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    assert await call(svc, "GetVersion") == VERSION
+
+
+async def test_list_devices_includes_disconnected_sessions(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    devices = await call(svc, "ListDevices")
+    assert devices == [[NAGA, load_devices()[NAGA].name, "", False],
+                       [DA, load_devices()[DA].name, "", False]]
+    d.sessions[DA]._hw = {**d.sessions[DA]._hw, "connected": True, "connection": "wired"}
+    assert [DA, load_devices()[DA].name, "wired", True] in await call(svc, "ListDevices")
+
+
+async def test_list_profiles_per_model(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    assert await call(svc, "ListProfiles", NAGA) == [["game", "Spiel"]]
+    assert await call(svc, "ListProfiles", DA) == [["p", "Pee"]]
+
+
+async def test_unknown_model_raises_dbus_error(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    for member, args in (("ListProfiles", ("nope",)), ("GetStatus", ("nope",)),
+                         ("ActivateProfile", ("nope", "p")), ("GetDiagnostics", ("nope",))):
+        with pytest.raises(DBusError) as ei:
+            await call(svc, member, *args)
+        assert ei.value.type == "io.github.razertux.Error.UnknownDevice"
+
+
+async def test_activate_profile_lands_in_the_right_session(tmp_path):
+    d, svc, store, bus = make(tmp_path)
+    await call(svc, "ActivateProfile", DA, "p")
+    assert d.sessions[DA].profile.id == "p"
+    assert d.sessions[NAGA].profile is None
+    active = json.loads((tmp_path / "settings.json").read_text())["active_profiles"]
+    assert active[DA] == "p" and active.get(NAGA, "default") == "default"
+    assert ("ProfileChanged", [DA, "p"]) in bus.signals
+    assert await call(svc, "GetActiveProfile", DA) == "p"
+    assert await call(svc, "GetActiveProfile", NAGA) == "default"
 
 
 async def test_activate_unknown_profile_raises_dbus_error(tmp_path):
-    svc, store, mapper, bus, _ = make(tmp_path)
+    d, svc, store, bus = make(tmp_path)
     with pytest.raises(DBusError) as ei:
-        await call(svc, "ActivateProfile", "nope")
+        await call(svc, "ActivateProfile", NAGA, "nope")
     assert ei.value.type == "io.github.razertux.Error.UnknownProfile"
-    assert mapper.profiles == []
+    assert d.sessions[NAGA].profile is None
     assert bus.signals == []
-    assert json.loads((tmp_path / "settings.json").read_text())["active_profiles"]["naga_v2_pro"] == "default"
+    assert json.loads((tmp_path / "settings.json").read_text())["active_profiles"][NAGA] == "default"
 
 
-async def test_list_profiles(tmp_path):
-    svc, *_ = make(tmp_path)
-    assert await call(svc, "ListProfiles") == [["game", "Spiel"]]
+async def test_profile_of_other_model_is_unknown(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    with pytest.raises(DBusError) as ei:
+        await call(svc, "ActivateProfile", DA, "game")
+    assert ei.value.type == "io.github.razertux.Error.UnknownProfile"
 
 
-async def test_default_profile_always_listed_and_activatable(tmp_path):
-    svc, store, mapper, bus, _ = make(tmp_path)
-    await call(svc, "ActivateProfile", "game")
-    await call(svc, "ActivateProfile", "default")
-    assert mapper.profiles[-1].id == "default"
-
-
-async def test_get_status_connected(tmp_path):
-    svc, *_ = make(tmp_path)
-    st = await call(svc, "GetStatus")
-    assert {k: v.value for k, v in st.items()} == {
-        "connected": True, "connection": "wired", "battery": 80, "charging": False,
-        "scroll_stage": -1, "dpi": -1, "openrazer_loaded": False, "config_errors": [],
-    }
-    assert st["battery"].signature == "i" and st["config_errors"].signature == "as"
-    assert st["scroll_stage"].signature == "i" and st["dpi"].signature == "i"
-
-
-async def test_get_status_scroll_stage_and_dpi(tmp_path):
-    svc, *_ = make(tmp_path, hw=FakeHw(scroll_stage=6, dpi=2500))
-    st = await call(svc, "GetStatus")
-    assert (st["scroll_stage"].value, st["dpi"].value) == (6, 2500)
-
-
-def test_scroll_profile_method_removed(tmp_path):
-    svc, *_ = make(tmp_path)
-    assert "ScrollProfileSupported" not in {m.name for m in ServiceInterface._get_methods(svc)}
+async def test_default_profile_always_activatable(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await call(svc, "ActivateProfile", NAGA, "game")
+    await call(svc, "ActivateProfile", NAGA, "default")
+    assert d.sessions[NAGA].profile.id == "default"
 
 
 async def test_get_status_disconnected(tmp_path):
-    hw = FakeHw(connected=False, connection="", battery=-1, charging=False)
-    svc, *_ = make(tmp_path, hw=hw)
-    st = await call(svc, "GetStatus")
-    assert st["connected"].value is False
-    assert st["connection"].value == ""
-    assert st["battery"].value == -1
+    d, svc, *_ = make(tmp_path)
+    st = await call(svc, "GetStatus", NAGA)
+    plain = {k: v.value for k, v in st.items()}
+    assert plain == {
+        "connected": False, "connection": "", "battery": -1, "charging": False,
+        "scroll_stage": -1, "dpi": -1, "openrazer_loaded": False, "config_errors": [],
+        "writable": False, "experimental": False, "model": NAGA,
+        "name": load_devices()[NAGA].name,
+    }
+    assert st["battery"].signature == "i" and st["config_errors"].signature == "as"
+    assert st["writable"].signature == "b" and st["name"].signature == "s"
+
+
+async def test_get_status_connected_experimental(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    s = d.sessions[DA]
+    s._hw = {**s._hw, "connected": True, "connection": "wired", "battery": 80, "dpi": 1600}
+    st = {k: v.value for k, v in (await call(svc, "GetStatus", DA)).items()}
+    assert (st["connected"], st["battery"], st["dpi"]) == (True, 80, 1600)
+    assert st["experimental"] is (not load_devices()[DA].verified)
+    assert st["model"] == DA
+
+
+def test_scroll_profile_method_removed(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    assert "ScrollProfileSupported" not in {m.name for m in ServiceInterface._get_methods(svc)}
 
 
 async def test_reload_switches_profile_and_reports_errors(tmp_path):
-    svc, store, mapper, bus, _ = make(tmp_path)
+    d, svc, store, bus = make(tmp_path)
     (tmp_path / "settings.json").write_text('{"active_profile": "game"}')
     (tmp_path / "macros.json").write_text("{kaputt")
     await call(svc, "Reload")
-    assert mapper.profiles[-1].id == "game"
-    assert mapper.macros[-1] == {}
-    assert ("ProfileChanged", ["game"]) in bus.signals
-    errors = (await call(svc, "GetStatus"))["config_errors"].value
+    assert d.sessions[NAGA].profile.id == "game"
+    assert ("ProfileChanged", [NAGA, "game"]) in bus.signals
+    errors = (await call(svc, "GetStatus", NAGA))["config_errors"].value
     assert any("macros.json" in e for e in errors)
-    assert any(m == "StatusChanged" for m, _ in bus.signals)
+    assert any(m == "StatusChanged" and b[0] == NAGA for m, b in bus.signals)
 
 
 async def test_reload_same_profile_no_profile_changed(tmp_path):
-    svc, store, mapper, bus, _ = make(tmp_path)
+    d, svc, store, bus = make(tmp_path)
     await call(svc, "Reload")
-    assert mapper.profiles[-1].id == "default"
+    bus.signals.clear()
+    await call(svc, "Reload")
+    assert d.sessions[NAGA].profile.id == "default"
     assert not any(m == "ProfileChanged" for m, _ in bus.signals)
 
 
 async def test_reload_clears_old_errors(tmp_path):
-    svc, *_ = make(tmp_path)
+    d, svc, *_ = make(tmp_path)
     (tmp_path / "macros.json").write_text("{kaputt")
     await call(svc, "Reload")
     (tmp_path / "macros.json").write_text("{}")
     await call(svc, "Reload")
-    assert (await call(svc, "GetStatus"))["config_errors"].value == []
+    assert (await call(svc, "GetStatus", NAGA))["config_errors"].value == []
 
 
 async def test_restore_original_without_backup(tmp_path):
-    svc, *_ = make(tmp_path)
+    d, svc, *_ = make(tmp_path)
     with pytest.raises(DBusError) as ei:
-        await call(svc, "RestoreOriginal")
+        await call(svc, "RestoreOriginal", NAGA)
     assert ei.value.type == "io.github.razertux.Error.NoBackup"
 
 
-async def test_restore_original_not_implemented_yet(tmp_path):
-    svc, *_ = make(tmp_path)
-    (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
+async def test_restore_original_not_connected(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    d.sessions[DA].backup_path.parent.mkdir(parents=True, exist_ok=True)
+    d.sessions[DA].backup_path.write_text('{"dpi": [800, 800]}')
     with pytest.raises(DBusError) as ei:
-        await call(svc, "RestoreOriginal")
-    assert ei.value.type == "io.github.razertux.Error.NotImplemented"
+        await call(svc, "RestoreOriginal", DA)
+    assert ei.value.type == "io.github.razertux.Error.NotConnected"
 
 
-async def test_restore_original_calls_hook(tmp_path):
+async def test_restore_original_goes_to_the_models_session(tmp_path):
+    d, svc, *_ = make(tmp_path)
     seen = []
-    svc, *_ = make(tmp_path, restore=seen.append)
-    (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
-    assert await call(svc, "RestoreOriginal") == []
+    d.sessions[DA].restore_backup = lambda b: (seen.append(b), ["poll_rate", "dpi"])[1]
+    d.sessions[DA].backup_path.parent.mkdir(parents=True, exist_ok=True)
+    d.sessions[DA].backup_path.write_text('{"dpi": [800, 800]}')
+    assert await call(svc, "RestoreOriginal", DA) == ["poll_rate", "dpi"]
     assert seen == [{"dpi": [800, 800]}]
 
 
-async def test_restore_original_returns_unrestored_fields(tmp_path):
-    svc, *_ = make(tmp_path, restore=lambda b: ["poll_rate", "dpi"])
-    (tmp_path / "mouse-backup.json").write_text('{"dpi": [800, 800]}')
-    assert await call(svc, "RestoreOriginal") == ["poll_rate", "dpi"]
+async def test_get_diagnostics(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    assert await call(svc, "GetDiagnostics", DA) == ""
+    d.sessions[DA].diagnostics = lambda: "probe: ok"
+    assert await call(svc, "GetDiagnostics", DA) == "probe: ok"
 
 
-async def test_notify_status_emits_signal(tmp_path):
-    svc, store, mapper, bus, _ = make(tmp_path)
-    svc.notify_status()
+async def test_learning_maps_to_session_and_emits_button_learned(tmp_path):
+    d, svc, store, bus = make(tmp_path)
+    await call(svc, "StartLearning", DA)
+    assert d.sessions[DA].status()["learning"] is True
+    assert d.sessions[NAGA].status()["learning"] is False
+    d.sessions[DA].on_learned(InputSignal("mouse", 1, 272))
+    assert ("ButtonLearned", [DA, "mouse", 1, 272]) in bus.signals
+    await call(svc, "StopLearning", DA)
+    assert d.sessions[DA].status()["learning"] is False
+
+
+async def test_notify_status_emits_signal_with_model(tmp_path):
+    d, svc, store, bus = make(tmp_path)
+    svc.notify_status(DA)
     member, body = bus.signals[-1]
-    assert member == "StatusChanged"
-    assert body[0]["connected"].value is True
+    assert member == "StatusChanged" and body[0] == DA
+    assert body[1]["model"].value == DA
 
 
-async def test_reload_applies_settings_hook(tmp_path):
-    got = []
-    svc, store, *_ = make(tmp_path, apply_settings=got.append)
-    store.save_settings(Settings(active_profile="default", idle_time=120))
-    await call(svc, "Reload")
-    assert got[-1].idle_time == 120
+async def test_devices_changed_when_connection_changes(tmp_path):
+    d, svc, store, bus = make(tmp_path)
+    svc.notify_status(DA)
+    assert not any(m == "DevicesChanged" for m, _ in bus.signals[1:])
+    s = d.sessions[DA]
+    s._hw = {**s._hw, "connected": True, "connection": "wired"}
+    svc.notify_status(DA)
+    assert ("DevicesChanged", []) in bus.signals
 
 
 async def test_activate_keeps_settings_saved_by_gui(tmp_path):
-    svc, store, *_ = make(tmp_path)
+    d, svc, store, bus = make(tmp_path)
     await svc.reload()
     store.save_settings(Settings(active_profile="default", theme="system",
                                  low_battery_notify=30))  # GUI saved meanwhile
-    await call(svc, "ActivateProfile", "game")
+    await call(svc, "ActivateProfile", NAGA, "game")
     s = store.load_settings()
     assert (s.active_profile, s.theme, s.low_battery_notify) == ("game", "system", 30)

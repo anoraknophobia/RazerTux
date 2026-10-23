@@ -1,37 +1,34 @@
-"""D-Bus interface io.github.razertux.Daemon (session bus, dbus-next).
+"""D-Bus interface io.github.razertux.Daemon1 (session bus, dbus-next): device-aware,
+every call names the device model.
 
 No `from __future__ import annotations` here: dbus-next reads the D-Bus
 signatures from the (string) annotations.
 """
 import logging
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
 from dbus_next import DBusError, Variant
 from dbus_next.service import ServiceInterface
 from dbus_next.service import method as _dbus_method
 from dbus_next.service import signal as _dbus_signal
 
-from razertux.backup import backup_path as model_backup_path
 from razertux.backup import load_backup
-from razertux.config.model import NAGA_MODEL, Profile, Settings, validate
 from razertux.config.store import ConfigStore
+from razertux.hw.button_maps import InputSignal
 from razertux.i18n import apply_settings as apply_language, tr
+
+from .session import DeviceSession, NotConnected, ReadOnly
 
 logger = logging.getLogger(__name__)
 
 BUS_NAME = "io.github.razertux"
 OBJECT_PATH = "/io/github/razertux"
-INTERFACE = "io.github.razertux.Daemon"
+INTERFACE = "io.github.razertux.Daemon1"
+VERSION = "1"
 _ERR = "io.github.razertux.Error."
-
-
-class Hardware(Protocol):
-    def hw_status(self) -> dict[str, Any]:
-        """connected (bool), connection (str), battery (int, -1 unknown), charging (bool),
-        scroll_stage (int 1-6, -1 unknown), dpi (int, -1 unknown)."""
 
 
 def openrazer_loaded() -> bool:
@@ -53,145 +50,172 @@ method = _quiet(_dbus_method)
 signal = _quiet(_dbus_signal)
 
 
-class NagaService(ServiceInterface):
-    """Profile state + D-Bus methods. Plain async methods (activate, reload, ...)
-    hold the logic; the D-Bus methods are thin wrappers."""
+class Daemon1Service(ServiceInterface):
+    """D-Bus methods over the daemon's DeviceSessions (one per model). The profile of
+    a model lives in its session and in Settings.active_profiles; plain methods
+    (activate, reload, ...) hold the logic, the D-Bus methods are thin wrappers."""
 
-    def __init__(self, store: ConfigStore, mapper: Any, hw: Hardware, *,
-                 apply_device_settings: Callable[[Profile], None] = lambda p: None,
-                 apply_settings: Callable[[Settings], None] = lambda s: None,
-                 restore: Callable[[dict], list[str] | None] | None = None,
-                 openrazer_loaded: Callable[[], bool] = openrazer_loaded,
-                 backup_path: Path | None = None) -> None:
+    def __init__(self, store: ConfigStore, sessions: Callable[[], Mapping[str, DeviceSession]], *,
+                 openrazer_loaded: Callable[[], bool] = openrazer_loaded) -> None:
         super().__init__(INTERFACE)
         self._store = store
-        self._mapper = mapper
-        self._hw = hw
-        self._apply = apply_device_settings
-        self._apply_settings = apply_settings
-        self._restore = restore
+        self._sessions = sessions
         self._openrazer = openrazer_loaded
-        self._backup_path = backup_path or model_backup_path(NAGA_MODEL, store.root)
-        self._settings = store.load_settings()
-        apply_language(self._settings)  # language of config errors and notifications
-        self.active_profile_id = self._settings.active_profile
-        self.active_profile: Profile | None = None
-        self._macros: dict = {}
-        self._validation: list[str] = []
+        self._seen: dict[str, tuple[bool, str]] = {}  # model -> (connected, connection)
+        apply_language(store.load_settings())  # language of config errors and notifications
 
     # -- logic ---------------------------------------------------------------
 
-    @property
-    def settings(self) -> Settings:
-        return self._settings
+    def session(self, model: str) -> DeviceSession:
+        try:
+            return self._sessions()[model]
+        except KeyError:
+            raise DBusError(_ERR + "UnknownDevice",
+                            tr("daemon", "Unbekanntes Gerät: {model}", model=model)) from None
 
-    def list_profiles(self) -> list[list[str]]:
-        return [[p.id, p.name] for p in self._store.list_profiles()]
+    def list_devices(self) -> list[list]:
+        out = []
+        for model, session in self._sessions().items():
+            st = session.status()
+            out.append([model, session.info.name, str(st["connection"]), bool(st["connected"])])
+        return out
 
-    async def activate(self, profile_id: str) -> None:
-        known = {p.id for p in self._store.list_profiles()} | {"default"}
-        if profile_id not in known:
-            raise DBusError(_ERR + "UnknownProfile", tr("daemon", "Unbekanntes Profil: {profile}", profile=profile_id))
-        profile = self._store.load_profile(profile_id)
-        await self._use(profile)
-        self._settings = self._store.load_settings()  # keep what the GUI saved meanwhile
-        self._settings.active_profile = profile.id
-        self._store.save_settings(self._settings)
-        self.ProfileChanged(profile.id)
-        self.notify_status()
+    def list_profiles(self, model: str) -> list[list[str]]:
+        return [[p.id, p.name] for p in self.session(model).store.list_profiles()]
+
+    async def activate(self, model: str, profile_id: str) -> None:
+        session = self.session(model)
+        try:
+            await session.activate(profile_id)
+        except KeyError:
+            raise DBusError(_ERR + "UnknownProfile",
+                            tr("daemon", "Unbekanntes Profil: {profile}", profile=profile_id)) from None
+        self.ProfileChanged(model, session.active_profile_id)
 
     async def reload(self) -> None:
-        """Re-read settings, macros and the active profile from disk."""
+        """Re-read settings, macros and every model's active profile from disk."""
         self._store.errors.clear()
-        old = self.active_profile_id
-        self._settings = self._store.load_settings()
-        apply_language(self._settings)
+        apply_language(self._store.load_settings())
         self._store.errors.clear()  # settings.json errors again, in the (new) language
-        self._settings = self._store.load_settings()
-        try:
-            self._apply_settings(self._settings)
-        except Exception:
-            logger.exception("Energie-Einstellungen nicht angewendet")
-        self._macros = self._store.load_macros()
-        self._mapper.set_macros(self._macros)
-        profile = self._store.load_profile(self._settings.active_profile)
-        await self._use(profile)
-        if profile.id != old:
-            self.ProfileChanged(profile.id)
-        self.notify_status()
+        sessions = dict(self._sessions())
+        old = {m: s.profile.id if s.profile else None for m, s in sessions.items()}
+        for session in sessions.values():
+            try:
+                await session.reload()
+            except Exception:
+                logger.exception("%s: Neuladen fehlgeschlagen", session.info.name)
+        for model, session in sessions.items():
+            if session.active_profile_id != old[model]:
+                self.ProfileChanged(model, session.active_profile_id)
 
-    async def _use(self, profile: Profile) -> None:
-        await self._mapper.set_profile(profile)
-        self.active_profile = profile
-        self.active_profile_id = profile.id
-        self._validation = validate(profile, self._macros)
-        try:
-            self._apply(profile)
-        except Exception:
-            logger.exception("Geräteeinstellungen für %s nicht angewendet", profile.id)
-
-    def config_errors(self) -> list[str]:
-        return list(dict.fromkeys([*self._store.errors, *self._validation]))
-
-    def status(self) -> dict[str, Variant]:
-        hw = self._hw.hw_status()
+    def status(self, model: str) -> dict[str, Variant]:
+        session = self.session(model)
+        st = session.status()
         return {
-            "connected": Variant("b", bool(hw["connected"])),
-            "connection": Variant("s", hw["connection"]),
-            "battery": Variant("i", int(hw["battery"])),
-            "charging": Variant("b", bool(hw["charging"])),
-            "scroll_stage": Variant("i", int(hw.get("scroll_stage", -1))),
-            "dpi": Variant("i", int(hw.get("dpi", -1))),
+            "connected": Variant("b", bool(st["connected"])),
+            "connection": Variant("s", st["connection"]),
+            "battery": Variant("i", int(st["battery"])),
+            "charging": Variant("b", bool(st["charging"])),
+            "scroll_stage": Variant("i", int(st.get("scroll_stage", -1))),
+            "dpi": Variant("i", int(st.get("dpi", -1))),
             "openrazer_loaded": Variant("b", bool(self._openrazer())),
-            "config_errors": Variant("as", self.config_errors()),
+            "config_errors": Variant("as", session.config_errors()),
+            "writable": Variant("b", bool(st["writable"])),
+            "experimental": Variant("b", not st["verified"]),
+            "model": Variant("s", model),
+            "name": Variant("s", session.info.name),
         }
 
-    def notify_status(self) -> None:
-        self.StatusChanged(self.status())
+    def notify_status(self, model: str) -> None:
+        session = self.session(model)
+        st = session.status()
+        now = (bool(st["connected"]), str(st["connection"]))
+        if self._seen.get(model) != now:
+            self._seen[model] = now
+            self.DevicesChanged()
+        self.StatusChanged(model, self.status(model))
 
-    def restore_original(self) -> list[str]:
+    def devices_changed(self) -> None:
+        """A session appeared (first sight of a new model)."""
+        self.DevicesChanged()
+
+    def button_learned(self, model: str, signal: InputSignal) -> None:
+        self.ButtonLearned(model, signal.source, int(signal.ev_type), int(signal.code))
+
+    def restore_original(self, model: str) -> list[str]:
         """Write the backup back to the mouse; returns the fields that could not be restored."""
+        session = self.session(model)
         try:
-            backup = load_backup(self._backup_path)
+            backup = load_backup(session.backup_path)
         except (OSError, ValueError) as e:
             raise DBusError(_ERR + "NoBackup",
                             tr("daemon", "Keine lesbare Sicherung unter {path}: {error}",
-                               path=self._backup_path, error=e)) from e
-        if self._restore is None:
-            raise DBusError(_ERR + "NotImplemented",
-                            tr("daemon", "Wiederherstellen des Originalzustands ist noch nicht umgesetzt"))
-        return list(self._restore(backup) or [])
+                               path=session.backup_path, error=e)) from e
+        try:
+            return list(session.restore_backup(backup) or [])
+        except NotConnected:
+            raise DBusError(_ERR + "NotConnected", tr("daemon", "Maus nicht verbunden")) from None
+        except ReadOnly:
+            raise DBusError(_ERR + "ReadOnly", tr("daemon", "Maus ist schreibgeschützt")) from None
 
     # -- D-Bus ---------------------------------------------------------------
 
     @method()
-    def ListProfiles(self) -> 'a(ss)':
-        return self.list_profiles()
+    def GetVersion(self) -> 's':
+        return VERSION
 
     @method()
-    def GetActiveProfile(self) -> 's':
-        return self.active_profile_id
+    def ListDevices(self) -> 'a(sssb)':
+        return self.list_devices()
 
     @method()
-    async def ActivateProfile(self, profile_id: 's'):
-        await self.activate(profile_id)
+    def ListProfiles(self, model: 's') -> 'a(ss)':
+        return self.list_profiles(model)
+
+    @method()
+    def GetActiveProfile(self, model: 's') -> 's':
+        return self.session(model).active_profile_id
+
+    @method()
+    async def ActivateProfile(self, model: 's', profile_id: 's'):
+        await self.activate(model, profile_id)
 
     @method()
     async def Reload(self):
         await self.reload()
 
     @method()
-    def GetStatus(self) -> 'a{sv}':
-        return self.status()
+    def GetStatus(self, model: 's') -> 'a{sv}':
+        return self.status(model)
 
     @method()
-    def RestoreOriginal(self) -> 'as':
-        return self.restore_original()
+    def RestoreOriginal(self, model: 's') -> 'as':
+        return self.restore_original(model)
+
+    @method()
+    def GetDiagnostics(self, model: 's') -> 's':
+        return self.session(model).diagnostics()
+
+    @method()
+    async def StartLearning(self, model: 's'):
+        await self.session(model).start_learning()
+
+    @method()
+    async def StopLearning(self, model: 's'):
+        await self.session(model).stop_learning()
 
     @signal()
-    def ProfileChanged(self, profile_id) -> 's':
-        return profile_id
+    def DevicesChanged(self):
+        pass
 
     @signal()
-    def StatusChanged(self, status) -> 'a{sv}':
-        return status
+    def ProfileChanged(self, model, profile_id) -> 'ss':
+        return [model, profile_id]
+
+    @signal()
+    def StatusChanged(self, model, status) -> 'sa{sv}':
+        return [model, status]
+
+    @signal()
+    def ButtonLearned(self, model, source, type, code) -> 'ssii':
+        return [model, source, type, code]

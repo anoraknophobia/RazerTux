@@ -41,6 +41,10 @@
     "Obere Tasten frei belegen": "Asignar libremente los botones superiores",
     "Standard": "Estándar"
   },
+  "DaemonClient": {
+    "Dienst läuft nicht": "El servicio no se está ejecutando",
+    "Dienst-Version passt nicht – bitte RazerTux neu starten": "La versión del servicio no coincide – reinicia RazerTux"
+  },
   "HeaderBar": {
     "Profil": "Perfil",
     "Profilaktionen": "Acciones de perfil",
@@ -256,10 +260,12 @@
   "daemon": {
     "Akkustand {level} % – bitte die Maus laden.": "Batería al {level} %: carga el ratón.",
     "Keine lesbare Sicherung unter {path}: {error}": "No hay una copia de seguridad legible en {path}: {error}",
-    "{name}: Akku schwach": "{name}: batería baja",
+    "Maus ist schreibgeschützt": "El ratón es de solo lectura",
+    "Maus nicht verbunden": "Ratón no conectado",
     "Naga V2 Pro: Akku schwach": "Naga V2 Pro: batería baja",
+    "Unbekanntes Gerät: {model}": "Dispositivo desconocido: {model}",
     "Unbekanntes Profil: {profile}": "Perfil desconocido: {profile}",
-    "Wiederherstellen des Originalzustands ist noch nicht umgesetzt": "Restaurar el estado original aún no está implementado"
+    "{name}: Akku schwach": "{name}: batería baja"
   },
   "keynames": {
     "Akut": "Agudo",

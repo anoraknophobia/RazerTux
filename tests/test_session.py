@@ -277,6 +277,38 @@ async def test_unplugging_deathadder_keeps_naga_grabbed(tmp_path):
     await d.shutdown()
 
 
+async def test_unplugged_deathadder_stays_listed_but_releases_resources(tmp_path):
+    d, hw = two_mouse_daemon(tmp_path)
+    await d.start()
+    da = QueueDev("/dev/input/event30", name="Razer Razer DeathAdder V2", product=DA_PID)
+    d.on_added("mouse", da)
+    await d.settle()
+    await d.sessions[DA].start_learning()
+    released = []
+    orig = d.sessions[DA].mapper.release_all
+
+    async def spy():
+        released.append(1)
+        await orig()
+    d.sessions[DA].mapper.release_all = spy
+    d.on_removed("/dev/input/event30")
+    await d.settle()
+    session = d.sessions[DA]
+    assert DA in d.sessions
+    devices = d.service.list_devices()
+    assert [DA, session.info.name, "", False] in devices
+    assert released  # held keys let go
+    assert session.router.paths == set()
+    assert session.status()["learning"] is False and session.router._learn is None
+    assert da.closed
+    # plugging it in again works
+    d.on_added("mouse", FakeDev("/dev/input/event31", name="Razer Razer DeathAdder V2",
+                                product=DA_PID))
+    await d.settle()
+    assert d.sessions[DA] is session and session.status()["connected"] is True
+    await d.shutdown()
+
+
 async def test_unknown_pid_creates_no_session(tmp_path):
     d, _ = two_mouse_daemon(tmp_path)
     await d.start()
