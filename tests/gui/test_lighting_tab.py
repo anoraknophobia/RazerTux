@@ -87,3 +87,19 @@ def test_scroll_zone_is_kept_but_not_shown(tab):
     assert "scroll" not in tab.effect_combos
     tab.set_effect("all", "wave")
     assert p.lighting["scroll"] == scroll and p.lighting["logo"].effect == "wave"
+
+
+def test_zones_follow_the_device(tab):
+    from razertux.devices.db import load_devices
+    tab.set_device(load_devices()["death_adder_v2"])
+    assert set(tab.effect_combos) == {"all", "logo", "scroll"}
+    assert tab.zone_labels["scroll"].text() == "Mausrad"
+    p = Profile(id="p", name="P", lighting={"thumb": LightingZone("static", (1, 2, 3), 9)})
+    tab.load(p)
+    tab.set_effect("all", "breath")
+    assert set(p.lighting) == {"logo", "scroll", "thumb"}  # unknown zone kept
+    assert p.lighting["scroll"].effect == "breath" and p.lighting["thumb"].effect == "static"
+    combo = tab.effect_combos["logo"]
+    assert "wave" not in [combo.itemData(i) for i in range(combo.count())]  # not in the database
+    tab.set_device(load_devices()["naga_v2_pro"])
+    assert set(tab.effect_combos) == {"all", "logo", "thumb"}

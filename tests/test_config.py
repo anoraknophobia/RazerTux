@@ -335,3 +335,11 @@ def test_default_profile_for_other_mouse_is_all_default_action():
     from razertux.devices.db import load_devices
     p = default_profile_for(load_devices()["viper"])
     assert p.standard and all(isinstance(a, DefaultAction) for a in p.standard.values())
+
+
+def test_settings_last_model_roundtrip():
+    assert Settings().last_model == ""
+    s = Settings()
+    s.last_model = "death_adder_v2"
+    assert Settings.from_dict(s.to_dict()).last_model == "death_adder_v2"
+    assert Settings.from_dict({"active_profile": "p"}).last_model == ""

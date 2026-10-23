@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 from razertux.config.model import (
     IDLE_MAX_S, IDLE_MIN_S, LOW_POWER_MAX, LOW_POWER_MIN, Settings,
 )
+from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, description
 
 DEFAULT_IDLE_MIN = 5
@@ -32,14 +33,14 @@ class PowerTab(QWidget):
         self.settings: Settings | None = None
         self._quiet = False
 
-        idle = Card(self.tr("Energiesparen im Funkbetrieb"))
+        self.idle_card = idle = Card(self.tr("Energiesparen im Funkbetrieb"))
         self.idle_box = QCheckBox(self.tr("Ruhezustand nach Inaktivität (Minuten)"))
         self.idle_slider = _slider(IDLE_MIN_S // 60, IDLE_MAX_S // 60)
         self.idle_value = QLabel()
         idle.add(self.idle_box)
         idle.add(self._row(self.idle_slider, self.idle_value, "1", "15"))
 
-        low = Card(self.tr("Energiesparmodus"))
+        self.low_card = low = Card(self.tr("Energiesparmodus"))
         self.low_power_box = QCheckBox(self.tr("Im Funkbetrieb Energiesparmodus, wenn der Akku "
                                                "unter (%) liegt"))
         self.low_power_slider = _slider(LOW_POWER_MIN, LOW_POWER_MAX)
@@ -48,7 +49,7 @@ class PowerTab(QWidget):
         low.add(self._row(self.low_power_slider, self.low_power_value,
                           f"{LOW_POWER_MIN} %", f"{LOW_POWER_MAX} %"))
 
-        warn = Card(self.tr("Akku-Warnung"))
+        self.warn_card = warn = Card(self.tr("Akku-Warnung"))
         warn.add(description(self.tr("Desktop-Benachrichtigung im Funkbetrieb, einmal je "
                                      "Entladung (erneut erst nach dem Laden).")))
         self.warn_box = QCheckBox(self.tr("Warnung bei Akku unter"))
@@ -90,6 +91,13 @@ class PowerTab(QWidget):
         row.addWidget(slider, 1)
         row.addWidget(QLabel(hi))
         return row
+
+    def set_device(self, info: DeviceInfo) -> None:
+        """Sleep timer and low power mode are global and written only to verified mice
+        (the Naga V2 Pro); an experimental battery mouse gets the desktop warning only."""
+        own = info.verified and "battery" in info.features
+        self.idle_card.setVisible(own and "idle_time" in info.features)
+        self.low_card.setVisible(own and "low_battery_threshold" in info.features)
 
     def load(self, settings: Settings) -> None:
         self._quiet = True

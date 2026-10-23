@@ -99,3 +99,34 @@ def test_main_window_wires_the_reload(qapp, tmp_path):
     w.buttons_tab.plate_combo.setCurrentIndex(2)
     assert seen == ["Reload"] and s.for_model(NAGA_MODEL).load_device_settings().plate == 2
     w.close()
+
+
+# -- Task 12: the tab follows the selected device -----------------------------------
+
+def test_other_device_hides_the_plate_choice(qapp, store):
+    from razertux.devices.db import load_devices
+    t = ButtonsTab(store.for_model(NAGA_MODEL))
+    t.set_device(load_devices()["death_adder_v2"], store.for_model("death_adder_v2"))
+    assert not t.plate_combo.isVisibleTo(t) and not t.plate_hint.isVisibleTo(t)
+    assert ButtonId.SIDE_1 not in t.mouse_view._buttons and ButtonId.BACK in t.mouse_view._buttons
+    t.set_device(load_devices()[NAGA_MODEL], store.for_model(NAGA_MODEL))
+    assert t.plate_combo.isVisibleTo(t) and ButtonId.SIDE_12 in t.mouse_view._buttons
+
+
+def test_generic_layout_shows_learned_slots_only(qapp, store):
+    from razertux.devices.db import load_devices
+    from razertux.hw.button_maps import InputSignal
+    ms = store.for_model("abyssus")
+    ds = ms.load_device_settings()
+    ds.learned = {ButtonId.LEARN_2: InputSignal("mouse", 1, 0x113)}
+    ms.save_device_settings(ds)
+    t = ButtonsTab(store.for_model(NAGA_MODEL))
+    assert not t.learn_btn.isVisibleTo(t)
+    t.set_device(load_devices()["abyssus"], ms)
+    learn = {b for b in t.mouse_view._buttons if b.startswith("learn_")}
+    assert learn == {ButtonId.LEARN_2}
+    assert t.learn_btn.isVisibleTo(t) and t.learn_btn.text() == "Taste anlernen …"
+    got = []
+    t.learnRequested.connect(got.append)
+    t.learn_btn.click()
+    assert got == [ButtonId.LEARN_1]  # the first free slot

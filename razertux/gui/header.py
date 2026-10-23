@@ -12,7 +12,10 @@ from PySide6.QtWidgets import (
 from razertux.gui.labels import battery_text
 from razertux.gui.widgets import BatteryIndicator
 
-DEVICE_NAME = "Naga V2 Pro"  # product name as plain text, no logo
+
+def short_name(name: str) -> str:
+    """Product name without the brand ("Razer Naga V2 Pro" -> "Naga V2 Pro")."""
+    return name.removeprefix("Razer ").strip() or name
 
 
 class HeaderBar(QWidget):
@@ -39,7 +42,7 @@ class HeaderBar(QWidget):
         self.activate_btn = QPushButton(self.tr("Aktivieren"))
         self.activate_btn.setToolTip(self.tr("Dieses Profil für die Maus verwenden"))
         self.activate_btn.clicked.connect(lambda _=False: slots["activate"]())
-        self.title = QLabel(DEVICE_NAME, self)
+        self.title = QLabel(self)  # product name of the selected mouse, plain text, no logo
         self.title.setObjectName("deviceTitle")
         self.title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.dpi_label = QLabel()
@@ -58,9 +61,17 @@ class HeaderBar(QWidget):
 
     def resizeEvent(self, e) -> None:
         super().resizeEvent(e)
+        self._place_title()
+
+    def _place_title(self) -> None:
         hint = self.title.sizeHint()
         self.title.setGeometry((self.width() - hint.width()) // 2, (self.height() - hint.height()) // 2,
                                hint.width(), hint.height())
+
+    def set_device_name(self, name: str) -> None:
+        """"Razer Naga V2 Pro" is shown as "Naga V2 Pro" (from the status or the database)."""
+        self.title.setText(short_name(name))
+        self._place_title()
 
     def set_status(self, status: dict) -> None:
         """Battery (percentage + glyph, "Kabel" when wired) and current DPI."""

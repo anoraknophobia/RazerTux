@@ -31,7 +31,9 @@
     "Taste": "Key",
     "Umschalten (an/aus)": "Toggle (on/off)",
     "n-mal wiederholen": "Repeat n times",
-    "Übernehmen": "Apply"
+    "Übernehmen": "Apply",
+    "RazerTux zeigen, welches Signal diese Taste sendet": "Show RazerTux which signal this button sends",
+    "Taste anlernen …": "Learn button …"
   },
   "ButtonsTab": {
     "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen.": "Off: the front top button cycles the scroll wheel stage and the rear one the sensitivity stage. On: both buttons can be assigned freely.",
@@ -43,7 +45,9 @@
     "Seitenplatte: 12 Tasten": "Side plate: 12 buttons",
     "Seitenplatte: 2 Tasten": "Side plate: 2 buttons",
     "Seitenplatte: 6 Tasten": "Side plate: 6 buttons",
-    "Standard": "Standard"
+    "Standard": "Standard",
+    "Eine weitere Taste der Maus anlernen und belegen": "Learn another button of the mouse and assign it",
+    "Taste anlernen …": "Learn button …"
   },
   "DaemonClient": {
     "Dienst läuft nicht": "Service is not running",
@@ -93,7 +97,12 @@
     "Reaktiv": "Reactive",
     "Spektrum": "Spectrum Cycling",
     "Statisch": "Static",
-    "Welle": "Wave"
+    "Welle": "Wave",
+    "Hintergrundbeleuchtung": "Backlight",
+    "Leiste links": "Left strip",
+    "Leiste rechts": "Right strip",
+    "Leuchtfeld": "Lighting area",
+    "Mausrad": "Scroll wheel"
   },
   "MacroTab": {
     "Abbrechen": "Cancel",
@@ -365,5 +374,27 @@
     "Makro fehlt: {macro}": "Macro missing: {macro}",
     "Maximal {count} DPI-Stufen erlaubt": "At most {count} sensitivity stages allowed",
     "Mehr als eine Hypershift-Taste": "More than one Hypershift key"
+  },
+  "DeviceBar": {
+    "%1 (nicht verbunden)": "%1 (not connected)",
+    "An: RazerTux übernimmt die Tasten dieser Maus (Belegungen und Makros).": "On: RazerTux takes over the buttons of this mouse (assignments and macros).",
+    "Diagnose kopieren": "Copy diagnostics",
+    "Diagnosetext in die Zwischenablage kopieren": "Copy the diagnostic text to the clipboard",
+    "Diese Maus ist mit RazerTux noch nicht getestet. Funktionen können fehlen oder falsch sein – eine Diagnose hilft, sie zu unterstützen.": "This mouse has not been tested with RazerTux yet. Features may be missing or wrong – a diagnostic report helps to support it.",
+    "Experimentell – ungetestet": "Experimental – untested",
+    "Keine Diagnose verfügbar (Dienst läuft nicht oder Maus nicht geprüft).": "No diagnostics available (service not running or mouse not probed).",
+    "Nur lesend: die Maus hat auf die Prüfbefehle nicht wie erwartet geantwortet.": "Read-only: the mouse did not answer the probe commands as expected.",
+    "Tastenbelegung aktivieren": "Enable button assignment"
+  },
+  "LearnDialog": {
+    "Abbrechen": "Cancel",
+    "Anlernen nicht möglich: %1": "Learning not possible: %1",
+    "Der Dienst läuft nicht – Anlernen ist nur mit laufendem Dienst möglich.": "The service is not running – learning needs the running service.",
+    "Die Maus ist nicht verbunden – zum Anlernen bitte anschließen.": "The mouse is not connected – please connect it to learn.",
+    "Drück jetzt die Taste an der Maus …": "Press the button on the mouse now …",
+    "Keine Taste erkannt – bitte erneut versuchen.": "No button detected – please try again.",
+    "Schließen": "Close",
+    "Speichern fehlgeschlagen:": "Saving failed:",
+    "Taste anlernen: %1": "Learn button: %1"
   }
 }

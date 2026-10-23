@@ -1,7 +1,8 @@
-"""Tab "Beleuchtung": brightness and effect per zone (Logo, Daumenfeld).
+"""Tab "Beleuchtung": brightness and effect per zone (Naga V2 Pro: Logo, Daumenfeld;
+other mice: their zones from the device database).
 
-The Naga V2 Pro has no scroll wheel LED: a "scroll" entry in a profile is kept
-as it is but never shown. Unchecked "Beleuchtung dieses Profils festlegen" means
+Zones the selected mouse lacks (the Naga V2 Pro has no scroll wheel LED) are kept
+in the profile as they are but never shown. Unchecked "Beleuchtung dieses Profils festlegen" means
 an empty `lighting` dict, i.e. the mouse keeps its own lighting."""
 from __future__ import annotations
 
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from razertux.config.model import LightingZone, Profile
+from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, description
 
 EFFECTS = [
@@ -30,9 +32,22 @@ ZONES = [
     ("all", QT_TRANSLATE_NOOP("LightingTab", "Alle Zonen")),
     ("logo", QT_TRANSLATE_NOOP("LightingTab", "Logo")),
     ("thumb", QT_TRANSLATE_NOOP("LightingTab", "Daumenfeld")),
+    ("scroll", QT_TRANSLATE_NOOP("LightingTab", "Mausrad")),
+    ("matrix", QT_TRANSLATE_NOOP("LightingTab", "Leuchtfeld")),
+    ("backlight", QT_TRANSLATE_NOOP("LightingTab", "Hintergrundbeleuchtung")),
+    ("left", QT_TRANSLATE_NOOP("LightingTab", "Leiste links")),
+    ("right", QT_TRANSLATE_NOOP("LightingTab", "Leiste rechts")),
 ]
-DEVICE_ZONES = ("logo", "thumb")
+DEVICE_ZONES = ("logo", "thumb")  # the Naga V2 Pro's own zone names
 DEFAULT_ZONE = LightingZone("static", (68, 214, 44), 191)
+_DB_EFFECT = {"off": "none"}  # LightingZone effect -> device database effect name
+
+
+def zones_for(info: DeviceInfo) -> dict[str, tuple[str, ...]]:
+    """Zone -> offered effects of a mouse (Naga V2 Pro: logo and thumb, every effect)."""
+    if info.model == "naga_v2_pro":
+        return {z: tuple(e for e, _ in EFFECTS) for z in DEVICE_ZONES}
+    return {z: tuple(e for e, _ in EFFECTS if _DB_EFFECT.get(e, e) in fx) for z, fx in info.zones.items()}
 
 
 def to_percent(raw: int) -> int:
@@ -49,6 +64,7 @@ class LightingTab(QWidget):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.profile: Profile | None = None
+        self.device_zones: tuple[str, ...] = DEVICE_ZONES
         self._zones: dict[str, LightingZone] = {z: DEFAULT_ZONE for z in DEVICE_ZONES}
         self._quiet = False
 
@@ -73,27 +89,14 @@ class LightingTab(QWidget):
                                    "beim Abstecken der Maus wieder vergessen.")))
         self.all_same = QCheckBox(self.tr("Alle Zonen gleich"))
         fx.add(self.all_same)
-        grid = QGridLayout()
+        self.grid = QGridLayout()
         self.zone_labels: dict[str, QLabel] = {}
         self.effect_combos: dict[str, QComboBox] = {}
         self.color_buttons: dict[str, QPushButton] = {}
-        for i, (key, text) in enumerate(ZONES):
-            label = QLabel(self.tr(text))
-            combo = QComboBox()
-            for eff, eff_text in EFFECTS:
-                combo.addItem(self.tr(eff_text), eff)
-            colour = QPushButton()
-            colour.setToolTip(self.tr("Farbe wählen"))
-            colour.setFixedSize(40, 24)
-            grid.addWidget(label, i, 0)
-            grid.addWidget(combo, i, 1)
-            grid.addWidget(colour, i, 2)
-            combo.currentIndexChanged.connect(lambda _i, k=key: self._on_effect(k))
-            colour.clicked.connect(lambda _=False, k=key: self._on_colour(k))
-            self.zone_labels[key], self.effect_combos[key], self.color_buttons[key] = label, combo, colour
-        grid.setColumnStretch(3, 1)
-        fx.add(grid)
-
+        self.grid.setColumnStretch(3, 1)
+        fx.add(self.grid)
+        self.zone_effects: dict[str, tuple[str, ...]] = {}
+        self._build_rows({z: tuple(e for e, _ in EFFECTS) for z in DEVICE_ZONES})
         self.cards = QWidget()
         cards = QGridLayout(self.cards)
         cards.setContentsMargins(0, 0, 0, 0)
@@ -112,6 +115,41 @@ class LightingTab(QWidget):
         self.all_same.toggled.connect(self._on_all_same)
         self.brightness.valueChanged.connect(self._on_brightness)
 
+    # -- device ----------------------------------------------------------------
+    def set_device(self, info: DeviceInfo) -> None:
+        """Zones and effects of the selected mouse (from the device database)."""
+        self._build_rows(zones_for(info))
+        if self.profile is not None:
+            self.load(self.profile)
+
+    def _build_rows(self, zones: dict[str, tuple[str, ...]]) -> None:
+        for widgets in (self.zone_labels, self.effect_combos, self.color_buttons):
+            for w in widgets.values():
+                w.setParent(None)
+                w.deleteLater()
+            widgets.clear()
+        self.device_zones = tuple(zones)
+        common = [e for e, _ in EFFECTS if all(e in fx for fx in zones.values())]
+        self.zone_effects = {"all": tuple(common), **zones}
+        self._zones = {z: DEFAULT_ZONE for z in self.device_zones}
+        names = dict(ZONES)
+        for i, (key, effects) in enumerate(self.zone_effects.items()):
+            label = QLabel(self.tr(names[key]) if key in names else key)
+            combo = QComboBox()
+            for eff, eff_text in EFFECTS:
+                if eff in effects:
+                    combo.addItem(self.tr(eff_text), eff)
+            colour = QPushButton()
+            colour.setToolTip(self.tr("Farbe wählen"))
+            colour.setFixedSize(40, 24)
+            self.grid.addWidget(label, i, 0)
+            self.grid.addWidget(combo, i, 1)
+            self.grid.addWidget(colour, i, 2)
+            combo.currentIndexChanged.connect(lambda _i, k=key: self._on_effect(k))
+            colour.clicked.connect(lambda _=False, k=key: self._on_colour(k))
+            self.zone_labels[key], self.effect_combos[key], self.color_buttons[key] = label, combo, colour
+        self.all_same.setVisible(len(self.device_zones) > 1)
+
     # -- hooks (replaced in tests) ----------------------------------------------
     def _pick_color(self, current: QColor) -> QColor | None:
         c = QColorDialog.getColor(current, self, self.tr("Farbe wählen"))
@@ -122,11 +160,11 @@ class LightingTab(QWidget):
         self._quiet = True
         self.profile = profile
         light = profile.lighting
-        first = next((light[z] for z in DEVICE_ZONES if z in light), DEFAULT_ZONE)
-        self._zones = {z: light.get(z, first) for z in DEVICE_ZONES}
-        logo, thumb = self._zones["logo"], self._zones["thumb"]
+        first = next((light[z] for z in self.device_zones if z in light), DEFAULT_ZONE)
+        self._zones = {z: light.get(z, first) for z in self.device_zones}
         self.enable_box.setChecked(bool(light))
-        self.all_same.setChecked((logo.effect, logo.color) == (thumb.effect, thumb.color))
+        self.all_same.setChecked(len(self._zones) > 1  # one zone: shown under its own name
+                                 and len({(z.effect, z.color) for z in self._zones.values()}) == 1)
         self.brightness.setValue(to_percent(max(z.brightness for z in self._zones.values())))
         self._show()
         self._quiet = False
@@ -135,7 +173,7 @@ class LightingTab(QWidget):
         """Push self._zones into the widgets (no commits)."""
         quiet, self._quiet = self._quiet, True
         same = self.all_same.isChecked()
-        shown = {"all": self._zones["logo"], **self._zones}
+        shown = {"all": self._zones[self.device_zones[0]], **self._zones}
         for key, zone in shown.items():
             visible = (key == "all") == same
             self.effect_combos[key].setCurrentIndex(self.effect_combos[key].findData(zone.effect))
@@ -154,7 +192,7 @@ class LightingTab(QWidget):
         combo.setCurrentIndex(combo.findData(effect))
 
     def _targets(self, key: str) -> tuple[str, ...]:
-        return DEVICE_ZONES if key == "all" else (key,)
+        return self.device_zones if key == "all" else (key,)
 
     def _on_effect(self, key: str) -> None:
         if self._quiet:
@@ -165,7 +203,7 @@ class LightingTab(QWidget):
         self._commit()
 
     def _on_colour(self, key: str) -> None:
-        r, g, b = self._zones["logo" if key == "all" else key].color
+        r, g, b = self._zones[self.device_zones[0] if key == "all" else key].color
         c = self._pick_color(QColor(r, g, b))
         if c is None:
             return
@@ -176,16 +214,16 @@ class LightingTab(QWidget):
     def _on_brightness(self, percent: int) -> None:
         if self._quiet:
             return
-        for z in DEVICE_ZONES:
+        for z in self.device_zones:
             self._zones[z] = replace(self._zones[z], brightness=to_raw(percent))
         self._commit()
 
     def _on_all_same(self, on: bool) -> None:
         if self._quiet:
             return
-        if on:  # every zone takes the logo's effect and colour
-            logo = self._zones["logo"]
-            for z in DEVICE_ZONES:
+        if on:  # every zone takes the first zone's effect and colour
+            logo = self._zones[self.device_zones[0]]
+            for z in self.device_zones:
                 self._zones[z] = replace(self._zones[z], effect=logo.effect, color=logo.color)
         self._commit()
 
@@ -195,11 +233,9 @@ class LightingTab(QWidget):
     def _commit(self) -> None:
         if self._quiet or self.profile is None:
             return
-        if self.enable_box.isChecked():
-            scroll = self.profile.lighting.get("scroll")
-            self.profile.lighting = dict(self._zones)
-            if scroll is not None:
-                self.profile.lighting["scroll"] = scroll
+        if self.enable_box.isChecked():  # zones this mouse lacks are kept as they are
+            kept = {z: c for z, c in self.profile.lighting.items() if z not in self.device_zones}
+            self.profile.lighting = {**kept, **self._zones}
         else:
             self.profile.lighting = {}
         self._show()

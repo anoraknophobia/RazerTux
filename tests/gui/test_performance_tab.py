@@ -175,3 +175,28 @@ def test_added_stage_stays_within_limit(tab):
     tab.load(p)
     assert tab.add_stage()
     assert p.dpi_stages[-1] == (10000, 10000)
+
+
+# -- Task 12: limits from the device database ---------------------------------------
+
+def test_device_dpi_max_caps_the_slider_limit(tab):
+    from dataclasses import replace
+    from razertux.config.model import Settings
+    from razertux.devices.db import load_devices
+    tab.load_settings(Settings(dpi_limit=10000))
+    tab.set_device(replace(load_devices()["death_adder_v2"], dpi_max=7200))
+    tab.load(staged(1, 1))
+    assert tab.rows[0].spin_x.maximum() == 7200
+    assert "7200" in tab.scale_label.text()
+    tab.set_device(load_devices()["naga_v2_pro"])
+    assert tab.rows[0].spin_x.maximum() == 10000
+
+
+def test_device_poll_rates_and_missing_dpi(tab):
+    from dataclasses import replace
+    from razertux.devices.db import load_devices
+    tab.set_device(replace(load_devices()["death_adder_v2"], poll_rates=(125, 1000)))
+    assert not tab.poll_buttons[500].isVisibleTo(tab) and tab.poll_buttons[1000].isVisibleTo(tab)
+    assert tab.sens_card.isVisibleTo(tab)
+    tab.set_device(load_devices()["abyssus"])  # dpi_max 0: no DPI setting
+    assert not tab.sens_card.isVisibleTo(tab) and tab.poll_card.isVisibleTo(tab)

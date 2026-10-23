@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from razertux.config.model import (
     DEFAULT_DPI_LIMIT, DPI_LIMIT_CHOICES, DPI_MAX, DPI_MIN, MAX_STAGES, POLL_RATES, Profile, Settings,
 )
+from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, ToggleSwitch, description
 
 DPI_STEP = 50
@@ -112,8 +113,9 @@ class PerformanceTab(QWidget):
         self._stashed: tuple[list[tuple[int, int]], int] | None = None
         self.settings: Settings | None = None
         self._limit = DEFAULT_DPI_LIMIT
+        self._dpi_max = DPI_MAX  # the selected mouse's own maximum (device database)
 
-        sens = Card(self.tr("Empfindlichkeit"))
+        self.sens_card = sens = Card(self.tr("Empfindlichkeit"))
         sens.add(description(self.tr("Anzahl der Punkte pro Zoll (DPI), um die sich der Zeiger bewegt.")))
         self.set_dpi_box = QCheckBox(self.tr("DPI dieses Profils festlegen"))
         self.set_dpi_box.setToolTip(self.tr("Aus: Die Maus behält ihre eigenen DPI-Stufen (nicht ändern)."))
@@ -152,7 +154,7 @@ class PerformanceTab(QWidget):
         sens.add(self.rows_box)
         self.radio_group = QButtonGroup(self)
 
-        poll = Card(self.tr("Abfragerate"))
+        self.poll_card = poll = Card(self.tr("Abfragerate"))
         poll.add(description(self.tr("Wie oft pro Sekunde (Hz) die Maus Daten sendet.")))
         row = QHBoxLayout()
         self.poll_buttons: dict[int | None, QPushButton] = {}
@@ -183,6 +185,19 @@ class PerformanceTab(QWidget):
         self.add_btn.clicked.connect(lambda _=False: self.add_stage())
         self.limit_combo.currentIndexChanged.connect(self._on_limit)
 
+    # -- device --------------------------------------------------------------------
+    def set_device(self, info: DeviceInfo) -> None:
+        """DPI maximum and polling rates of the selected mouse; cards for what it lacks hide."""
+        has_dpi = "dpi" in info.features and info.dpi_max > 0
+        self._dpi_max = info.dpi_max if has_dpi else DPI_MAX
+        self.sens_card.setVisible(has_dpi)
+        self.poll_card.setVisible("poll_rate" in info.features)
+        for rate, b in self.poll_buttons.items():
+            b.setVisible(rate is None or rate in info.poll_rates)
+        self.limit_combo.setToolTip(self.tr("Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.")
+                                    .replace("%1", str(self._dpi_max)))
+        self._apply_limit(self.limit_combo.currentData())
+
     # -- DPI limit (global setting) ----------------------------------------------
     def load_settings(self, settings: Settings) -> None:
         self.settings = settings
@@ -199,6 +214,8 @@ class PerformanceTab(QWidget):
             self.changed.emit()
 
     def _apply_limit(self, limit: int) -> None:
+        """The chosen slider limit, capped at what the mouse can do."""
+        limit = min(limit, self._dpi_max)
         self._limit = limit
         for r in self.rows:
             r.set_limit(limit)

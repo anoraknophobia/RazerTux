@@ -1,6 +1,8 @@
 """Dialog to pick what a button does."""
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import QT_TRANSLATE_NOOP, Qt, Signal
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
@@ -118,7 +120,9 @@ class KeyCapture(QPushButton):
 
 class ActionDialog(QDialog):
     def __init__(self, parent: QWidget | None, current: Action, macros: dict[str, Macro],
-                 *, button: ButtonId | None = None, layer: str = "standard"):
+                 *, button: ButtonId | None = None, layer: str = "standard",
+                 on_learn: Callable[[], object] | None = None):
+        """on_learn: offer "Taste anlernen …" (an unchecked or experimental key)."""
         super().__init__(parent)
         self.setWindowTitle(self.tr("Belegung: %1").replace("%1", button_name(button))
                             if button else self.tr("Belegung"))
@@ -157,6 +161,12 @@ class ActionDialog(QDialog):
         self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(self.tr("Übernehmen"))
         self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(self.tr("Abbrechen"))
         self.ok_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
+        self.learn_btn: QPushButton | None = None
+        if on_learn is not None:
+            self.learn_btn = self.buttons.addButton(self.tr("Taste anlernen …"),
+                                                    QDialogButtonBox.ButtonRole.ActionRole)
+            self.learn_btn.setToolTip(self.tr("RazerTux zeigen, welches Signal diese Taste sendet"))
+            self.learn_btn.clicked.connect(lambda _=False: on_learn())
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
@@ -252,6 +262,7 @@ class ActionDialog(QDialog):
 
     @classmethod
     def pick(cls, parent: QWidget | None, current: Action, macros: dict[str, Macro],
-             *, button: ButtonId | None = None, layer: str = "standard") -> Action | None:
-        d = cls(parent, current, macros, button=button, layer=layer)
+             *, button: ButtonId | None = None, layer: str = "standard",
+             on_learn: Callable[[], object] | None = None) -> Action | None:
+        d = cls(parent, current, macros, button=button, layer=layer, on_learn=on_learn)
         return d.result_action() if d.exec() == QDialog.DialogCode.Accepted else None

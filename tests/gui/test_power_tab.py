@@ -53,3 +53,12 @@ def test_warning_level(tab):
     assert s.low_battery_notify == 30
     tab.warn_box.setChecked(False)
     assert s.low_battery_notify == 0
+
+
+def test_experimental_battery_mouse_gets_the_warning_only(tab):
+    from razertux.devices.db import load_devices
+    tab.set_device(load_devices()["basilisk_v3_pro"])  # unverified
+    assert not tab.idle_card.isVisibleTo(tab) and not tab.low_card.isVisibleTo(tab)
+    assert tab.warn_card.isVisibleTo(tab)
+    tab.set_device(load_devices()["naga_v2_pro"])
+    assert tab.idle_card.isVisibleTo(tab) and tab.low_card.isVisibleTo(tab)

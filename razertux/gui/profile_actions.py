@@ -1,26 +1,28 @@
 """Profile operations of the main window (new, duplicate, rename, delete, export,
-import). A mixin for MainWindow; translation context stays "MainWindow"."""
+import, macro deletion, activation). A mixin for MainWindow; translation context stays "MainWindow"."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtWidgets import QFileDialog, QInputDialog
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 
-from razertux.config.model import Profile, default_profile
-from razertux.config.store import new_profile_id
+from razertux import APP_NAME
+from razertux.config.model import Profile
+from razertux.config.store import ModelStore, new_profile_id
+from razertux.gui.macro_tab import strip_macro
 
 
 class ProfileActions:
-    """Needs from the window: store, client, profile, profile_combo, tr(), _warn(),
-    _confirm(), _resolve_unsaved(), _show_profile(), select_profile(),
-    reload_profile_list(), _update_dirty()."""
+    """Needs from the window: store, profiles (ModelStore of the shown mouse), client,
+    profile, macros, profile_combo, tr(), _warn(), _confirm(), _resolve_unsaved(),
+    _show_profile(), select_profile(), reload_profile_list(), _update_dirty(), _refresh()."""
 
     def _ask_name(self, title: str, default: str = "") -> str | None:
         name, ok = QInputDialog.getText(self, title, self.tr("Name des Profils:"), text=default)
         return name.strip() if ok and name.strip() else None
 
     def _add_profile(self, profile: Profile) -> None:
-        self.store.save_profile(profile)
+        self.profiles.save_profile(profile)
         self.reload_profile_list()
         self._show_profile(profile)
         self.client.reload()
@@ -29,7 +31,7 @@ class ProfileActions:
         name = self._ask_name(self.tr("Neues Profil")) if self._resolve_unsaved() else None
         if name:
             self._add_profile(Profile(id=new_profile_id(name), name=name,
-                                      standard=default_profile().standard))
+                                      standard=self.profiles.default_profile().standard))
 
     def duplicate_profile(self) -> None:
         name = self._ask_name(self.tr("Profil duplizieren"),
@@ -48,13 +50,13 @@ class ProfileActions:
             self._update_dirty()
 
     def delete_profile(self) -> None:
-        if len(self.store.list_profiles()) < 2:
+        if len(self.profiles.list_profiles()) < 2:
             self._warn(self.tr("Löschen nicht möglich"), self.tr("Das letzte Profil kann nicht gelöscht werden."))
             return
         if not self._confirm(self.tr("Profil löschen"),
                              self.tr("Profil „%1“ wirklich löschen?").replace("%1", self.profile.name)):
             return
-        self.store.delete_profile(self.profile.id)
+        self.profiles.delete_profile(self.profile.id)
         self.reload_profile_list()
         self.select_profile(self.profile_combo.itemData(0), force=True)
         self.client.reload()
@@ -66,7 +68,7 @@ class ProfileActions:
                                               f"{self.profile.name}.json", self.tr("Profil (*.json)"))
         if path:
             try:
-                self.store.export_profile(self.profile.id, Path(path))
+                self.profiles.export_profile(self.profile.id, Path(path))
             except (OSError, ValueError) as e:
                 self._warn(self.tr("Export fehlgeschlagen"),
                            self.tr("Das Profil konnte nicht exportiert werden:") + f"\n{e}")
@@ -80,7 +82,7 @@ class ProfileActions:
         if not self._resolve_unsaved():
             return
         try:
-            profile = self.store.import_profile(path)
+            profile = self.profiles.import_profile(path)
         except Exception as e:  # corrupt JSON, wrong structure, unreadable file
             self._warn(self.tr("Import fehlgeschlagen"),
                        self.tr("Die Datei „%1“ ist kein gültiges Profil und wurde nicht importiert.")
@@ -89,3 +91,46 @@ class ProfileActions:
         self.reload_profile_list()
         self._show_profile(profile)
         self.client.reload()
+
+    def _ask_unsaved(self) -> str:
+        box = QMessageBox(QMessageBox.Icon.Question, APP_NAME,
+                          self.tr("Das Profil hat ungespeicherte Änderungen."), parent=self)
+        save = box.addButton(self.tr("Speichern"), QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton(self.tr("Verwerfen"), QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(self.tr("Abbrechen"), QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        return {save: "save", discard: "discard"}.get(box.clickedButton(), "cancel")
+
+    def _on_macro_deleted(self, macro_id: str) -> None:
+        """Deleted macro: reset its bindings in every profile and drop it from disk.
+
+        Other unsaved macro edits stay unsaved (only this id leaves disk, memory and baseline)."""
+        try:
+            for ms in self._all_model_stores():  # on-disk state of every mouse (the open profile too)
+                for p in ms.list_profiles():
+                    strip_macro(p, macro_id)
+                    ms.save_profile(p)
+            on_disk = self.store.load_macros()
+            on_disk.pop(macro_id, None)
+            self.store.save_macros(on_disk)
+        except OSError as e:
+            self._warn(self.tr("Speichern fehlgeschlagen"),
+                       self.tr("Das Makro konnte nicht gelöscht werden:") + f"\n{e}")
+            return
+        strip_macro(self.profile, macro_id)  # unsaved edits stay, only the binding goes
+        base = Profile.from_dict(self._baseline)
+        strip_macro(base, macro_id)
+        self._baseline = base.to_dict()
+        self._macros_baseline.pop(macro_id, None)
+        self.client.reload()
+        self._refresh()
+
+    def activate_current(self) -> None:
+        if self._resolve_unsaved():
+            self._ask(self.client.activate_profile, self.profile.id, self.model, default=False)
+
+    def _all_model_stores(self) -> list[ModelStore]:
+        """The shown mouse and every mouse with saved profiles."""
+        root = self.store.root / "profiles"
+        models = {self.profiles.model} | ({d.name for d in root.iterdir() if d.is_dir()} if root.is_dir() else set())
+        return [self.store.for_model(m) for m in sorted(models)]

@@ -6,23 +6,24 @@ import copy
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget, QVBoxLayout,
-    QWidget,
+    QHBoxLayout, QMainWindow, QMessageBox, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from razertux import APP_NAME
-from razertux.config.model import NAGA_MODEL, DefaultAction, Profile, default_profile, validate
+from razertux.config.model import DefaultAction, Profile, default_profile, validate
 from razertux.config.store import ConfigStore
 from razertux.gui.about import AboutDialog
 from razertux.gui.action_dialog import ActionDialog
 from razertux.gui.buttons_tab import ButtonsTab
 from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.device_actions import DeviceActions, device_info
+from razertux.gui.device_bar import DeviceBar, make_banner
 from razertux.gui.header import HeaderBar
 from razertux.gui.language import (
     add_language_menu, check_language, make_language_combo, select_language,
 )
 from razertux.gui.lighting_tab import LightingTab
-from razertux.gui.macro_tab import MacroTab, strip_macro
+from razertux.gui.macro_tab import MacroTab
 from razertux.gui.performance_tab import PerformanceTab
 from razertux.gui.power_tab import PowerTab
 from razertux.gui.profile_actions import ProfileActions
@@ -33,7 +34,7 @@ POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # G
                 "scroll_stage_names", "dpi_limit")
 
 
-class MainWindow(QMainWindow, ProfileActions):
+class MainWindow(QMainWindow, ProfileActions, DeviceActions):
     themeRequested = Signal(str)  # "synapse" | "system"
     languageRequested = Signal(str)  # Settings.language
 
@@ -45,6 +46,9 @@ class MainWindow(QMainWindow, ProfileActions):
         self.macros = store.load_macros()
         self.settings = store.load_settings()
         self._settings_baseline = self._power_dict()
+        self.model = self._initial_model()  # the mouse shown (device bar)
+        self.profiles, self.info = store.for_model(self.model), device_info(self.model)
+        self._remap_enabled = False
         self.profile: Profile = default_profile()
         self._baseline: dict = {}
         self._macros_baseline: dict = self._macro_dicts()
@@ -54,13 +58,10 @@ class MainWindow(QMainWindow, ProfileActions):
         self._dismissed_errors: list[str] = []
         self._build()
         self.client.available.connect(self._on_available)
-        # until the device selector, the window works on the Naga V2 Pro
-        self.client.statusChanged.connect(lambda m, st: m == NAGA_MODEL and self._on_status(st))
-        self.client.profileChanged.connect(lambda m, pid: m == NAGA_MODEL and self._on_active_changed(pid))
-        self.reload_profile_list()
-        self._active_id = client.active_profile() or store.load_settings().active_profile
-        self.select_profile(self._active_id, force=True)
-        self._on_status(client.status())
+        self.client.statusChanged.connect(lambda m, st: m == self.model and self._on_status(st))
+        self.client.profileChanged.connect(lambda m, pid: m == self.model and self._on_active_changed(pid))
+        self.client.devicesChanged.connect(self._refresh_devices)
+        self._enter_device()
         self._on_available(client.is_available)
 
     # -- construction --------------------------------------------------------
@@ -76,18 +77,22 @@ class MainWindow(QMainWindow, ProfileActions):
         self._no_daemon_text = self.tr(
             "Der Dienst (razertuxd) läuft nicht. Änderungen werden gespeichert, "
             "aber erst nach dem Start des Dienstes angewendet.")
-        self.banner = self._make_banner(self._no_daemon_text)
-        self.openrazer_banner = self._make_banner(self.tr(
+        self.banner = make_banner(self._no_daemon_text)
+        self.openrazer_banner = make_banner(self.tr(
             "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme"))
-        self.errors_banner = self._make_banner("", "#8a5a00")
+        self.errors_banner = make_banner("", "#8a5a00")
         self.errors_dismiss = QPushButton(self.tr("Ausblenden"), self.errors_banner)
         self.errors_dismiss.clicked.connect(lambda _=False: self._dismiss_errors())
         self.errors_banner.layout().addWidget(self.errors_dismiss)
 
-        self.buttons_tab = ButtonsTab(self.store.for_model(NAGA_MODEL), self.client.reload)
+        self.device_bar = DeviceBar(self.client)
+        self.device_bar.deviceChanged.connect(self.switch_device)
+        self.device_bar.remapToggled.connect(self.set_remap_enabled)
+        self.buttons_tab = ButtonsTab(self.profiles, self.client.reload)
         self.buttons_tab.bindingClicked.connect(self.edit_binding)
         self.buttons_tab.layerChanged.connect(self.set_layer)
         self.buttons_tab.remapToggled.connect(self.set_remap)
+        self.buttons_tab.learnRequested.connect(self.learn_button)
         self.mouse_view = self.buttons_tab.mouse_view
         self.performance_tab, self.lighting_tab, self.power_tab = PerformanceTab(), LightingTab(), PowerTab()
         self.scroll_tab = ScrollTab()
@@ -96,11 +101,12 @@ class MainWindow(QMainWindow, ProfileActions):
         self.macro_tab = MacroTab(self.macros, self._all_profiles)
         self.macro_tab.changed.connect(self._refresh)
         self.macro_tab.macroDeleted.connect(self._on_macro_deleted)
-        self.tabs = QTabWidget()
-        for widget, name in ((self.buttons_tab, self.tr("TASTEN")), (self.performance_tab, self.tr("LEISTUNG")),
-                             (self.scroll_tab, self.tr("MAUSRAD")), (self.lighting_tab, self.tr("BELEUCHTUNG")),
-                             (self.power_tab, self.tr("ENERGIE")), (self.macro_tab, self.tr("MAKROS"))):
-            self.tabs.addTab(widget, name)
+        self.tabs = QTabWidget()  # filled per mouse (_show_tabs)
+        self.tab_pages = {"buttons": (self.buttons_tab, self.tr("TASTEN")),
+                          "performance": (self.performance_tab, self.tr("LEISTUNG")),
+                          "scroll": (self.scroll_tab, self.tr("MAUSRAD")),
+                          "lighting": (self.lighting_tab, self.tr("BELEUCHTUNG")),
+                          "power": (self.power_tab, self.tr("ENERGIE")), "macros": (self.macro_tab, self.tr("MAKROS"))}
         self.power_tab.load(self.settings)
         self.scroll_tab.load(self.settings)
         self.performance_tab.load_settings(self.settings)
@@ -131,6 +137,7 @@ class MainWindow(QMainWindow, ProfileActions):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
         lay.addWidget(self.header)
+        lay.addWidget(self.device_bar)
         for b in (self.banner, self.openrazer_banner, self.errors_banner):
             lay.addWidget(b)
         body = QVBoxLayout()
@@ -141,28 +148,9 @@ class MainWindow(QMainWindow, ProfileActions):
         self.setCentralWidget(central)
         self.resize(1100, 800)
 
-    def _make_banner(self, text: str, colour: str = "#b3261e") -> QFrame:
-        frame = QFrame()
-        frame.setStyleSheet(f"QFrame {{ background: {colour}; }} QLabel {{ color: white; }}")
-        row = QHBoxLayout(frame)
-        frame.label = QLabel(text)  # type: ignore[attr-defined]
-        frame.label.setWordWrap(True)  # type: ignore[attr-defined]
-        row.addWidget(frame.label, 1)  # type: ignore[attr-defined]
-        frame.hide()
-        return frame
-
     # -- hooks (replaced in tests) --------------------------------------------
     def _warn(self, title: str, text: str) -> None:
         QMessageBox.warning(self, title, text)
-
-    def _ask_unsaved(self) -> str:
-        box = QMessageBox(QMessageBox.Icon.Question, APP_NAME,
-                          self.tr("Das Profil hat ungespeicherte Änderungen."), parent=self)
-        save = box.addButton(self.tr("Speichern"), QMessageBox.ButtonRole.AcceptRole)
-        discard = box.addButton(self.tr("Verwerfen"), QMessageBox.ButtonRole.DestructiveRole)
-        box.addButton(self.tr("Abbrechen"), QMessageBox.ButtonRole.RejectRole)
-        box.exec()
-        return {save: "save", discard: "discard"}.get(box.clickedButton(), "cancel")
 
     def _confirm(self, title: str, text: str) -> bool:
         return QMessageBox.question(self, title, text) == QMessageBox.StandardButton.Yes
@@ -203,7 +191,7 @@ class MainWindow(QMainWindow, ProfileActions):
             self.macro_tab.refresh()
 
     def _all_profiles(self) -> list[Profile]:
-        return [self.profile if p.id == self.profile.id else p for p in self.store.list_profiles()]
+        return [self.profile if p.id == self.profile.id else p for p in self.profiles.list_profiles()]
 
     def show_about(self) -> None:
         AboutDialog(self).exec()
@@ -232,7 +220,7 @@ class MainWindow(QMainWindow, ProfileActions):
     def reload_profile_list(self, select: str | None = None) -> None:
         self.profile_combo.blockSignals(True)
         self.profile_combo.clear()
-        for p in self.store.list_profiles():
+        for p in self.profiles.list_profiles():
             self.profile_combo.addItem(p.name, p.id)
         self.profile_combo.blockSignals(False)
         if select is not None:
@@ -242,7 +230,7 @@ class MainWindow(QMainWindow, ProfileActions):
         if not force and profile_id != self.profile.id and not self._resolve_unsaved():
             self.profile_combo.setCurrentIndex(max(self.profile_combo.findData(self.profile.id), 0))
             return False
-        self._show_profile(self.store.load_profile(profile_id))
+        self._show_profile(self.profiles.load_profile(profile_id))
         return True
 
     def _show_profile(self, profile: Profile) -> None:
@@ -259,7 +247,7 @@ class MainWindow(QMainWindow, ProfileActions):
     def revert(self) -> None:
         self._reload_macros()
         self._reload_settings()
-        self._show_profile(self.store.load_profile(self.profile.id))
+        self._show_profile(self.profiles.load_profile(self.profile.id))
 
     def _refresh(self) -> None:
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
@@ -288,8 +276,9 @@ class MainWindow(QMainWindow, ProfileActions):
 
     def edit_binding(self, button: ButtonId) -> None:
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
+        learn = {"on_learn": lambda: self.learn_button(button)} if self.learnable(button) else {}
         action = ActionDialog.pick(self, layer.get(button, DefaultAction()), self.macros,
-                                   button=button, layer=self.layer)
+                                   button=button, layer=self.layer, **learn)
         if action is not None:
             self.set_action(button, action)
 
@@ -311,7 +300,7 @@ class MainWindow(QMainWindow, ProfileActions):
                     setattr(on_disk, f, getattr(self.settings, f))
                 self.store.save_settings(on_disk)
                 self._settings_baseline = self._power_dict()
-            self.store.save_profile(self.profile)
+            self.profiles.save_profile(self.profile)
         except OSError as e:
             self._warn(self.tr("Speichern fehlgeschlagen"),
                        self.tr("Das Profil konnte nicht geschrieben werden:") + f"\n{e}")
@@ -321,33 +310,6 @@ class MainWindow(QMainWindow, ProfileActions):
         self.reload_profile_list(select=self.profile.id)
         self._update_dirty()
         return True
-
-    def _on_macro_deleted(self, macro_id: str) -> None:
-        """Deleted macro: reset its bindings in every profile and drop it from disk.
-
-        Other unsaved macro edits stay unsaved (only this id leaves disk, memory and baseline)."""
-        try:
-            for p in self.store.list_profiles():  # on-disk state (the open profile too)
-                strip_macro(p, macro_id)
-                self.store.save_profile(p)
-            on_disk = self.store.load_macros()
-            on_disk.pop(macro_id, None)
-            self.store.save_macros(on_disk)
-        except OSError as e:
-            self._warn(self.tr("Speichern fehlgeschlagen"),
-                       self.tr("Das Makro konnte nicht gelöscht werden:") + f"\n{e}")
-            return
-        strip_macro(self.profile, macro_id)  # unsaved edits stay, only the binding goes
-        base = Profile.from_dict(self._baseline)
-        strip_macro(base, macro_id)
-        self._baseline = base.to_dict()
-        self._macros_baseline.pop(macro_id, None)
-        self.client.reload()
-        self._refresh()
-
-    def activate_current(self) -> None:
-        if self._resolve_unsaved():
-            self.client.activate_profile(self.profile.id)
 
     # -- daemon state ---------------------------------------------------------
     def _on_available(self, up: bool) -> None:
@@ -378,6 +340,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self._update_warnings()
         self.header.set_status(status)
         self.scroll_tab.set_status(status)
+        self._show_device_status(status)
 
     # -- closing --------------------------------------------------------------
     def request_close(self) -> bool:

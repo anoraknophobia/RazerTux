@@ -31,7 +31,9 @@
     "Taste": "Tecla",
     "Umschalten (an/aus)": "Alternar (activar/desactivar)",
     "n-mal wiederholen": "Repetir n veces",
-    "Übernehmen": "Aplicar"
+    "Übernehmen": "Aplicar",
+    "RazerTux zeigen, welches Signal diese Taste sendet": "Mostrar a RazerTux qué señal envía este botón",
+    "Taste anlernen …": "Aprender botón …"
   },
   "ButtonsTab": {
     "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen.": "Desactivado: el botón superior delantero cambia el nivel de la rueda y el trasero el nivel de sensibilidad. Activado: ambos botones se pueden asignar libremente.",
@@ -43,7 +45,9 @@
     "Seitenplatte: 12 Tasten": "Placa lateral: 12 botones",
     "Seitenplatte: 2 Tasten": "Placa lateral: 2 botones",
     "Seitenplatte: 6 Tasten": "Placa lateral: 6 botones",
-    "Standard": "Estándar"
+    "Standard": "Estándar",
+    "Eine weitere Taste der Maus anlernen und belegen": "Aprender otro botón del ratón y asignarlo",
+    "Taste anlernen …": "Aprender botón …"
   },
   "DaemonClient": {
     "Dienst läuft nicht": "El servicio no se está ejecutando",
@@ -93,7 +97,12 @@
     "Reaktiv": "Reactivo",
     "Spektrum": "Ciclo de espectro",
     "Statisch": "Estático",
-    "Welle": "Onda"
+    "Welle": "Onda",
+    "Hintergrundbeleuchtung": "Retroiluminación",
+    "Leiste links": "Franja izquierda",
+    "Leiste rechts": "Franja derecha",
+    "Leuchtfeld": "Zona iluminada",
+    "Mausrad": "Rueda"
   },
   "MacroTab": {
     "Abbrechen": "Cancelar",
@@ -365,5 +374,27 @@
     "Makro fehlt: {macro}": "Falta la macro: {macro}",
     "Maximal {count} DPI-Stufen erlaubt": "Se permiten como máximo {count} niveles de sensibilidad",
     "Mehr als eine Hypershift-Taste": "Más de una tecla Hypershift"
+  },
+  "DeviceBar": {
+    "%1 (nicht verbunden)": "%1 (no conectado)",
+    "An: RazerTux übernimmt die Tasten dieser Maus (Belegungen und Makros).": "Activado: RazerTux se encarga de los botones de este ratón (asignaciones y macros).",
+    "Diagnose kopieren": "Copiar diagnóstico",
+    "Diagnosetext in die Zwischenablage kopieren": "Copiar el texto de diagnóstico al portapapeles",
+    "Diese Maus ist mit RazerTux noch nicht getestet. Funktionen können fehlen oder falsch sein – eine Diagnose hilft, sie zu unterstützen.": "Este ratón aún no se ha probado con RazerTux. Pueden faltar funciones o ser incorrectas – un diagnóstico ayuda a darle soporte.",
+    "Experimentell – ungetestet": "Experimental – sin probar",
+    "Keine Diagnose verfügbar (Dienst läuft nicht oder Maus nicht geprüft).": "No hay diagnóstico disponible (el servicio no está en marcha o el ratón no se ha comprobado).",
+    "Nur lesend: die Maus hat auf die Prüfbefehle nicht wie erwartet geantwortet.": "Solo lectura: el ratón no respondió a los comandos de prueba como se esperaba.",
+    "Tastenbelegung aktivieren": "Activar asignación de botones"
+  },
+  "LearnDialog": {
+    "Abbrechen": "Cancelar",
+    "Anlernen nicht möglich: %1": "No se puede aprender: %1",
+    "Der Dienst läuft nicht – Anlernen ist nur mit laufendem Dienst möglich.": "El servicio no está en marcha – aprender requiere el servicio en marcha.",
+    "Die Maus ist nicht verbunden – zum Anlernen bitte anschließen.": "El ratón no está conectado – conéctalo para aprender.",
+    "Drück jetzt die Taste an der Maus …": "Pulsa ahora el botón del ratón …",
+    "Keine Taste erkannt – bitte erneut versuchen.": "No se detectó ningún botón – inténtalo de nuevo.",
+    "Schließen": "Cerrar",
+    "Speichern fehlgeschlagen:": "Error al guardar:",
+    "Taste anlernen: %1": "Aprender botón: %1"
   }
 }

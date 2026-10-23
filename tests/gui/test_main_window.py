@@ -305,3 +305,161 @@ def test_scroll_tab_status_and_names_saved(env):
     assert w.dpi_label.text() == ""
     w.client.statusChanged.emit("naga_v2_pro", {"connected": False, "dpi": 800})
     assert w.dpi_label.text() == ""
+
+
+# -- Task 12: device selector, capability tabs, experimental banner, learning ----------
+
+DA = "death_adder_v2"
+DA_STATUS = {"connected": True, "experimental": True, "writable": True, "model": DA,
+             "name": "Razer DeathAdder V2", "battery": -1, "connection": "wired"}
+
+
+@pytest.fixture
+def two(qapp, tmp_path):
+    store = ConfigStore(tmp_path)
+    store.save_profile(default_profile())
+    store.save_profile(Profile(id="p2", name="Zwei"))
+    da = store.for_model(DA)
+    da.save_profile(Profile(id="default", name="Standard"))
+    da.save_profile(Profile(id="dpi", name="Präzision"))
+    store.save_settings(Settings(active_profile="p2"))
+    transport = FakeTransport()
+    transport.add_second_device()
+    transport.statuses[DA] = dict(DA_STATUS)
+    w = MainWindow(store, DaemonClient(transport))
+    w.messages = []
+    w._warn = lambda title, text: w.messages.append((title, text))
+    w._ask_unsaved = lambda: w.answer
+    w.answer = "cancel"
+    yield w, store, transport
+    w.close()
+
+
+def test_device_bar_lists_both_mice_and_starts_on_the_naga(two):
+    w, *_ = two
+    assert w.model == "naga_v2_pro" and set(w.device_bar.pills) == {"naga_v2_pro", DA}
+    assert w.device_bar.pills["naga_v2_pro"].isChecked()
+    assert w.header.title.text() == "Naga V2 Pro"
+
+
+def test_switching_loads_the_profiles_of_that_model(two):
+    w, store, transport = two
+    w.device_bar.pills[DA].click()
+    assert w.model == DA and w.profile.id == "dpi"  # the daemon's active profile of the DeathAdder
+    assert [w.profile_combo.itemText(i) for i in range(w.profile_combo.count())] == ["Standard", "Präzision"]
+    assert w.header.title.text() == "DeathAdder V2"
+    assert store.load_settings().last_model == DA
+    w.performance_tab.poll_buttons[500].click()
+    assert w.save() is True
+    assert store.for_model(DA).load_profile("dpi").poll_rate == 500
+    assert store.load_profile("p2").poll_rate is None  # the Naga's profile is untouched
+    w.device_bar.pills["naga_v2_pro"].click()
+    assert w.model == "naga_v2_pro" and w.profile.id == "p2"
+
+
+def test_switching_with_unsaved_changes_can_be_cancelled(two):
+    w, *_ = two
+    w.set_action(ButtonId.SIDE_3, KeyAction(E.KEY_Z))
+    w.answer = "cancel"
+    w.device_bar.pills[DA].click()
+    assert w.model == "naga_v2_pro" and w.device_bar.pills["naga_v2_pro"].isChecked()
+    w.answer = "discard"
+    w.device_bar.pills[DA].click()
+    assert w.model == DA and not w.is_dirty
+
+
+def test_deathadder_has_no_energy_or_wheel_tab(two):
+    w, *_ = two
+    w.switch_device(DA)
+    assert tab_names(w) == ["TASTEN", "LEISTUNG", "BELEUCHTUNG", "MAKROS"]
+    assert not w.buttons_tab.plate_combo.isVisibleTo(w.buttons_tab)
+    assert set(w.lighting_tab.effect_combos) == {"all", "logo", "scroll"}
+    w.switch_device("naga_v2_pro")
+    assert tab_names(w) == ["TASTEN", "LEISTUNG", "MAUSRAD", "BELEUCHTUNG", "ENERGIE", "MAKROS"]
+    assert set(w.lighting_tab.effect_combos) == {"all", "logo", "thumb"}
+
+
+def test_experimental_banner_and_diagnostics(two):
+    from PySide6.QtGui import QGuiApplication
+    w, store, transport = two
+    w.show()
+    assert not w.device_bar.banner.isVisible()
+    w.switch_device(DA)
+    assert w.device_bar.banner.isVisible()
+    w.device_bar.diag_btn.click()
+    assert QGuiApplication.clipboard().text() == "probe ok"
+    w.device_bar.remap_toggle.click()
+    assert store.for_model(DA).load_device_settings().remap_enabled is True
+    assert ("Reload", ()) in transport.calls
+
+
+def test_status_of_the_other_mouse_is_ignored(two):
+    w, *_ = two
+    w.switch_device(DA)
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 80, "connection": "wireless"})
+    assert w.battery_label.text() == "Kabel"  # still the DeathAdder's
+    w.client.statusChanged.emit(DA, {**DA_STATUS, "dpi": 1600})
+    assert w.dpi_label.text() == "1600 DPI"
+
+
+def test_learning_a_button_saves_the_signal(two):
+    from razertux.hw.button_maps import InputSignal
+
+    w, store, transport = two
+    w.switch_device(DA)
+
+    def run(dialog):
+        dialog.start()
+        w.client.handle_signal("ButtonLearned", [DA, "mouse", 1, 0x113])
+        return dialog.result()
+    w._run_learn = run
+    w.learn_button(ButtonId.LEARN_1)
+    assert store.for_model(DA).load_device_settings().learned == {
+        ButtonId.LEARN_1: InputSignal("mouse", 1, 0x113)}
+    assert ("StartLearning", (DA,)) in transport.calls
+
+
+def test_learning_offered_for_experimental_mice_and_small_plates(two):
+    w, store, _ = two
+    assert not w.learnable(ButtonId.SIDE_1)  # Naga, 12-key plate: verified
+    w.buttons_tab.plate_combo.setCurrentIndex(1)  # 6 keys: unchecked
+    assert w.learnable(ButtonId.SIDE_1) and not w.learnable(ButtonId.LEFT)
+    w.switch_device(DA)
+    assert w.learnable(ButtonId.BACK)
+
+
+def test_unknown_device_status_does_not_crash(two):
+    from razertux.gui.dbus_client import DaemonError
+    w, _, transport = two
+    orig = transport.call
+
+    def unknown(member, signature="", args=()):
+        if args and args[0] == DA:
+            raise DaemonError("io.github.razertux.Error.UnknownDevice", "Unbekanntes Gerät")
+        return orig(member, signature, args)
+    transport.call = unknown
+    w.switch_device(DA)  # no traceback
+    assert w.model == DA and w.profile.id in ("default", "dpi")
+
+
+def test_no_daemon_shows_the_last_used_model(qapp, tmp_path):
+    store = ConfigStore(tmp_path)
+    store.for_model(DA).save_profile(Profile(id="dpi", name="Präzision"))
+    s = Settings()
+    s.last_model = DA
+    s.active_profiles[DA] = "dpi"
+    store.save_settings(s)
+    transport = FakeTransport()
+    transport.up = False
+    w = MainWindow(store, DaemonClient(transport))
+    assert w.model == DA and w.profile.id == "dpi"
+    assert w.header.title.text() == "DeathAdder V2"
+    w.performance_tab.poll_buttons[1000].click()
+    assert w.save() is True and store.for_model(DA).load_profile("dpi").poll_rate == 1000
+    w.close()
+
+
+def test_device_name_comes_from_the_status(env):
+    w, *_ = env
+    w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "name": "Razer Naga V2 Pro"})
+    assert w.header.title.text() == "Naga V2 Pro"

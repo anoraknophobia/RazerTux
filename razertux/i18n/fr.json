@@ -31,7 +31,9 @@
     "Taste": "Touche",
     "Umschalten (an/aus)": "Basculer (activé/désactivé)",
     "n-mal wiederholen": "Répéter n fois",
-    "Übernehmen": "Appliquer"
+    "Übernehmen": "Appliquer",
+    "RazerTux zeigen, welches Signal diese Taste sendet": "Montrer à RazerTux quel signal ce bouton envoie",
+    "Taste anlernen …": "Apprendre le bouton …"
   },
   "ButtonsTab": {
     "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen.": "Désactivé : le bouton supérieur avant change le niveau de la molette et le bouton arrière le niveau de sensibilité. Activé : les deux boutons sont librement affectables.",
@@ -43,7 +45,9 @@
     "Seitenplatte: 12 Tasten": "Plaque latérale : 12 boutons",
     "Seitenplatte: 2 Tasten": "Plaque latérale : 2 boutons",
     "Seitenplatte: 6 Tasten": "Plaque latérale : 6 boutons",
-    "Standard": "Standard"
+    "Standard": "Standard",
+    "Eine weitere Taste der Maus anlernen und belegen": "Apprendre un autre bouton de la souris et l’assigner",
+    "Taste anlernen …": "Apprendre le bouton …"
   },
   "DaemonClient": {
     "Dienst läuft nicht": "Le service n’est pas en cours d’exécution",
@@ -93,7 +97,12 @@
     "Reaktiv": "Réactif",
     "Spektrum": "Cycle spectral",
     "Statisch": "Statique",
-    "Welle": "Vague"
+    "Welle": "Vague",
+    "Hintergrundbeleuchtung": "Rétroéclairage",
+    "Leiste links": "Bande gauche",
+    "Leiste rechts": "Bande droite",
+    "Leuchtfeld": "Zone lumineuse",
+    "Mausrad": "Molette"
   },
   "MacroTab": {
     "Abbrechen": "Annuler",
@@ -365,5 +374,27 @@
     "Makro fehlt: {macro}": "Macro manquante : {macro}",
     "Maximal {count} DPI-Stufen erlaubt": "{count} niveaux de sensibilité au maximum",
     "Mehr als eine Hypershift-Taste": "Plus d’une touche Hypershift"
+  },
+  "DeviceBar": {
+    "%1 (nicht verbunden)": "%1 (non connectée)",
+    "An: RazerTux übernimmt die Tasten dieser Maus (Belegungen und Makros).": "Activé : RazerTux prend en charge les boutons de cette souris (assignations et macros).",
+    "Diagnose kopieren": "Copier le diagnostic",
+    "Diagnosetext in die Zwischenablage kopieren": "Copier le texte de diagnostic dans le presse-papiers",
+    "Diese Maus ist mit RazerTux noch nicht getestet. Funktionen können fehlen oder falsch sein – eine Diagnose hilft, sie zu unterstützen.": "Cette souris n’a pas encore été testée avec RazerTux. Des fonctions peuvent manquer ou être erronées – un diagnostic aide à la prendre en charge.",
+    "Experimentell – ungetestet": "Expérimental – non testé",
+    "Keine Diagnose verfügbar (Dienst läuft nicht oder Maus nicht geprüft).": "Aucun diagnostic disponible (service arrêté ou souris non vérifiée).",
+    "Nur lesend: die Maus hat auf die Prüfbefehle nicht wie erwartet geantwortet.": "Lecture seule : la souris n’a pas répondu aux commandes de test comme prévu.",
+    "Tastenbelegung aktivieren": "Activer l’assignation des boutons"
+  },
+  "LearnDialog": {
+    "Abbrechen": "Annuler",
+    "Anlernen nicht möglich: %1": "Apprentissage impossible : %1",
+    "Der Dienst läuft nicht – Anlernen ist nur mit laufendem Dienst möglich.": "Le service n’est pas lancé – l’apprentissage nécessite le service en marche.",
+    "Die Maus ist nicht verbunden – zum Anlernen bitte anschließen.": "La souris n’est pas connectée – veuillez la brancher pour l’apprentissage.",
+    "Drück jetzt die Taste an der Maus …": "Appuie maintenant sur le bouton de la souris …",
+    "Keine Taste erkannt – bitte erneut versuchen.": "Aucun bouton détecté – réessaie.",
+    "Schließen": "Fermer",
+    "Speichern fehlgeschlagen:": "Échec de l’enregistrement :",
+    "Taste anlernen: %1": "Apprendre le bouton : %1"
   }
 }

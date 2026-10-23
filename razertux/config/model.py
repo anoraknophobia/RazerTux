@@ -231,13 +231,14 @@ class Settings:
     scroll_stage_names: dict[int, str]
     language: str  # "system" | "de" | "en" | "es" | "fr" (GUI restart needed)
     dpi_limit: int  # GUI slider maximum, one of DPI_LIMIT_CHOICES
+    last_model: str  # device model the window showed last ("" = none yet)
 
     def __init__(self, active_profile: str | None = None, low_battery_notify: int = 15,
                  theme: str = "synapse", idle_time: int | None = None,
                  low_battery_threshold: int | None = None,
                  scroll_stage_names: dict[int, str] | None = None,
                  language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
-                 active_profiles: dict[str, str] | None = None):
+                 active_profiles: dict[str, str] | None = None, last_model: str = ""):
         self.active_profiles = dict(active_profiles or {})
         if active_profile is not None:
             self.active_profiles[NAGA_MODEL] = active_profile
@@ -249,6 +250,7 @@ class Settings:
             else scroll_stage_names
         self.language = language
         self.dpi_limit = dpi_limit
+        self.last_model = last_model
 
     @property
     def active_profile(self) -> str:
@@ -268,7 +270,8 @@ class Settings:
                 "scroll_stage_names": {str(k): v for k, v in
                                        sorted(self.scroll_stage_names.items())},
                 "language": self.language,
-                "dpi_limit": self.dpi_limit}
+                "dpi_limit": self.dpi_limit,
+                "last_model": self.last_model}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
@@ -285,7 +288,8 @@ class Settings:
                    d.get("theme", "synapse"), d.get("idle_time"),
                    d.get("low_battery_threshold"), stage_names,
                    str(d.get("language", "system")),
-                   _dpi_limit(d.get("dpi_limit")), active_profiles=active)
+                   _dpi_limit(d.get("dpi_limit")), active_profiles=active,
+                   last_model=str(d.get("last_model", "")))
 
 
 @dataclass
