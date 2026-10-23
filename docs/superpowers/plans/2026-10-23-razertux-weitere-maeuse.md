@@ -348,3 +348,27 @@ def test_diagnostics_contains_pid_and_hex_but_no_serial(): ...
 
 - [ ] **Step 1–4:** Failing packaging tests → umsetzen → volle Suite grün, `makepkg -f` baut. **Step 5: Commit** `chore: package 0.3.0 for all supported mice`.
 - [ ] **Step 6 (Nutzer):** `sudo pacman -U …/razertux-0.3.0-1-any.pkg.tar.zst`; Controller startet Dienst/Tray neu und prüft mit dem Nutzer: Naga-Tasten, Makro, Profilwechsel, DPI-Stufen, Mausrad-Anzeige, 12er-Platte in der neuen Grafik.
+
+---
+
+### Task 15: Bildschirmanzeige (OSD) bei Profil- und DPI-Wechsel (Nutzerwunsch 2026-10-23)
+
+Wird **vor Task 14** ausgeführt (Version 0.3.0 enthält es).
+
+**Wunsch des Nutzers:** „visuelle Bestätigung, wenn ich ein Profil oder DPI ändere – keine Benachrichtigung, sondern wie eine OSD-Anzeige: ein Quadrat mit runden Ecken, darin z. B. ‚1800 DPI‘ oder ‚Profil1‘, in grüner Laserfarbe.“
+
+**Files:**
+- Create: `razertux/gui/osd.py`
+- Modify: `razertux/gui/app.py` (OSD hängt am Tray-Prozess, der immer läuft), `razertux/gui/tray.py` (Schalter „Bildschirmanzeige“), `razertux/config/model.py` (`Settings.osd: bool = True`)
+- Test: `tests/gui/test_osd.py`
+
+**Interfaces / Werte:**
+- `class OsdWindow(QWidget)`: rahmenlos, durchscheinender Hintergrund, immer oben, nimmt keinen Fokus, erscheint nicht in der Taskleiste (`Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool | Qt.WindowDoesNotAcceptFocus`, `WA_TranslucentBackground`, `WA_ShowWithoutActivating`). Größe ca. 220×220, runde Ecken (Radius 24), Hintergrund `#0b0b0b` mit Deckkraft ~0.85, Rand und Text im Laser-Stil (gestapelte grüne Striche wie `laserize`: #44D62C bzw. Paletten-Highlight im Theme „system“). Zwei Zeilen: groß der Wert („1800“ / Profilname, bei langen Namen verkleinern/abschneiden), klein darunter die Art („DPI“ / „PROFIL“). Bei mehreren Geräten zusätzlich klein der Gerätename.
+- `show_message(value: str, kind: str, device: str | None = None)`: zeigt sofort (überschreibt eine laufende Anzeige), 1,5 s sichtbar, dann 300 ms Ausblenden. Position: Bildschirmmitte (Wayland erlaubt keine freie Positionierung; KWin zentriert – auf X11 explizit zentrieren).
+- Auslöser (im GUI-/Tray-Prozess über `DaemonClient`): `ProfileChanged(model, id)` → Profilname; `StatusChanged(model, status)` mit geänderter `dpi` (≠ letzter bekannter Wert, nicht beim ersten Status nach Verbindungsaufbau, nicht bei -1) → „<dpi> DPI“. Kein OSD beim Start/Reload ohne echte Änderung.
+- `Settings.osd` (Standard an), Schalter „Bildschirmanzeige“ im Tray-Menü (abhakbar), gespeichert in `settings.json`.
+- Texte über `tr()`, en/es/fr ergänzen.
+
+- [ ] **Step 1: Failing tests** – Profilwechsel-Signal → `show_message("Profil1", "PROFIL")`; DPI 1800→2500 → „2500“/„DPI“; erster Status, gleicher Wert, -1 → keine Anzeige; `osd=False` → keine Anzeige; neue Anzeige ersetzt laufende (ein Fenster); Fenster-Flags gesetzt; Rendering offscreen (Screenshot `task-15-osd.png`).
+- [ ] **Step 2–4:** FAIL → implementieren → PASS. **Step 5: Commit** `feat: green laser OSD on profile and DPI changes`.
+- [ ] **Step 6 (Nutzer, mit Task 14):** Sichtprüfung unter KDE Wayland (Position, Lesbarkeit).
