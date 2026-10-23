@@ -112,25 +112,78 @@ def test_accessible_flags(tmp_path, monkeypatch):
 
 def test_never_reads_serials(tmp_path, monkeypatch):
     build(tmp_path)
+    secret = {"serial", "uniq", "phys"}
+    for p in tmp_path.rglob("*"):
+        if p.name in secret:
+            p.chmod(0)  # any read would fail (and is also spied below)
     opened = []
-    real_open, real_read_text, real_read_bytes = open, Path.read_text, Path.read_bytes
+    import builtins
+    import io
+    real_io_open, real_os_open, real_popen = io.open, os.open, Path.open
 
-    def spy_text(self, *a, **k):
-        opened.append(str(self))
-        return real_read_text(self, *a, **k)
-
-    def spy_bytes(self, *a, **k):
-        opened.append(str(self))
-        return real_read_bytes(self, *a, **k)
-
-    monkeypatch.setattr(Path, "read_text", spy_text)
-    monkeypatch.setattr(Path, "read_bytes", spy_bytes)
-    monkeypatch.setattr("builtins.open", lambda f, *a, **k: (opened.append(str(f)), real_open(f, *a, **k))[1])
+    monkeypatch.setattr(builtins, "open", lambda f, *a, **k: (opened.append(str(f)), real_io_open(f, *a, **k))[1])
+    monkeypatch.setattr(io, "open", lambda f, *a, **k: (opened.append(str(f)), real_io_open(f, *a, **k))[1])
+    monkeypatch.setattr(os, "open", lambda f, *a, **k: (opened.append(str(f)), real_os_open(f, *a, **k))[1])
+    monkeypatch.setattr(Path, "open", lambda self, *a, **k: (opened.append(str(self)), real_popen(self, *a, **k))[1])
     devs = list_razer_devices(str(tmp_path))
-    assert opened
-    assert not [p for p in opened if p.rsplit("/", 1)[-1] in ("serial", "uniq", "phys")]
+    assert opened and len(devs) == 3
+    assert not [p for p in opened if p.rsplit("/", 1)[-1] in secret]
     blob = repr(devs)
     assert "FAKE-SERIAL" not in blob and "FAKE-UNIQ" not in blob and "FAKE-PHYS" not in blob
+
+
+def test_unreadable_and_vanishing(tmp_path, monkeypatch):
+    build(tmp_path)
+    base = tmp_path / "bus/usb/devices/5-1"
+    (base / "5-1:1.0/0003:1532:00A7.0000/report_descriptor").chmod(0)
+    (base / "product").chmod(0)
+    devs = list_razer_devices(str(tmp_path))
+    naga = devs[0]
+    if os.access(base / "product", os.R_OK):  # running as root: chmod has no effect
+        return
+    assert naga.product == "" and naga.interfaces[0].descriptor == b""
+    # a directory disappearing between listing and reading must not raise
+    real_glob = Path.glob
+
+    def vanishing(self, pattern):
+        if self.name in ("hidraw", "input"):
+            raise FileNotFoundError(self)
+        return real_glob(self, pattern)
+
+    monkeypatch.setattr(Path, "glob", vanishing)
+    assert [d.pid for d in list_razer_devices(str(tmp_path))] == [0xA7, 0x227, 0xFFFE]
+
+
+def test_sorted_by_pid_then_busport(tmp_path):
+    add_device(tmp_path, "5-9", 0x00A7, "A", [])
+    add_device(tmp_path, "5-10", 0x00A7, "B", [])
+    add_device(tmp_path, "5-2", 0x0001, "C", [])
+    assert [d.product for d in list_razer_devices(str(tmp_path))] == ["C", "B", "A"]
+
+
+def test_btn_names_ranges_and_keyboard_kind(tmp_path):
+    add_device(tmp_path, "5-1", 0x00A7, "Razer Naga V2 Pro", [
+        (3, 1, 1, [("Razer Naga V2 Pro Keyboard", {"ev": "120013", "key": "0 0 0 0 fffffffe", "rel": "1943"})]),
+        (3, 1, 2, [("Razer Naga V2 Pro", {"ev": "17", "key": "1f0000 0 0 0 0", "rel": "3"})]),
+    ])
+    ifs = report_interfaces(list_razer_devices(str(tmp_path))[0])
+    assert ifs[0]["evdev_keys"] == {"keyboard": "1-31"}
+    assert "mouse" not in ifs[0]["evdev"]
+    assert "BTN_LEFT" in ifs[1]["evdev"]["mouse"] and "REL_X" in ifs[1]["evdev"]["mouse"]
+    assert not any(n.startswith("CODE_") for n in ifs[1]["evdev"]["mouse"])
+    out = sanitize(Report(interfaces=ifs))["interfaces"]
+    assert out[0]["evdev_keys"] == {"keyboard": "1-31"} and "truncated" not in out[0]
+
+
+def test_ranges_and_sanitize_strict():
+    assert discover._ranges({1, 2, 3, 5, 9, 10}) == "1-3,5,9-10"
+    assert discover._ranges(set()) == ""
+    big = ",".join(str(i * 2) for i in range(268))
+    out = sanitize(Report(interfaces=[{"evdev": {}, "evdev_keys": {"keyboard": big, "bogus": "1", "mouse": "x;y"}}]))
+    i = out["interfaces"][0]
+    assert i["evdev_keys"] == {"keyboard": big} and i["truncated"] is True
+    out = sanitize(Report(interfaces=[{"evdev": {"mouse": [f"K{n}" for n in range(200)]}}]))
+    assert out["interfaces"][0]["truncated"] is True and len(out["interfaces"][0]["evdev"]["mouse"]) == 128
 
 
 def test_report_shapes_known_and_unknown(tmp_path):
@@ -146,7 +199,7 @@ def test_report_shapes_known_and_unknown(tmp_path):
     assert ifs[0]["number"] == 0 and ifs[0]["class"] == 3 and ifs[0]["protocol"] == 2
     assert ifs[0]["hid_descriptor_hex"] == DESC.hex()
     assert len(ifs[0]["descriptor_sha1"]) == 40
-    assert "KEY_ESC" in ifs[1]["evdev"]["keyboard"]
+    assert ifs[1]["evdev_keys"]["keyboard"].startswith("0-") or ifs[1]["evdev_keys"]["keyboard"].startswith("1-")
     assert "consumer" in ifs[1]["evdev"]
     out = sanitize(Report(device=dev, interfaces=ifs))
     assert out["interfaces"][0]["hid_descriptor_hex"] == DESC.hex()

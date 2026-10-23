@@ -100,34 +100,41 @@ def _event_node(inp: Path, ev_dir: Path) -> EventNode:
     return node
 
 
+def _glob(p: Path, pattern: str) -> list[Path]:
+    try:
+        return sorted(p.glob(pattern))
+    except OSError:  # directory vanished (hot-unplug) between listing and reading
+        return []
+
+
 def _interface(idir: Path) -> FoundInterface | None:
     num, cls = _int(idir / "bInterfaceNumber", 16), _int(idir / "bInterfaceClass", 16)
     if num is None or cls is None:
         return None
     fi = FoundInterface(num, cls, _int(idir / "bInterfaceSubClass", 16) or 0,
                         _int(idir / "bInterfaceProtocol", 16) or 0)
-    for hid in sorted(idir.glob("0003:*")):
+    for hid in _glob(idir, "0003:*"):
         try:
             fi.descriptor = (hid / "report_descriptor").read_bytes()
         except OSError:
             pass
-        for h in sorted((hid / "hidraw").glob("hidraw*")):
+        for h in _glob(hid / "hidraw", "hidraw*"):
             path = "/dev/" + h.name
             rw = os.access(path, os.R_OK | os.W_OK)
             fi.hidraw.append(Node(path, rw, rw))
-        for inp in sorted((hid / "input").glob("input*")):
-            for ev_dir in sorted(inp.glob("event*")):
+        for inp in _glob(hid / "input", "input*"):
+            for ev_dir in _glob(inp, "event*"):
                 fi.events.append(_event_node(inp, ev_dir))
     return fi
 
 
 def list_razer_devices(sysfs_root: str = "/sys") -> list[FoundDevice]:
     base = Path(sysfs_root) / "bus/usb/devices"
-    out: list[FoundDevice] = []
+    found: list[tuple[int, str, FoundDevice]] = []
     try:
         entries = sorted(base.iterdir())
     except OSError:
-        return out
+        return []
     for d in entries:
         if ":" in d.name or _int(d / "idVendor", 16) != RAZER_VID:
             continue
@@ -135,14 +142,14 @@ def list_razer_devices(sysfs_root: str = "/sys") -> list[FoundDevice]:
         if pid is None:
             continue
         dev = FoundDevice(RAZER_VID, pid, _text(d / "bcdDevice"), _text(d / "manufacturer"), _text(d / "product"))
-        for idir in sorted(d.glob(d.name + ":*")):
+        for idir in _glob(d, d.name + ":*"):
             fi = _interface(idir)
             if fi is not None:
                 dev.interfaces.append(fi)
         dev.interfaces.sort(key=lambda i: i.number)
-        out.append(dev)
-    out.sort(key=lambda x: x.pid)
-    return out
+        found.append((pid, d.name, dev))
+    found.sort(key=lambda t: (t[0], t[1]))
+    return [t[2] for t in found]
 
 
 def report_device(dev: FoundDevice) -> dict:
@@ -153,44 +160,66 @@ def report_device(dev: FoundDevice) -> dict:
             "db_model": info.model if info else "", "connection": info.pids.get(dev.pid, "") if info else ""}
 
 
-def _code_name(code: int, table: dict) -> str:
-    n = table.get(code)
-    if isinstance(n, (list, tuple)):
-        n = n[0] if n else None
-    return str(n) if n else f"CODE_{code}"
+def _code_name(code: int, *tables: dict) -> str:
+    for table in tables:
+        n = table.get(code)
+        if isinstance(n, (list, tuple)):
+            n = n[0] if n else None
+        if n:
+            return str(n)
+    return f"CODE_{code}"
 
 
 def _event_kind(e: EventNode) -> str:
     n = e.name.lower()
+    if E.KEY_A in e.key or "keyboard" in n:
+        return "keyboard"
     if "consumer" in n:
         return "consumer"
     if "system" in n:
         return "system"
     if e.rel:
         return "mouse"
-    if E.KEY_A in e.key:
-        return "keyboard"
     if e.key or e.abs:
         return "other"
     return "misc"
 
 
+def _ranges(codes) -> str:
+    """Sorted codes as compact "1-83,85,90-92" text."""
+    out, start, prev = [], None, None
+    for c in sorted(codes) + [None]:
+        if start is None:
+            start = prev = c
+        elif c is not None and c == prev + 1:
+            prev = c
+        else:
+            out.append(str(start) if start == prev else f"{start}-{prev}")
+            start = prev = c
+    return ",".join(out)
+
+
 def _event_names(e: EventNode) -> list[str]:
-    names = [_code_name(c, E.KEY) for c in sorted(e.key)]
+    """Named non-keyboard-key capabilities: buttons (BTN_*), relative and absolute axes."""
+    names = [_code_name(c, E.BTN, E.KEY) for c in sorted(e.key) if c >= E.BTN_MISC]
     names += [_code_name(c, E.REL) for c in sorted(e.rel)]
     names += [_code_name(c, E.ABS) for c in sorted(e.abs)]
     return names
 
 
 def report_interfaces(dev: FoundDevice) -> list[dict]:
-    """The ``interfaces`` section: class triple, HID descriptor (hex + sha1) and evdev capability names per kind."""
+    """The ``interfaces`` section: class triple, HID descriptor (hex + sha1), evdev names and key code ranges."""
     out = []
     for i in dev.interfaces:
         evdev: dict[str, list[str]] = {}
+        keys: dict[str, set[int]] = {}
         for e in i.events:
-            evdev.setdefault(_event_kind(e), []).extend(_event_names(e))
+            k = _event_kind(e)
+            evdev.setdefault(k, []).extend(_event_names(e))
+            keys.setdefault(k, set()).update(c for c in e.key if c < E.BTN_MISC)
         entry = {"number": i.number, "class": i.cls, "subclass": i.subclass, "protocol": i.protocol,
-                 "evdev": {k: sorted(set(v)) for k, v in sorted(evdev.items())}}
+                 "evdev": {k: sorted(set(v)) for k, v in sorted(evdev.items())},
+                 "evdev_keys": {k: _ranges(v) for k, v in sorted(keys.items()) if v}}
         if i.descriptor:
             entry["hid_descriptor_hex"] = i.descriptor.hex()
             entry["descriptor_sha1"] = hashlib.sha1(i.descriptor).hexdigest()

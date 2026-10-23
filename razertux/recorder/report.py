@@ -24,6 +24,8 @@ _TOP = ("schema", "version", "device", "system", "interfaces", "buttons", "reads
 _HEX = re.compile(r"^[0-9a-fA-F]*$")
 _NAME = re.compile(r"^[A-Za-z0-9_]{1,40}$")
 _ZONE = re.compile(r"^[a-z0-9_]{1,24}$")
+_RANGES = re.compile(r"^[0-9]{1,4}(?:-[0-9]{1,4})?(?:,[0-9]{1,4}(?:-[0-9]{1,4})?)*$")
+KEYS_MAX = 4096
 _BAD_KEY = re.compile(r"(?i)serial|uniq|phys|mac|host|user")
 RAW_MAX = 256
 DESCRIPTOR_MAX = 16384
@@ -171,7 +173,22 @@ def _interface(i: dict) -> dict:
     if sha is not None:
         out["descriptor_sha1"] = sha
     ev = _d(i.get("evdev"))
-    out["evdev"] = {k: _names(ev[k]) for k in sorted(ev) if k in _EVDEV_NODES}
+    out["evdev"] = {}
+    for k in sorted(ev):
+        if k in _EVDEV_NODES:
+            out["evdev"][k] = _names(ev[k])
+            if len(_l(ev[k])) > MAX_ITEMS:
+                out["truncated"] = True
+    keys = {}
+    for k, v in sorted(_d(i.get("evdev_keys")).items()):
+        if k not in _EVDEV_NODES:
+            continue
+        if isinstance(v, str) and len(v) <= KEYS_MAX and _RANGES.match(v):
+            keys[k] = v
+        else:
+            out["truncated"] = True
+    if keys:
+        out["evdev_keys"] = keys
     return out
 
 
