@@ -1,3 +1,4 @@
+
 import pytest
 from fake_daemon import DA, NAGA, FakeTransport
 from PySide6.QtCore import QPoint, Qt
@@ -119,8 +120,8 @@ def test_device_name_only_with_several_devices(setup):
     client.profileChanged.emit(NAGA, "default")
     t.add_second_device()
     client.refresh()
-    client.profileChanged.emit(DA, "dpi")
-    assert shown[-1] == ("Präzision", "PROFIL", "Razer DeathAdder V2")
+    client.profileChanged.emit(DA, "default")
+    assert shown[-1] == ("Standard", "PROFIL", "Razer DeathAdder V2")
 
 
 def test_one_window_replaced_by_new_message(qapp):
@@ -152,3 +153,115 @@ def test_render_screenshot(qapp, tmp_path):
                      if (c := QColor.fromRgba(img.pixel(x, y))).alpha() > 200 and c.green() > c.red() + 40)
         assert greens > 50
     w.hide()
+
+
+def test_first_profile_signal_is_only_a_baseline(qapp, tmp_path):
+    store = ConfigStore(tmp_path)
+    t = FakeTransport()
+    t.up = False                       # daemon not there when the GUI starts
+    client = DaemonClient(t)
+    ctl = OsdController(client, store)
+    shown = []
+    ctl.window.show_message = lambda *a, **k: shown.append(a)
+    t.up = True
+    client.profileChanged.emit(NAGA, "p2")      # first report: baseline
+    assert shown == []
+    client.profileChanged.emit(NAGA, "default")
+    assert len(shown) == 1
+
+
+def test_refresh_after_daemon_start_or_restart_is_silent(setup):
+    ctl, client, t, shown, _ = setup
+    client.refresh()
+    client.available.emit(False)
+    client.refresh()                   # daemon restarted
+    assert shown == []
+    t.active[NAGA] = "default"         # restarted with another active profile
+    client.available.emit(False)
+    client.refresh()
+    assert shown == []
+
+
+def test_second_device_appearing_is_silent(setup):
+    ctl, client, t, shown, _ = setup
+    t.add_second_device()
+    client.refresh()
+    assert shown == []
+
+
+def test_profile_switch_with_other_dpi_shows_one_osd(setup):
+    ctl, client, t, shown, _ = setup
+    now = [100.0]
+    ctl._now = lambda: now[0]
+    client.statusChanged.emit(NAGA, status(1800))
+    client.profileChanged.emit(NAGA, "default")
+    now[0] += 0.5
+    client.statusChanged.emit(NAGA, status(800))
+    assert shown == [("Standard", "PROFIL", None)]
+
+
+def test_reload_changing_dpi_is_silent(setup):
+    ctl, client, t, shown, _ = setup
+    now = [100.0]
+    ctl._now = lambda: now[0]
+    client.statusChanged.emit(NAGA, status(1800))
+    client.reload()
+    now[0] += 0.5
+    client.statusChanged.emit(NAGA, status(800))
+    assert shown == []
+
+
+def test_dpi_button_after_quiet_period_shows(setup):
+    ctl, client, t, shown, _ = setup
+    now = [100.0]
+    ctl._now = lambda: now[0]
+    client.statusChanged.emit(NAGA, status(1800))
+    client.profileChanged.emit(NAGA, "default")
+    now[0] += 3.0
+    client.statusChanged.emit(NAGA, status(2500))
+    assert shown[-1] == ("2500", "DPI", None)
+
+
+def test_switching_device_in_window_shows_no_osd(qapp, tmp_path):
+    from fake_daemon import FakeTransport as FT
+    from test_main_window import DA_STATUS
+
+    from razertux.config.model import Profile, default_profile
+    from razertux.gui.main_window import MainWindow
+    store = ConfigStore(tmp_path)
+    store.save_profile(default_profile())
+    store.save_profile(Profile(id="p2", name="Zwei"))
+    da = store.for_model(DA)
+    da.save_profile(Profile(id="default", name="Standard"))
+    da.save_profile(Profile(id="dpi", name="Präzision"))
+    store.save_settings(Settings(active_profile="p2"))
+    t = FT()
+    t.add_second_device()
+    t.statuses[DA] = dict(DA_STATUS)
+    client = DaemonClient(t)
+    w = MainWindow(store, client)
+    ctl = OsdController(client, store)
+    shown = []
+    ctl.window.show_message = lambda *a, **k: shown.append(a)
+    w.switch_device(DA)
+    w.switch_device(NAGA)
+    assert shown == []
+
+
+def test_disabling_hides_visible_osd(setup):
+    ctl, client, t, shown, _ = setup
+    ctl.window.show()
+    ctl.set_enabled(False)
+    assert not ctl.window.isVisible()
+
+
+def test_daemon_error_in_slot_does_not_escape(setup):
+    from razertux.gui.dbus_client import DaemonError
+    ctl, client, t, shown, _ = setup
+
+    def boom(*a, **k):
+        raise DaemonError("x", "kaputt")
+    client.list_profiles = boom
+    client.devices = boom
+    client.profileChanged.emit(NAGA, "default")
+    assert shown == [("default", "PROFIL", None)]

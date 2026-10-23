@@ -6,6 +6,8 @@ does not let a client place top-level windows, so only on X11 it is centred
 explicitly (KWin puts it in the middle itself)."""
 from __future__ import annotations
 
+import time
+
 from PySide6.QtCore import QPropertyAnimation, QRectF, Qt, QTimer
 from PySide6.QtGui import (
     QColor, QFont, QFontMetrics, QGuiApplication, QPainter, QPainterPath, QPalette, QPen,
@@ -13,7 +15,7 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QApplication, QWidget
 
 from razertux.config.store import ConfigStore
-from razertux.gui.dbus_client import DaemonClient
+from razertux.gui.dbus_client import DaemonClient, DaemonError
 from razertux.gui.laser import CORE, CORE_FACTOR, CORE_OPACITY, GLOW
 from razertux.gui.theme import ACCENT
 
@@ -64,6 +66,11 @@ class OsdWindow(QWidget):
         self.show()
         self.update()
         self._hold.start(VISIBLE_MS)
+
+    def dismiss(self) -> None:
+        self._fade.stop()
+        self._hold.stop()
+        self.hide()
 
     def _fade_out(self) -> None:
         self._fade.start()
@@ -146,41 +153,83 @@ class OsdWindow(QWidget):
 
 
 class OsdController:
-    """Turns profile and DPI changes of the daemon into OSD messages."""
+    """Turns profile and DPI changes of the daemon into OSD messages.
+
+    The first profile / DPI report per model is only a baseline (start-up, daemon
+    restart, device appearing). A profile change shows one OSD; DPI changes within
+    1.5 s after it or after a Reload are side effects and stay silent."""
 
     def __init__(self, client: DaemonClient, store: ConfigStore,
-                 theme_name=lambda: "synapse") -> None:
+                 theme_name=lambda: "synapse", clock=time.monotonic) -> None:
         self.client = client
         self.store = store
         self._theme_name = theme_name
+        self._now = clock
         self.enabled = store.load_settings().osd
         self.window = OsdWindow()
         self._profile: dict[str, str] = {}
-        self._dpi: dict[str, int | None] = {}   # None = next status is the baseline
+        self._dpi: dict[str, int] = {}          # absent = next status is the baseline
+        self._quiet_until: dict[str | None, float] = {}   # model (None = all) -> time
         client.profileChanged.connect(self._on_profile)
         client.statusChanged.connect(self._on_status)
-        client.available.connect(lambda _up: self._dpi.clear())
+        client.devicesChanged.connect(self._seed)
+        client.available.connect(self._on_available)
+        client.reloading.connect(self._on_reload)
+        self._seed()
 
     def set_enabled(self, on: bool) -> None:
         self.enabled = on
+        if not on:
+            self.window.dismiss()
         s = self.store.load_settings()
         s.osd = on
         self.store.save_settings(s)
 
+    def _seed(self) -> None:
+        """Remember the active profile of every known device as the baseline."""
+        try:
+            for model, *_ in self.client.devices():
+                if model not in self._profile:
+                    active = self.client.active_profile(model)
+                    if active:
+                        self._profile[model] = active
+        except DaemonError:
+            pass
+
+    def _on_available(self, up: bool) -> None:
+        self._dpi.clear()
+        self._profile.clear()
+        if up:
+            self._seed()
+
+    def _on_reload(self) -> None:
+        self._quiet_until[None] = self._now() + VISIBLE_MS / 1000
+
+    def _quiet(self, model: str) -> bool:
+        now = self._now()
+        return now < max(self._quiet_until.get(model, 0.0), self._quiet_until.get(None, 0.0))
+
     def _show(self, value: str, kind: str, model: str) -> None:
         self.window.theme = self._theme_name()
         device = None
-        devices = self.client.devices()
+        try:
+            devices = self.client.devices()
+        except DaemonError:
+            devices = []
         if sum(1 for d in devices if d[3]) >= 2:
             device = next((d[1] for d in devices if d[0] == model), None)
         self.window.show_message(value, kind, device)
 
     def _on_profile(self, model: str, profile_id: str) -> None:
-        changed = self._profile.get(model) != profile_id
+        last = self._profile.get(model)
         self._profile[model] = profile_id
-        if not (changed and self.enabled):
+        if last is None or last == profile_id or not self.enabled:
             return
-        name = dict(self.client.list_profiles(model)).get(profile_id, profile_id)
+        try:
+            name = dict(self.client.list_profiles(model)).get(profile_id, profile_id)
+        except DaemonError:
+            name = profile_id
+        self._quiet_until[model] = self._now() + VISIBLE_MS / 1000
         self._show(name, "PROFIL", model)
 
     def _on_status(self, model: str, status: dict) -> None:
@@ -192,5 +241,5 @@ class OsdController:
             return
         last = self._dpi.get(model)
         self._dpi[model] = dpi
-        if last is not None and last != dpi and self.enabled:
+        if last is not None and last != dpi and self.enabled and not self._quiet(model):
             self._show(str(dpi), "DPI", model)

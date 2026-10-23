@@ -153,6 +153,7 @@ class DaemonClient(QObject):
     devicesChanged = Signal()
     buttonLearned = Signal(str, str, int, int)  # model, source, type, code
     available = Signal(bool)
+    reloading = Signal()  # a Reload was requested (the daemon re-applies profiles)
 
     def __init__(self, transport: Any | None = None, parent: QObject | None = None):
         super().__init__(parent)
@@ -248,6 +249,7 @@ class DaemonClient(QObject):
         return self._call("ActivateProfile", "ss", (model, profile_id)) is not None
 
     def reload(self) -> bool:
+        self.reloading.emit()
         return self._call("Reload") is not None
 
     def status(self, model: str = NAGA_MODEL) -> dict:
