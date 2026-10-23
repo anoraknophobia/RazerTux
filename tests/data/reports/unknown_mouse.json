@@ -1,0 +1,71 @@
+{
+ "buttons": {
+  "duplicates": [],
+  "results": {
+   "back": [
+    "if0:mouse:BTN_SIDE"
+   ],
+   "dpi_up": [
+    "if1:keyboard:KEY_F13"
+   ],
+   "forward": [
+    "if0:mouse:BTN_EXTRA"
+   ],
+   "left": [
+    "if0:mouse:BTN_LEFT"
+   ],
+   "middle": [
+    "if0:mouse:BTN_MIDDLE"
+   ],
+   "right": [
+    "if0:mouse:BTN_RIGHT"
+   ],
+   "top_1": "absent",
+   "wheel_down": [
+    "if0:mouse:REL_WHEEL:-"
+   ],
+   "wheel_left": "absent",
+   "wheel_right": "absent",
+   "wheel_up": [
+    "if0:mouse:REL_WHEEL:+"
+   ]
+  },
+  "signals": [],
+  "standard_keys_seen": 0,
+  "template": "ergo"
+ },
+ "device": {
+  "bcdDevice": "0100",
+  "connection": "wired",
+  "kind": "mouse",
+  "pid": 4660,
+  "usb_manufacturer": "Razer",
+  "usb_product": "Razer Mystery Mouse",
+  "user_kind": "mouse",
+  "vid": 5426
+ },
+ "interfaces": [
+  {
+   "class": 3,
+   "descriptor_sha1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "evdev": {
+    "mouse": [
+     "BTN_LEFT"
+    ]
+   },
+   "number": 0,
+   "protocol": 2,
+   "subclass": 1
+  }
+ ],
+ "light": {},
+ "notes": "",
+ "reads": {},
+ "schema": "razertux-device-report",
+ "system": {
+  "distro": "CachyOS 20260101",
+  "kernel": "7.2.10-1-cachyos",
+  "razertux": "0.3.0"
+ },
+ "version": 1
+}

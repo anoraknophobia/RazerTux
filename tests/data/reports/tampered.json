@@ -1,0 +1,96 @@
+{
+ "buttons": {
+  "duplicates": [
+   "if0:mouse:BTN_EXTRA"
+  ],
+  "results": {
+   "dpi_down": [
+    "if0:mouse:BTN_EXTRA"
+   ],
+   "dpi_up": [
+    "if0:mouse:BTN_EXTRA"
+   ],
+   "side_1": [
+    "if2:keyboard:KEY_1"
+   ],
+   "side_2": [
+    "if2:keyboard:KEY_2"
+   ],
+   "side_3": "absent",
+   "wheel_down": [
+    "if0:mouse:REL_WHEEL:-"
+   ],
+   "wheel_up": [
+    "if0:mouse:REL_WHEEL:+"
+   ]
+  },
+  "signals": [],
+  "standard_keys_seen": 0,
+  "template": "mmo"
+ },
+ "device": {
+  "bcdDevice": "0200",
+  "connection": "wired",
+  "db_model": "naga_trinity",
+  "kind": "mouse",
+  "pid": 103,
+  "serial": "XX123",
+  "usb_manufacturer": "Razer",
+  "usb_product": "Razer Naga Trinity",
+  "vid": 5426
+ },
+ "interfaces": [
+  {
+   "class": 3,
+   "descriptor_sha1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "evdev": {
+    "mouse": [
+     "BTN_LEFT",
+     "BTN_RIGHT"
+    ]
+   },
+   "number": 0,
+   "protocol": 2,
+   "subclass": 1
+  },
+  {
+   "class": 3,
+   "descriptor_sha1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "evdev": {
+    "keyboard": [
+     "KEY_1",
+     "KEY_2"
+    ]
+   },
+   "number": 2,
+   "protocol": 1,
+   "subclass": 1
+  }
+ ],
+ "light": {
+  "logo": "yes",
+  "scroll": "no"
+ },
+ "notes": "mail me at /home/bob/x",
+ "reads": {
+  "battery": {
+   "status": "failed"
+  },
+  "dpi": {
+   "raw": "0320",
+   "status": "ok",
+   "value": 800
+  },
+  "firmware": {
+   "status": "ok",
+   "value": "1.2.3"
+  }
+ },
+ "schema": "razertux-device-report",
+ "system": {
+  "distro": "CachyOS 20260101",
+  "kernel": "7.2.10-1-cachyos",
+  "razertux": "0.3.0"
+ },
+ "version": 1
+}
