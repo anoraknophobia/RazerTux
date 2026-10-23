@@ -215,21 +215,16 @@ def test_readme_has_no_manual_backup_step():
     assert "automatically" in steps and "optional" in steps
 
 
-def test_readme_names_disclaimer_and_switch_over():
+def test_readme_names_disclaimer_without_old_name():
     readme = (ROOT / "README.md").read_text()
     assert readme.startswith("# RazerTux")
     head = readme[:800]
     assert "Not an official Razer product; not affiliated with Razer Inc." in head
-    switch = readme.split("## Switching from naga-config")[1].split("\n## ")[0]
-    assert "systemctl --user disable --now naga-configd.service" in switch
-    assert "systemctl --user enable --now razertuxd.service" in switch
-    assert "~/.config/razertux" in switch
     assert "OpenRazer" in readme and "GPL" in readme
     assert "https://github.com/anoraknophobia/RazerTux" in head
-    # the old name only appears where the switch-over is explained
-    rest = readme.replace(switch, "")
-    assert "naga-configd" not in rest and "~/.config/naga-config" not in rest
-
+    # the former project name is not mentioned on GitHub
+    for old in ("naga-config", "naga_config", "nagaconfig", "formerly"):
+        assert old not in readme
 
 def test_translations_and_icon_are_packaged():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
