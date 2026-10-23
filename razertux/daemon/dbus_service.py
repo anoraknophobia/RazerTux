@@ -4,13 +4,14 @@ every call names the device model.
 No `from __future__ import annotations` here: dbus-next reads the D-Bus
 signatures from the (string) annotations.
 """
+import asyncio
 import logging
 import warnings
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-from dbus_next import DBusError, Variant
+from dbus_next import DBusError, Message, MessageType, Variant
 from dbus_next.service import ServiceInterface
 from dbus_next.service import method as _dbus_method
 from dbus_next.service import signal as _dbus_signal
@@ -29,6 +30,7 @@ OBJECT_PATH = "/io/github/razertux"
 INTERFACE = "io.github.razertux.Daemon1"
 VERSION = "1"
 _ERR = "io.github.razertux.Error."
+PAUSE_TIMEOUT = 300.0  # seconds a recorder may keep a device paused
 
 
 def openrazer_loaded() -> bool:
@@ -62,6 +64,11 @@ class Daemon1Service(ServiceInterface):
         self._sessions = sessions
         self._openrazer = openrazer_loaded
         self._seen: dict[str, tuple[bool, str]] = {}  # model -> (connected, connection)
+        self.pause_timeout = PAUSE_TIMEOUT
+        # model -> (callers' unique bus names, auto-resume timer)
+        self._pauses: dict[str, tuple[set[str], asyncio.TimerHandle]] = {}
+        # senders of the PauseDevice calls not yet dispatched (see attach)
+        self._senders: list[str | None] = []
         apply_language(store.load_settings())  # language of config errors and notifications
 
     # -- logic ---------------------------------------------------------------
@@ -108,6 +115,72 @@ class Daemon1Service(ServiceInterface):
             if session.active_profile_id != old[model]:
                 self.ProfileChanged(model, session.active_profile_id)
 
+    async def attach(self, bus: Any) -> None:
+        """Watch the bus so a recorder that dies cannot leave a device unmapped.
+
+        dbus-next hands a ServiceInterface method no sender, so a message handler
+        notes who called PauseDevice (handlers run before dispatch, in call order,
+        and dispatch of a sync or async method starts in that order too) and the
+        method takes it from `_senders`. NameOwnerChanged then resumes the models
+        that caller paused."""
+        def on_message(msg: Message) -> None:
+            if (msg.message_type == MessageType.METHOD_CALL and msg.interface == INTERFACE
+                    and msg.member == "PauseDevice" and msg.signature == "s"):
+                self._senders.append(msg.sender)
+            elif (msg.message_type == MessageType.SIGNAL and msg.member == "NameOwnerChanged"
+                    and msg.sender == "org.freedesktop.DBus" and len(msg.body) == 3):
+                asyncio.get_running_loop().create_task(self.name_owner_changed(*msg.body))
+
+        bus.add_message_handler(on_message)
+        await bus.call(Message(
+            destination="org.freedesktop.DBus", path="/org/freedesktop/DBus",
+            interface="org.freedesktop.DBus", member="AddMatch", signature="s",
+            body=["type='signal',sender='org.freedesktop.DBus',"
+                  "interface='org.freedesktop.DBus',member='NameOwnerChanged'"]))
+
+    async def name_owner_changed(self, name: str, old_owner: str, new_owner: str) -> None:
+        if new_owner or not name:
+            return
+        for model, (senders, _timer) in list(self._pauses.items()):
+            senders.discard(name)
+            if not senders and name == old_owner:
+                await self.resume_device(model)
+
+    async def pause_device(self, model: str, sender: str | None = None) -> None:
+        """Release the model's grabs and stop mapping until resume_device, the caller
+        leaves the bus, or pause_timeout seconds pass (the mouse must never stay
+        unmapped). Idempotent; a second pause keeps the first deadline."""
+        session = self.session(model)
+        entry = self._pauses.get(model)
+        if entry is None:
+            loop = asyncio.get_running_loop()
+            timer = loop.call_later(self.pause_timeout, lambda: loop.create_task(
+                self._timed_out(model)))
+            entry = self._pauses[model] = (set(), timer)
+        if sender:
+            entry[0].add(sender)
+        await session.pause()
+
+    async def _timed_out(self, model: str) -> None:
+        logger.warning("%s: pause timed out - mapping resumes", model)
+        try:
+            await self.resume_device(model)
+        except Exception:
+            logger.exception("%s: resume after timeout failed", model)
+
+    async def resume_device(self, model: str) -> None:
+        session = self.session(model)
+        entry = self._pauses.pop(model, None)
+        if entry is not None:
+            entry[1].cancel()
+        await session.resume()
+
+    def shutdown(self) -> None:
+        """Daemon stops: forget pauses (the sessions' close releases everything)."""
+        for _senders, timer in self._pauses.values():
+            timer.cancel()
+        self._pauses.clear()
+
     def status(self, model: str) -> dict[str, Variant]:
         session = self.session(model)
         st = session.status()
@@ -121,6 +194,7 @@ class Daemon1Service(ServiceInterface):
             "openrazer_loaded": Variant("b", bool(self._openrazer())),
             "config_errors": Variant("as", session.config_errors()),
             "writable": Variant("b", bool(st["writable"])),
+            "paused": Variant("b", bool(st.get("paused", False))),
             "experimental": Variant("b", not st["verified"]),
             "model": Variant("s", model),
             "name": Variant("s", session.info.name),
@@ -203,6 +277,15 @@ class Daemon1Service(ServiceInterface):
     @method()
     async def StopLearning(self, model: 's'):
         await self.session(model).stop_learning()
+
+    @method()
+    async def PauseDevice(self, model: 's'):
+        sender = self._senders.pop(0) if self._senders else None
+        await self.pause_device(model, sender)
+
+    @method()
+    async def ResumeDevice(self, model: 's'):
+        await self.resume_device(model)
 
     @signal()
     def DevicesChanged(self):

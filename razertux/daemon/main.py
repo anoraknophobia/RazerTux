@@ -100,6 +100,7 @@ class Daemon:
                 await session.settle()
 
     async def shutdown(self) -> None:
+        self.service.shutdown()
         await self.settle()
         for session in list(self.sessions.values()):
             try:  # one failing session must not keep the others (and uinput) open
@@ -203,6 +204,7 @@ async def run(config_dir: Path) -> int:
             daemon._spawn(send())
         daemon.notify = notify
         bus.export(OBJECT_PATH, daemon.service)
+        await daemon.service.attach(bus)
         reply = await bus.request_name(BUS_NAME, NameFlag.DO_NOT_QUEUE)
         if reply != RequestNameReply.PRIMARY_OWNER:
             logger.error("%s is already taken - is the service already running?", BUS_NAME)

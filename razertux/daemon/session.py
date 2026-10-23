@@ -229,6 +229,7 @@ class DeviceSession:
         self.router = InputRouter(self.mapper, out, grab=needs_grab(None, self.device_settings, info))
         self._refresh_map()
         self._learning = False
+        self._paused = False  # device recorder: grabs released, mapping stopped
 
         self._paths: set[str] = set()  # every input node of this model we were given
         self._mouse_path: str | None = None  # mouse node whose control channel we use
@@ -301,6 +302,7 @@ class DeviceSession:
     async def close(self) -> None:
         """Clean shutdown: write-back, normal mode, release and ungrab."""
         await self.settle()
+        self._paused = False
         self._write_back()
         await self._disconnect(reset_mode=True)
         await self.router.close()
@@ -366,6 +368,8 @@ class DeviceSession:
                                   if s.ev_type == E.EV_KEY})  # the key it sends
 
     def _wants_grab(self, profile: Profile | None = None) -> bool:
+        if self._paused:
+            return False
         profile = self.profile if profile is None else profile
         return self._learning or needs_grab(profile, self.device_settings, self.info)
 
@@ -375,6 +379,32 @@ class DeviceSession:
             logger.info("%s: input devices %s", self.info.name,
                         "grabbed" if want else "released")
             await self.router.set_grab(want)
+
+    # -- pause (device recorder) ---------------------------------------------------------
+
+    async def pause(self) -> None:
+        """Release every grab and stop mapping, so a recorder can read the raw device.
+        Learning ends. Profile switches and reloads keep the nodes released until
+        resume(). Idempotent."""
+        if self._paused:
+            return
+        self._paused = True
+        self.router.learn(None)
+        self._learning = False
+        await self._update_grab()
+        self._on_status()
+
+    async def resume(self) -> None:
+        """Back to the grab state the active profile asks for. Idempotent."""
+        if not self._paused:
+            return
+        self._paused = False
+        await self._update_grab()
+        self._on_status()
+
+    @property
+    def paused(self) -> bool:
+        return self._paused
 
     # -- learning --------------------------------------------------------------------
 
@@ -405,7 +435,8 @@ class DeviceSession:
                 "model": self.model, "name": self.info.name,
                 "verified": self.info.verified, "writable": self.writable,
                 "probe_ok": None if self.probe_result is None else self.probe_result.ok,
-                "grabbed": self.router.grabbed, "learning": self._learning}
+                "grabbed": self.router.grabbed, "learning": self._learning,
+                "paused": self._paused}
 
     def diagnostics(self) -> str:
         if self.probe_result is None or self._pid is None:

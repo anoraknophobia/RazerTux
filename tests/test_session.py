@@ -610,3 +610,50 @@ async def test_shutdown_closes_every_session_even_if_one_fails(tmp_path, caplog)
         await d.shutdown()
     assert closed == [second.model] and out_closed == [True]
     assert "kaputt" in caplog.text
+
+
+# -- pause (device recorder) ------------------------------------------------------------
+
+async def test_pause_releases_grab_and_resume_restores_it(tmp_path):
+    s, store, _ = make_session(tmp_path, model=NAGA, transport=naga_transport())
+    kbd = QueueDev("/dev/input/event40", product=NAGA_PID)
+    s.add_input(NAGA_PID, "mouse", kbd)
+    await s.settle()
+    assert kbd.grabbed  # the Naga is always grabbed
+    await s.pause()
+    await s.pause()  # idempotent
+    assert not kbd.grabbed and s.status()["paused"] is True
+    await s.resume()
+    await s.resume()  # idempotent
+    assert kbd.grabbed and s.status()["paused"] is False
+    assert kbd.grab_calls == ["grab", "ungrab", "grab"]
+    await s.close()
+
+
+async def test_pause_stops_learning_and_profile_switch_stays_released(tmp_path):
+    s, store, _ = make_session(tmp_path, model=NAGA, transport=naga_transport())
+    store.for_model(NAGA).save_profile(remap_profile("remap"))
+    dev = QueueDev("/dev/input/event40", product=NAGA_PID)
+    s.add_input(NAGA_PID, "mouse", dev)
+    await s.settle()
+    await s.start_learning()
+    await s.pause()
+    assert not dev.grabbed and s.status()["learning"] is False
+    await s.activate("remap")
+    await s.reload()
+    assert not dev.grabbed  # no re-grab while paused
+    await s.resume()
+    assert dev.grabbed
+    await s.close()
+
+
+async def test_node_added_while_paused_is_not_grabbed(tmp_path):
+    s, store, _ = make_session(tmp_path, model=NAGA, transport=naga_transport())
+    await s.pause()
+    dev = QueueDev("/dev/input/event41", product=NAGA_PID)
+    s.add_input(NAGA_PID, "mouse", dev)
+    await s.settle()
+    assert not dev.grabbed
+    await s.resume()
+    assert dev.grabbed
+    await s.close()
