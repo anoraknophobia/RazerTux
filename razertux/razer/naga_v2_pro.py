@@ -4,6 +4,7 @@ Byte layouts follow OpenRazer (driver/razerchromacommon.c, razermouse_driver.c)
 for USB_DEVICE_ID_RAZER_NAGA_V2_PRO_WIRED/WIRELESS: transaction id 0x1F everywhere.
 """
 from ..config.model import LightingZone
+from . import commands as C
 from .report import build_report
 from .transport import RazerError, Transport
 
@@ -17,17 +18,12 @@ LOGO = 0x04
 THUMB = 0x05
 ZONE_LED = {"logo": LOGO, "scroll": SCROLL, "thumb": THUMB}
 
-# poll rate byte -> Hz (razer_attr_read_poll_rate, standard variant)
-_POLL_HZ = {0x01: 1000, 0x02: 500, 0x08: 125}
-
-
-# poll rate Hz -> byte (razer_chroma_misc_set_polling_rate)
-_POLL_BYTE = {hz: raw for raw, hz in _POLL_HZ.items()}
+# supported poll rates (razer_chroma_misc_set_polling_rate, standard variant)
+_POLL_BYTE = {1000: 0x01, 500: 0x02, 125: 0x08}
 
 # Defaults OpenRazer does not expose per call (documented, see docs/hardware-notes.md)
 WAVE_DIRECTION = 1  # 0x01 = right/left per firmware; OpenRazer accepts 0x00..0x02
 REACTIVE_SPEED = 2  # OpenRazer: 0x01 (fast) .. 0x04 (slow)
-_WAVE_SPEED = 0x28  # fixed in razer_chroma_extended_matrix_effect_wave
 
 # Set commands whose effect survives a replug: either they have NO varstore/storage
 # argument in their layout, or the firmware ignores NOSTORE (set_dpi, see
@@ -55,24 +51,29 @@ class NagaV2Pro:
         report = build_report(cmd_class, cmd_id, args, size=size, txn=TXN)
         return self._t.query(report).args
 
+    def _run(self, built: tuple[int, int, bytes, int]) -> bytes:
+        """Send a commands.py builder result and return the response args."""
+        return self._get(*built)
+
+    def _read(self, name: str, *builder_args):
+        """Send builder ``name`` and run its PARSER on the response."""
+        return C.PARSERS[name](self._run(C.BUILDERS[name](*builder_args)))
+
     def device_mode(self) -> int:
         """0x00 normal, 0x03 driver mode (top buttons as vendor reports)."""
-        return self._get(0x00, 0x84, b"", 0x02)[0]
+        return self._read("razer_chroma_standard_get_device_mode")[0]
 
     def set_device_mode(self, mode: int) -> None:
-        self._get(0x00, 0x04, bytes([mode, 0x00]), 0x02)
+        self._run(C.razer_chroma_standard_set_device_mode(mode))
 
     def firmware(self) -> str:
-        a = self._get(0x00, 0x81, b"", 0x02)
-        return f"v{a[0]}.{a[1]}"
+        return self._read("razer_chroma_standard_get_firmware_version")
 
     def serial(self) -> str:
-        a = self._get(0x00, 0x82, b"", 0x16)
-        return a[:22].split(b"\x00")[0].decode("ascii", "replace")
+        return self._read("razer_chroma_standard_get_serial")
 
     def dpi(self) -> tuple[int, int]:
-        a = self._get(0x04, 0x85, bytes([NOSTORE]), 0x07)
-        return (a[1] << 8) | a[2], (a[3] << 8) | a[4]
+        return self._read("razer_chroma_misc_get_dpi_xy", NOSTORE)
 
     def dpi_stages(self) -> tuple[int, list[tuple[int, int]]]:
         """Onboard stage table (class 0x04 id 0x83, the one the back top button
@@ -92,28 +93,26 @@ class NagaV2Pro:
         return active, stages
 
     def poll_rate(self) -> int:
-        raw = self._get(0x00, 0x85, b"", 0x01)[0]
-        if raw not in _POLL_HZ:
-            raise ValueError(f"unknown poll rate byte {raw:#04x}")
-        return _POLL_HZ[raw]
+        a = self._run(C.razer_chroma_misc_get_polling_rate())
+        hz = C.PARSERS["razer_chroma_misc_get_polling_rate"](a)
+        if not hz:
+            raise ValueError(f"unknown poll rate byte {a[0]:#04x}")
+        return hz
 
     def brightness(self, led: int) -> int:
-        return self._get(0x0F, 0x84, bytes([VARSTORE, led]), 0x03)[2]  # echo: varstore, led, level
+        return self._read("razer_chroma_extended_matrix_get_brightness", VARSTORE, led)  # echo: varstore, led, level
 
     def battery(self) -> int:
-        raw = self._get(0x07, 0x80, b"", 0x02)[1]
-        return round(raw * 100 / 255)
+        return round(self._read("razer_chroma_misc_get_battery_level") * 100 / 255)
 
     def charging(self) -> bool:
-        return self._get(0x07, 0x84, b"", 0x02)[1] != 0
+        return self._read("razer_chroma_misc_get_charging_status") != 0
 
     def idle_time(self) -> int:
-        a = self._get(0x07, 0x83, b"", 0x02)
-        return (a[0] << 8) | a[1]
+        return self._read("razer_chroma_misc_get_idle_time")
 
     def low_battery_threshold(self) -> int:
-        raw = self._get(0x07, 0x81, b"", 0x01)[0]
-        return round(raw * 100 / 255)
+        return round(self._read("razer_chroma_misc_get_low_battery_threshold") * 100 / 255)
 
     # -- write commands ----------------------------------------------------
     # Every command with a storage argument takes store=NOSTORE by default (RAM
@@ -123,7 +122,10 @@ class NagaV2Pro:
         """razer_chroma_misc_set_dpi_xy: class 0x04 id 0x05 size 7."""
         _check_dpi(x)
         _check_dpi(y)
-        self._get(0x04, 0x05, bytes([store, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0]), 0x07)
+        cls, cid, args, size = C.razer_chroma_misc_set_dpi_xy(store, x, y)
+        # OpenRazer's builder always writes VARSTORE; this model's callers choose the
+        # storage byte (NOSTORE by default), so only that first byte is replaced.
+        self._get(cls, cid, bytes([store]) + args[1:], size)
 
     def set_dpi_stages(self, active: int, stages: list[tuple[int, int]], *,
                        store: int = NOSTORE) -> None:
@@ -170,47 +172,46 @@ class NagaV2Pro:
         """razer_chroma_misc_set_polling_rate: class 0x00 id 0x05 size 1 (no storage arg)."""
         if hz not in _POLL_BYTE:
             raise ValueError(f"Abfragerate {hz!r} nicht in {sorted(_POLL_BYTE)}")
-        self._get(0x00, 0x05, bytes([_POLL_BYTE[hz]]), 0x01)
+        self._run(C.razer_chroma_misc_set_polling_rate(hz))
 
     def set_brightness(self, led: int, value: int, *, store: int = NOSTORE) -> None:
         """razer_chroma_extended_matrix_brightness: class 0x0F id 0x04 size 3."""
         if not isinstance(value, int) or not 0 <= value <= 255:
             raise ValueError(f"Helligkeit {value!r} ausserhalb 0-255")
-        self._get(0x0F, 0x04, bytes([store, led, value]), 0x03)
+        self._run(C.razer_chroma_extended_matrix_brightness(store, led, value))
 
     def set_effect(self, led: int, zone: LightingZone, *, store: int = NOSTORE) -> None:
         """razer_chroma_extended_matrix_effect_*: class 0x0F id 0x02 (OpenRazer's per-LED
         path for this model). Wave and spectrum take no colour."""
-        eff, (r, g, b) = zone.effect, zone.color
-        head = bytes([store, led])
+        eff, rgb = zone.effect, tuple(zone.color)
         if eff == "off":
-            args = head + bytes([0x00, 0, 0, 0])
+            built = C.razer_chroma_extended_matrix_effect_none(store, led)
         elif eff == "static":
-            args = head + bytes([0x01, 0, 0, 0x01, r, g, b])
+            built = C.razer_chroma_extended_matrix_effect_static(store, led, rgb)
         elif eff == "breath":
-            args = head + bytes([0x02, 0x01, 0x00, 0x01, r, g, b])
+            built = C.razer_chroma_extended_matrix_effect_breathing_single(store, led, rgb)
         elif eff == "spectrum":
-            args = head + bytes([0x03, 0, 0, 0])
+            built = C.razer_chroma_extended_matrix_effect_spectrum(store, led)
         elif eff == "wave":
-            args = head + bytes([0x04, WAVE_DIRECTION, _WAVE_SPEED, 0])
+            built = C.razer_chroma_extended_matrix_effect_wave(store, led, WAVE_DIRECTION)
         elif eff == "reactive":
-            args = head + bytes([0x05, 0, REACTIVE_SPEED, 0x01, r, g, b])
+            built = C.razer_chroma_extended_matrix_effect_reactive(store, led, REACTIVE_SPEED, rgb)
         else:
             raise ValueError(f"unbekannter Effekt {eff!r}")
-        self._get(0x0F, 0x02, args, len(args))
+        self._run(built)
 
     def set_idle_time(self, seconds: int) -> None:
         """razer_chroma_misc_set_idle_time: class 0x07 id 0x03 size 2 (no storage arg)."""
         if not isinstance(seconds, int) or not 60 <= seconds <= 900:
             raise ValueError(f"Leerlaufzeit {seconds!r} ausserhalb 60-900 s")
-        self._get(0x07, 0x03, bytes([seconds >> 8, seconds & 0xFF]), 0x02)
+        self._run(C.razer_chroma_misc_set_idle_time(seconds))
 
     def set_low_battery_threshold(self, percent: int) -> None:
         """razer_chroma_misc_set_low_battery_threshold: class 0x07 id 0x01 size 1
         (no storage arg). Raw 0x0C=5%, 0x26=15%, 0x3F=25%, i.e. raw = percent*255//100."""
         if not isinstance(percent, int) or not 5 <= percent <= 25:
             raise ValueError(f"Akku-Schwelle {percent!r} ausserhalb 5-25 %")
-        self._get(0x07, 0x01, bytes([percent * 255 // 100]), 0x01)
+        self._run(C.razer_chroma_misc_set_low_battery_threshold(percent * 255 // 100))
 
     def snapshot(self) -> dict:
         """All readable state; each field independently None on any error."""
