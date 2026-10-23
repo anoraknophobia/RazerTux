@@ -5,3 +5,6 @@ __pycache__/
 packaging/src/
 packaging/pkg/
 *.pkg.tar.zst
+
+# internal planning documents (kept locally in ~/REA/razertux-planning)
+docs/superpowers/
