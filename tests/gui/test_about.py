@@ -68,14 +68,14 @@ def test_about_dialog_german(qapp):
     for part in ("RazerTux", f"Version {__version__}",
                  "Not an official Razer product; not affiliated with Razer Inc.",
                  "GPL-2.0-or-later", "Protocol knowledge from OpenRazer (GPL-2.0)",
-                 "https://github.com/anoraknophobia/razertux"):
+                 "https://github.com/anoraknophobia/RazerTux"):
         assert part in text, part
     assert not d.windowIcon().isNull()
     assert d.close_button.text() == "Close"
 
 
 def test_project_url():
-    assert PROJECT_URL == "https://github.com/anoraknophobia/razertux"
+    assert PROJECT_URL == "https://github.com/anoraknophobia/RazerTux"
 
 
 def test_about_shows_the_project_link(qapp):

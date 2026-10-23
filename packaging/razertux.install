@@ -2,18 +2,15 @@
 # user services must be switched by the user (systemctl --user).
 
 _razertux_switch_hint() {
-  echo ':: RazerTux: Dienst als normaler Benutzer (nicht root) umstellen bzw. aktivieren:'
   echo ':: RazerTux: switch/enable the service as your normal user (not root):'
   echo '   systemctl --user disable --now naga-configd.service 2>/dev/null; systemctl --user enable --now razertuxd.service'
-  echo ':: Eine vorhandene ~/.config/naga-config wird beim ersten Start nach ~/.config/razertux kopiert.'
+  echo ':: An existing ~/.config/naga-config is copied to ~/.config/razertux on first start.'
 }
 
 _razertux_restart_hint() {
-  echo ':: RazerTux: den laufenden Dienst als normaler Benutzer (nicht root) neu starten:'
   echo ':: RazerTux: restart the running service as your normal user (not root):'
   echo '   systemctl --user restart razertuxd.service'
-  echo ':: Den Tray (razertux-tray) ebenfalls neu starten – oder einfach ab- und wieder anmelden.'
-  echo ':: Restart the tray (razertux-tray) as well – or simply log out and back in.'
+  echo ':: Restart the tray (razertux-tray) as well - or simply log out and back in.'
 }
 
 post_install() {

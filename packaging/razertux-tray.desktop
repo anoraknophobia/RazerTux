@@ -1,8 +1,10 @@
 [Desktop Entry]
 Type=Application
 Name=RazerTux (Tray)
-Comment=RazerTux-Tray-Symbol beim Anmelden starten
-Comment[en]=Start the RazerTux tray icon at login
+Comment=Start the RazerTux tray icon at login
+Comment[de]=RazerTux-Tray-Symbol beim Anmelden starten
+Comment[es]=Iniciar el icono de bandeja de RazerTux al iniciar sesión
+Comment[fr]=Lancer l'icône de la zone de notification RazerTux à l'ouverture de session
 Exec=razertux-gui --tray
 Icon=razertux
 Terminal=false

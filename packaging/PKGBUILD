@@ -1,12 +1,12 @@
 # Maintainer: anoraknophobia
 # RazerTux – not an official Razer product; not affiliated with Razer Inc.
-# Baut aus dem lokalen Git-Checkout (ein Verzeichnis ueber packaging/), kein Netzwerk noetig.
+# Builds from the local git checkout (one directory above packaging/); no network needed.
 pkgname=razertux
 pkgver=0.3.0
 pkgrel=1
 pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro and other Razer mice)'
 arch=('any')
-url='https://github.com/anoraknophobia/razertux'
+url='https://github.com/anoraknophobia/RazerTux'
 license=('GPL-2.0-or-later')
 depends=(python python-evdev pyside6 python-pyudev python-dbus-next)
 makedepends=(python-build python-installer python-wheel python-setuptools)
@@ -17,7 +17,7 @@ install=razertux.install
 source=()
 
 prepare() {
-  # Saubere Kopie des Checkouts, damit build/ und egg-info nicht im Repo landen
+  # Clean copy of the checkout so build/ and egg-info do not end up in the repo
   rm -rf "$srcdir/$pkgname"
   mkdir -p "$srcdir/$pkgname"
   cp -r "$startdir/../razertux" "$startdir/../pyproject.toml" \

@@ -1,38 +1,32 @@
 # RazerTux
 
-> **Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.**
 > **Not an official Razer product; not affiliated with Razer Inc.**
-> „Razer“ und „Naga“ sind Marken von Razer Inc.; RazerTux nutzt keine Razer-Logos.
+> "Razer" and "Naga" are trademarks of Razer Inc.; RazerTux uses no Razer logos.
 >
-> Projekt / Project: <https://github.com/anoraknophobia/razertux>
+> Project: <https://github.com/anoraknophobia/RazerTux>
 
-> **English:** RazerTux (formerly *naga-config*) is an unofficial Linux replacement for
-> Razer Synapse, currently for the Razer Naga V2 Pro: a background service (`razertuxd`),
-> a command line tool (`razertux`) and a Qt GUI with tray icon (`razertux-gui`) for button
-> assignments, macros, Hypershift, DPI stages, polling rate, lighting and power settings.
-> Install with `cd packaging && makepkg -si`, then
-> `systemctl --user enable --now razertuxd.service`. The GUI is available in German,
-> English, Spanish and French (*View → Language*, see below); this README is in German.
+RazerTux (formerly *naga-config*) is an unofficial Linux replacement for Razer Synapse. It
+supports the Razer Naga V2 Pro and, experimentally, other Razer mice (tested on CachyOS/Arch,
+KDE Plasma Wayland). It consists of a background service (`razertuxd`), a command line tool
+(`razertux`) and a Qt GUI with a tray icon (`razertux-gui`). The current version is 0.3.0.
+The GUI is available in English, German, Spanish and French (see "Language" below).
 
-Inoffizieller Linux-Ersatz für Razer Synapse, derzeit für die Razer Naga V2 Pro und
-experimentell weitere Razer-Mäuse (getestet unter CachyOS/Arch, KDE Plasma Wayland).
-Besteht aus einem Hintergrunddienst (`razertuxd`), einer Kommandozeile (`razertux`) und
-einer Qt-Oberfläche mit Tray-Symbol (`razertux-gui`). Früherer Name: *naga-config*
-(siehe „Umstieg von naga-config“).
+## Features
 
-## Funktionen
-
-- **Tasten**: Belegungen, Tastenkombinationen, Makros, Hypershift, mehrere Profile.
-- **Obere Tasten frei belegen**: Aus = Firmware schaltet Mausrad-Stufe bzw. DPI-Stufe
-  weiter (Normalmodus). An = Treibermodus, die beiden oberen Tasten sind frei belegbar.
-- **Leistung**: DPI und DPI-Stufen. Eine dauerhaft geschriebene DPI wird beim sauberen
-  Beenden des Dienstes auf den gesicherten Wert zurückgeschrieben.
-- **Beleuchtung**: Logo und Daumenfeld (das Mausrad hat keine LED).
-- **Energie/Akku**: Ladestand, Leerlaufzeit, Warnung bei niedrigem Akku.
-- **Mausrad**: Anzeige der aktiven Mausrad-Stufe. Die Stufenwerte selbst lassen sich nur in
-  Synapse ändern.
-- Heller/dunkler Stil umschaltbar.
-- Oberfläche auf Deutsch, Englisch, Spanisch und Französisch.
+- **Buttons**: assignments, key combinations, macros, Hypershift, several profiles per model.
+- **Free top buttons**: off = the firmware steps the scroll-wheel stage or DPI stage
+  (normal mode). On = driver mode, the two top buttons can be assigned freely.
+- **Learn button**: press a button on the mouse to select it in the GUI.
+- **Performance**: DPI and DPI stages. A DPI value written permanently is restored to the
+  backed-up value when the service exits cleanly.
+- **Lighting**: logo and thumb pad (the scroll wheel has no LED).
+- **Power/battery**: charge level, idle time, low-battery warning.
+- **Scroll wheel**: shows the active scroll-wheel stage on the Naga. Changing the stage
+  values or tension needs Synapse on Windows for now.
+- **Multi-device**: several mice at once, each with its own per-model profiles.
+- **On-screen display** when the profile or DPI stage changes (toggle in the tray menu).
+- Light/dark style switch.
+- UI languages: English, German, Spanish and French.
 
 ## Installation
 
@@ -42,75 +36,86 @@ makepkg -si
 systemctl --user enable --now razertuxd.service
 ```
 
-Der Dienst startet mit der grafischen Sitzung (`graphical-session.target`) und wird
-außerdem bei Bedarf per D-Bus (`io.github.razertux`) gestartet.
-Das Tray-Symbol startet beim Anmelden automatisch
-(`/etc/xdg/autostart/razertux-tray.desktop`).
-Eine früher von Hand nach `/etc/udev/rules.d/` kopierte udev-Regel bitte entfernen; das
-Paket installiert `70-razertux.rules` nach `/usr/lib/udev/rules.d/`.
+Build dependencies (`makedepends`): `python-build`, `python-installer`, `python-wheel`,
+`python-setuptools`.
 
-Das Paket steht im Konflikt mit `openrazer-daemon` und `openrazer-driver-dkms`: Beide
-greifen auf dasselbe Gerät zu und stören sich gegenseitig.
+The service starts with the graphical session (`graphical-session.target`) and is also
+started on demand via D-Bus (`io.github.razertux`). The tray icon starts automatically at
+login (`/etc/xdg/autostart/razertux-tray.desktop`). If you copied a udev rule to
+`/etc/udev/rules.d/` by hand earlier, please remove it; the package installs
+`70-razertux.rules` to `/usr/lib/udev/rules.d/`.
 
-## Umstieg von naga-config
+The package conflicts with `openrazer-daemon` and `openrazer-driver-dkms`: both access the
+same device and interfere with each other.
 
-RazerTux ersetzt das Paket `naga-config` (`replaces`/`conflicts` im PKGBUILD); `makepkg -si`
-bzw. pacman entfernt es dabei. Danach einmal **als normaler Benutzer** (nicht mit sudo)
-den alten Dienst ab- und den neuen anmelden:
+## Upgrading
+
+After upgrading the package, restart the service as a normal user and restart the tray
+(or log out and back in):
+
+```
+systemctl --user restart razertuxd.service
+```
+
+### Update to 0.3.0
+
+The configuration lives in `~/.config/razertux`. On first start it is migrated to schema 2
+automatically; the old files are kept unchanged in the `pre-schema2/` subfolder there.
+
+## Switching from naga-config
+
+RazerTux replaces the package `naga-config` (`replaces`/`conflicts` in the PKGBUILD);
+`makepkg -si` or pacman removes it. Afterwards, **as a normal user** (not with sudo),
+disable the old service and enable the new one once:
 
 ```
 systemctl --user disable --now naga-configd.service 2>/dev/null
 systemctl --user enable --now razertuxd.service
 ```
 
-Beim ersten Start von Dienst oder Oberfläche wird `~/.config/naga-config/` vollständig nach
-`~/.config/razertux/` kopiert (Profile, Makros, Einstellungen, Sicherung
-`mouse-backup.json`). Der alte Ordner bleibt unverändert und kann danach von Hand gelöscht
-werden; ein vorhandenes `~/.config/razertux/` wird nie überschrieben. Ein noch laufendes
-altes Tray-Symbol einfach beenden (oder ab- und wieder anmelden).
+On first start of the service or GUI, `~/.config/naga-config/` is copied completely to
+`~/.config/razertux/` (profiles, macros, settings, backup `mouse-backup.json`). The old
+folder stays untouched and can be deleted by hand afterwards; an existing
+`~/.config/razertux/` is never overwritten. Just quit a still-running old tray icon (or log
+out and back in).
 
-## Erste Schritte
+## Getting started
 
-1. Maus per Funk-Dongle oder USB verbinden und `razertux-gui` starten (oder das
-   Tray-Symbol anklicken). Beim ersten Verbinden sichert der Dienst den Ausgangszustand
-   der Maus automatisch nach `~/.config/razertux/mouse-backup.json` (eine vorhandene
-   Sicherung wird nie überschrieben).
-2. Profil anlegen, Tasten, DPI und Beleuchtung einstellen. Profile lassen sich im Tray
-   wechseln.
+1. Connect the mouse via wireless dongle or USB and start `razertux-gui` (or click the tray
+   icon). On first connect the service automatically backs up the mouse's initial state to
+   `~/.config/razertux/mouse-backup.json` (an existing backup is never overwritten).
+2. Create a profile and set buttons, DPI and lighting. You can switch profiles in the tray.
 
-Kommandozeile: `razertux status` zeigt den Maus-Zustand, `razertux restore` stellt
-den gesicherten Zustand wieder her. `razertux backup` legt die Sicherung von Hand an
-(optional, nur nötig ohne laufenden Dienst; überschreibt ebenfalls nichts).
+Command line: `razertux status` shows the mouse state and `razertux restore` restores the
+backed-up state. `razertux backup` creates the backup by hand (optional, only needed without
+a running service; it does not overwrite anything either). All three accept `--model` to
+pick a model when several mice are connected.
 
-## Sprache / Language
+## Language
 
-*Ansicht → Sprache* (auch im Tray-Menü): Systemsprache, Deutsch, English, Español, Français.
-„Systemsprache“ nimmt die Sprache des Systems und, wenn sie nicht dabei ist, Englisch. Die
-Oberfläche übernimmt eine neue Sprache nach einem Neustart („Jetzt neu starten“ startet sie
-sofort neu); der Dienst übernimmt sie sofort (Akku-Warnung, Konfigurationsfehler). Die
-Einstellung steht als `"language"` in `~/.config/razertux/settings.json`.
+*View -> Language* (also in the tray menu): system language, English, German, Spanish,
+French. "System language" uses the language of the system and falls back to English if it
+is not supported. The GUI switches to a new language after a restart ("Restart now" restarts
+it immediately); the service switches immediately (battery warning, configuration errors).
+The setting is stored as `"language"` in `~/.config/razertux/settings.json`.
 
-*View → Language* (also in the tray menu): system language, German, English, Spanish,
-French. "System language" falls back to English if the system language is not supported.
-The GUI switches after a restart ("Restart now"); the service switches immediately.
+English is the source language. Translations are JSON files in `razertux/i18n/<lang>.json`
+(`{"context": {"English text": "translation"}}`); `tests/test_i18n.py` checks that every
+text is translated and the placeholders match.
 
-Übersetzungen liegen als JSON in `razertux/i18n/<lang>.json`
-(`{"Kontext": {"deutscher Text": "Übersetzung"}}`); `tests/test_i18n.py` prüft, dass jeder
-Text übersetzt ist und die Platzhalter stimmen.
-
-## Originalzustand wiederherstellen
+## Restoring the original state
 
 ```
 razertux restore
 ```
 
-(oder „Originalzustand wiederherstellen“ im Tray) schreibt die gesicherten Werte zurück:
-DPI, DPI-Stufen, Abfragerate, Helligkeit und die Energie-Einstellungen (Leerlaufzeit,
-Akku-Energiesparschwelle). Effekte und Farben gehören nicht dazu; die setzt die Maus beim
-Aus- und wieder Einstecken selbst zurück. Mit `razertux status` lässt sich das Ergebnis
-gegen die Sicherung prüfen. Die Sicherung liegt in `~/.config/razertux/mouse-backup.json`.
+(or "Restore original state" in the tray) writes the backed-up values back: DPI, DPI stages,
+polling rate, brightness and the power settings (idle time, low-battery threshold). Effects
+and colors are not included; the mouse resets them itself when unplugged and plugged in
+again. Use `razertux status` to compare the result against the backup. The backup is stored
+in `~/.config/razertux/mouse-backup.json`.
 
-## Deinstallation
+## Uninstalling
 
 ```
 razertux restore
@@ -119,65 +124,49 @@ sudo pacman -Rns razertux
 rm -r ~/.config/razertux
 ```
 
-`restore` vor der Deinstallation ausführen, solange der Dienst noch da ist. Das Entfernen
-von `~/.config/razertux` löscht auch die Sicherung und die Profile.
+Run `restore` before uninstalling, while the service is still there. Removing
+`~/.config/razertux` also deletes the backup and the profiles.
 
-## Unterstützte Mäuse
+## Supported mice
 
-- **Razer Naga V2 Pro**: geprüft (Funk-Dongle und USB), voller Funktionsumfang.
-- **Alle anderen Razer-Mäuse aus der OpenRazer-Datenbank** (rund 117 Produkt-IDs, siehe
-  `razertux/devices/openrazer_mice.json`): **experimentell**. RazerTux liest zuerst nur
-  (Lese-Probe) und legt eine Sicherung des Gerätezustands an, bevor etwas geschrieben
-  wird. Auf diesen Mäusen sind DPI, Abfragerate und Ähnliches abhängig vom Modell
-  verfügbar; ungetestet heißt: keine Gewähr.
-- Probleme melden: In der Oberfläche **„Diagnose kopieren“** wählen und den Text in ein
-  GitHub-Issue (<https://github.com/anoraknophobia/razertux/issues>) einfügen.
-- Die Datenbank stammt aus OpenRazer (GPL-2.0), siehe `OPENRAZER-NOTICE` (installiert
-  nach `/usr/share/licenses/razertux/`). Die udev-Regel `70-razertux.rules` wird daraus
-  mit `python tools/import_openrazer.py --udev` erzeugt.
+- **Razer Naga V2 Pro**: verified (wireless dongle and USB), full feature set.
+- **All other Razer mice from the OpenRazer database** (88 models / 117 USB product IDs, see
+  `razertux/devices/openrazer_mice.json`): **experimental**. RazerTux first only reads (read
+  probe) and backs up the device state before anything is written. On these mice, DPI,
+  polling rate and similar settings are available depending on the model; untested means
+  no guarantee.
+- Reporting problems: choose **"Copy diagnostics"** in the GUI and paste the text into a
+  GitHub issue (<https://github.com/anoraknophobia/RazerTux/issues>).
+- The database comes from OpenRazer (GPL-2.0), see `OPENRAZER-NOTICE` (installed to
+  `/usr/share/licenses/razertux/`). The udev rule `70-razertux.rules` is generated from it
+  with `python tools/import_openrazer.py --udev`.
 
-## Laser-Grafiken
+## Laser graphics
 
-Die Maus-Ansichten mit den Tasten-Beschriftungen („Laser“-Linien) sind eigene
-Zeichnungen (SVG-Vorlagen im Paket). Es werden keine Razer-Bilder verwendet.
+The mouse views with button labels ("laser" lines) are original drawings (SVG templates in
+the package). No Razer images or logos are used.
 
-## Bildschirmanzeige (OSD)
+## On-screen display (OSD)
 
-Beim Profilwechsel und bei DPI-Stufenwechsel zeigt RazerTux kurz eine Bestätigung auf dem
-Bildschirm. Im Tray-Menü lässt sich die Anzeige ein- und ausschalten.
+When the profile or the DPI stage changes, RazerTux briefly shows a confirmation on screen.
+The display can be switched on and off in the tray menu.
 
-## Update auf 0.3.0
+## Known limits
 
-Die Konfiguration wird beim ersten Start automatisch auf Schema 2 umgestellt. Die alten
-Dateien bleiben unverändert im Unterordner `pre-schema2/` (in `~/.config/razertux/`)
-erhalten.
+- Bluetooth: normal input only, no configuration. Use the wireless dongle or USB.
+- Scroll-wheel stage values (haptics) cannot be changed, only the active stage is shown.
+- `kill -9` on the service skips the cleanup. systemd restarts the service; this only
+  affects "Free top buttons" (driver mode): until the restart the top buttons do not react,
+  afterwards the service sets the mode to match the profile again. Without a running
+  service, unplugging and replugging the mouse helps.
+- `dbus-next` is deprecated as of Python 3.15; a replacement will be needed then.
+- A parallel running OpenRazer service is not supported (package conflict).
+- More hardware details: `docs/hardware-notes.md`.
 
-> **English summary (0.3.0):** Naga V2 Pro is verified; all other OpenRazer mice are
-> experimental (read probe and backup before any write; use "Diagnose kopieren" /
-> copy diagnostics for GitHub issues). Laser drawings are original, no Razer images. An
-> on-screen display (OSD) confirms profile/DPI changes and can be toggled in the tray. The
-> config migrates automatically to schema 2; old files are kept in `pre-schema2/`. The
-> device database is derived from OpenRazer (GPL-2.0), see `OPENRAZER-NOTICE`.
+## Credits
 
-## Bekannte Grenzen
-
-- Bluetooth: nur normale Eingabe, keine Konfiguration. Dafür Funk-Dongle oder USB nutzen.
-- Stufenwerte des Mausrads (Haptik) sind nicht änderbar, nur die aktive Stufe wird angezeigt.
-- `kill -9` auf den Dienst überspringt das Aufräumen. systemd startet den Dienst neu; das
-  betrifft nur „Obere Tasten frei belegen“ (Treibermodus): bis zum Neustart reagieren die
-  oberen Tasten nicht, danach stellt der Dienst den Modus wieder passend zum Profil ein.
-  Ohne laufenden Dienst hilft Aus- und wieder Einstecken der Maus.
-- `dbus-next` ist ab Python 3.15 veraltet (deprecation); dann ist ein Ersatz nötig.
-- Parallel laufender OpenRazer-Dienst wird nicht unterstützt (Paketkonflikt).
-- Weitere Details zur Hardware: `docs/hardware-notes.md`.
-
-## Danksagung / Credits
-
-Das Wissen über das HID-Protokoll der Razer-Mäuse stammt zu einem großen Teil aus
-[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0). Vielen Dank an das
-OpenRazer-Projekt. Das Programmsymbol (Pinguin) ist eine eigene Zeichnung.
-
-Protocol knowledge comes largely from OpenRazer (GPL-2.0); thanks to the OpenRazer
+Much of the knowledge about the HID protocol of Razer mice, and the device data, comes from
+[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0). Many thanks to the OpenRazer
 project. The app icon (penguin) is an original drawing.
 
 ## License
@@ -185,4 +174,4 @@ project. The app icon (penguin) is an original drawing.
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation; either version 2 of the License, or (at your option) any later
-version. See `LICENSE` for the GPL-2.0 text.
+version (GPL-2.0-or-later). See `LICENSE` for the GPL-2.0 text.

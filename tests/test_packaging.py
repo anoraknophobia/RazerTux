@@ -23,8 +23,10 @@ def test_old_packaging_files_are_gone():
 
 def test_desktop_entry():
     lines = _read("razertux.desktop").splitlines()
-    for line in ("Name=RazerTux", "GenericName=Razer-Gerätekonfiguration",
-                 "Comment=Inoffizielle Konfiguration für Razer-Mäuse", "Exec=razertux-gui",
+    for line in ("Name=RazerTux", "GenericName=Razer device configuration",
+                 "GenericName[de]=Razer-Gerätekonfiguration",
+                 "Comment=Unofficial configuration for Razer mice",
+                 "Comment[de]=Inoffizielle Konfiguration für Razer-Mäuse", "Exec=razertux-gui",
                  "Icon=razertux", "Categories=Settings;HardwareSettings;Qt;"):
         assert line in lines
 
@@ -102,15 +104,15 @@ def test_openrazer_notice_is_packaged():
 
 def test_readme_documents_new_sections():
     r = (ROOT / "README.md").read_text()
-    for h in ("## Unterstützte Mäuse", "## Laser-Grafiken", "## Bildschirmanzeige (OSD)"):
+    for h in ("## Supported mice", "## Laser graphics", "## On-screen display (OSD)"):
         assert h in r, h
-    assert "pre-schema2" in r and "Diagnose kopieren" in r
+    assert "pre-schema2" in r and "Copy diagnostics" in r
     assert r.startswith("# RazerTux")
 
 
 def test_hardware_notes_list_unverified_assumptions():
     h = (ROOT / "docs" / "hardware-notes.md").read_text()
-    assert "Platten 6/2" in h and "generische Treiber" in h
+    assert "Plates 6/2" in h and "generic driver" in h
 
 
 def test_pkgbuild_names_and_relations():
@@ -122,7 +124,7 @@ def test_pkgbuild_names_and_relations():
         assert line in lines, line
     assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next)" in p
     assert "license=('GPL-2.0-or-later')" in p and "arch=('any')" in p
-    assert [l for l in lines if l.startswith("url=")] == ["url='https://github.com/anoraknophobia/razertux'"]
+    assert [l for l in lines if l.startswith("url=")] == ["url='https://github.com/anoraknophobia/RazerTux'"]
     rest = "\n".join(l for l in lines if not l.startswith(("replaces=", "conflicts=")))
     for old in ("naga-config", "naga_config", "nagaconfig"):
         assert old not in rest
@@ -159,7 +161,7 @@ def test_install_script_only_prints_the_switch_commands():
     for old in ("0.2.0-1", "0.2.9-1"):
         out = run(f"post_upgrade 0.3.0-1 {old}")
         assert "systemctl --user restart razertuxd.service" in out
-        assert "Tray" in out and "anmelden" in out and "log out" in out
+        assert "tray" in out and "log out" in out and "anmelden" not in out
         assert SWITCH_CMD not in out
     both = run("post_upgrade 0.3.0-1 0.1.0-1")  # naga-config era: switch hint, then enable
     assert both.count(SWITCH_CMD) == 1 and "restart razertuxd.service" not in both
@@ -208,24 +210,22 @@ def test_pyproject_license_is_spdx_expression():
 
 def test_readme_has_no_manual_backup_step():
     readme = (ROOT / "README.md").read_text()
-    steps = readme.split("## Erste Schritte")[1].split("## ")[0]
+    steps = readme.split("## Getting started")[1].split("## ")[0]
     assert not re.search(r"^\d+\..*razertux backup", steps, re.M)  # no numbered step
-    assert "automatisch" in steps and "optional" in steps
-    assert "lässt die Maus im Treibermodus, bis sie neu angesteckt wird" not in readme
+    assert "automatically" in steps and "optional" in steps
 
 
 def test_readme_names_disclaimer_and_switch_over():
     readme = (ROOT / "README.md").read_text()
     assert readme.startswith("# RazerTux")
     head = readme[:800]
-    assert "Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden." in head
     assert "Not an official Razer product; not affiliated with Razer Inc." in head
-    switch = readme.split("## Umstieg von naga-config")[1].split("\n## ")[0]
+    switch = readme.split("## Switching from naga-config")[1].split("\n## ")[0]
     assert "systemctl --user disable --now naga-configd.service" in switch
     assert "systemctl --user enable --now razertuxd.service" in switch
     assert "~/.config/razertux" in switch
     assert "OpenRazer" in readme and "GPL" in readme
-    assert "https://github.com/anoraknophobia/razertux" in head
+    assert "https://github.com/anoraknophobia/RazerTux" in head
     # the old name only appears where the switch-over is explained
     rest = readme.replace(switch, "")
     assert "naga-configd" not in rest and "~/.config/naga-config" not in rest
@@ -261,5 +261,5 @@ def test_descriptions_name_all_razer_mice_like_the_pkgbuild():
 
 def test_readme_wording_and_line_width():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "kein Gewähr" not in readme and "keine Gewähr" in readme
-    assert all(len(line) <= 100 for line in readme.splitlines()[16:21])
+    assert "no guarantee" in readme
+    assert all(len(line) <= 100 for line in readme.splitlines())
