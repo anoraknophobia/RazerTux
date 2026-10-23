@@ -1,6 +1,6 @@
 # RazerTux – Weitere Razer-Mäuse (Konzept-Entwurf)
 
-Stand: 2026-10-22 abends · Status: **Entwurf, wartet auf Freigabe durch den Nutzer**
+Stand: 2026-10-23 · Status: **vom Nutzer freigegeben (2026-10-23)**, inkl. Laser-Stil (Abschnitt 6c)
 Vorgänger: `2026-10-22-naga-config-design.md` (Naga V2 Pro, umgesetzt und installiert)
 
 ## 1. Absicht und Warum
@@ -101,11 +101,23 @@ echter Hardware getestet werden.
 8. **Mausrad-Optionen**: Wo OpenRazer sie anbietet (Scroll-Modus, Beschleunigung, Smart Reel), erscheinen sie im
    Reiter „Mausrad“.
 
+## 6c. Grafik-Stil „Laser“ (Entscheidung des Nutzers, 2026-10-23)
+
+- Alle Gerätegrafiken – auch die Naga V2 Pro – werden als **leuchtende Umrisslinien in Razer-Grün (#44D62C)**
+  auf dunklem Grund gezeichnet: keine Flächen-Schattierung, keine Fotos, keine Razer-Bilder oder -Logos.
+  Grund: keine Rechte-Probleme mit Bildern.
+- Leuchten ohne SVG-Filter (QtSvg kann keine): je Linie gestapelte Striche (breit/transparent → schmal/voll)
+  plus heller Kern. Hervorhebung einer Taste = grüne Füllung mit ~35 % Deckkraft.
+- Im Theme „Systemfarben“ wird das Grün durch die Akzentfarbe der Palette ersetzt (wie bisher per Platzhalter).
+- Die Naga-Form wird an der echten Maus des Nutzers nachgebessert (Nutzer: „Form sieht in Realität ein wenig
+  anders aus“) – Referenz: Fotos des Nutzers, nur als Vorlage zum Nachzeichnen, nicht eingebettet.
+- Mockup: `.superpowers/sdd/…/laser-mockup.png` (Entwurf vom 2026-10-23).
+
 ## 7. Offene Fragen an den Nutzer (nur wenn er etwas anders will)
 
 1. Sollen von Anfang an **alle 117** OpenRazer-Mäuse freigeschaltet sein (als experimentell), oder nur eine Liste
-   verbreiteter Modelle? *Vorschlag: alle, klar als experimentell markiert.*
-2. **Mehrere Mäuse gleichzeitig** unterstützen? *Vorschlag: ja.*
+   verbreiteter Modelle? *Vorschlag: alle, klar als experimentell markiert.* → **freigegeben**
+2. **Mehrere Mäuse gleichzeitig** unterstützen? *Vorschlag: ja.* → **freigegeben**
 
 ## 8. Risiken
 
