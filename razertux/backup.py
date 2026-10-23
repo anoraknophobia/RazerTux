@@ -3,6 +3,7 @@ import json
 import logging
 from pathlib import Path
 
+from .i18n import tr
 from .razer.mouse import VARSTORE, RazerMouse
 from .razer.transport import RazerError
 
@@ -33,9 +34,9 @@ def save_backup(dev: RazerMouse, path: Path) -> dict:
         return load_backup(path)
     snap = dev.snapshot()
     if all(snap.get(k) is None for k in CORE_FIELDS):
-        raise BackupError(
-            "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up"
-        )
+        raise BackupError(tr(
+            "cli", "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up"
+        ))
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(path, "x") as f:  # exclusive: never clobber
@@ -69,7 +70,7 @@ def restore_backup(dev: RazerMouse, data: dict, fields: set[str] | None = None) 
         try:
             fn(*args, **kw)
         except _RESTORE_ERRORS as e:
-            logger.warning("Wiederherstellen von %s fehlgeschlagen: %s", name, e)
+            logger.warning("Restoring %s failed: %s", name, e)
             failed.append(name)
 
     def need(name: str):

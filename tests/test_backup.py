@@ -283,15 +283,15 @@ def test_cli_restore_asks_the_daemon_for_that_model(daemon_devices, monkeypatch,
 
 def test_cli_restore_old_daemon_prints_version_hint(daemon_devices, monkeypatch, capsys):
     def old(model):
-        raise cli.RestoreError(cli.VERSION_MISMATCH)
+        raise cli.RestoreError(cli._version_mismatch())
     monkeypatch.setattr(cli, "_dbus_restore", old)
     assert cli.main(["restore"]) == 1
     err = capsys.readouterr().err
     assert "Service version does not match" in err
-    assert "systemctl --user restart razertuxd" in err  # I2: names the real remedy
+    assert "systemctl --user restart razertuxd" in err  # names the real remedy
 
 
-# -- I4: experimental mice: PID of the opened node, probe before writing ------------
+# -- experimental mice: PID of the opened node, probe before writing ------------
 
 BV3 = "basilisk_v3_pro"  # experimental, 0x00aa wired / 0x00ab wireless
 

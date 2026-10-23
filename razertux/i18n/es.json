@@ -289,7 +289,10 @@
     "Naga V2 Pro: Low battery": "Naga V2 Pro: batería baja",
     "Unknown device: {model}": "Dispositivo desconocido: {model}",
     "Unknown profile: {profile}": "Perfil desconocido: {profile}",
-    "{name}: Low battery": "{name}: batería baja"
+    "{name}: Low battery": "{name}: batería baja",
+    "RazerTux service (Razer mice)": "Servicio de RazerTux (ratones Razer)",
+    "verbose log": "registro detallado",
+    "configuration directory (default: ~/.config/razertux)": "directorio de configuración (por defecto: ~/.config/razertux)"
   },
   "keynames": {
     "Acute": "Agudo",
@@ -413,5 +416,27 @@
   "OsdWindow": {
     "DPI": "DPI",
     "PROFILE": "PERFIL"
+  },
+  "cli": {
+    "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again": "La versión del servicio no coincide: reinicia el servicio de RazerTux (systemctl --user restart razertuxd) o vuelve a iniciar sesión",
+    "No Naga V2 Pro found (hidraw)": "No se encontró ninguna Naga V2 Pro (hidraw)",
+    "No {name} found (hidraw)": "No se encontró {name} (hidraw)",
+    "Unknown model: {model} (known: {known})": "Modelo desconocido: {model} (conocidos: {known})",
+    "Several devices connected – please specify --model: {models}": "Hay varios dispositivos conectados: indica --model: {models}",
+    "USB product ID of {path} cannot be determined – {name} has several variants (wired/wireless), please connect the mouse directly or pass --hidraw": "No se puede determinar el ID de producto USB de {path}: {name} tiene varias variantes (cable/inalámbrica); conecta el ratón directamente o indica --hidraw",
+    "Probe of {name} failed ({problems}) – nothing written": "La sonda de {name} falló ({problems}): no se escribió nada",
+    "hidraw path instead of auto-detection": "ruta hidraw en lugar de la detección automática",
+    "device model (default: the only connected device)": "modelo de dispositivo (por defecto: el único dispositivo conectado)",
+    "print the mouse state as JSON": "mostrar el estado del ratón como JSON",
+    "back up the mouse state once": "guardar una vez el estado del ratón",
+    "restore the mouse state from the backup": "restaurar el estado del ratón desde la copia de seguridad",
+    "Error: {error}": "Error: {error}",
+    "Backup already exists, nothing overwritten: {path}": "La copia de seguridad ya existe, no se sobrescribió nada: {path}",
+    "Warning: unreadable fields: {fields}": "Aviso: campos ilegibles: {fields}",
+    "Backup written: {path}": "Copia de seguridad escrita: {path}",
+    "Not restored: {fields}": "No restaurado: {fields}",
+    "Restored.": "Restaurado.",
+    "Error: No readable backup at {path}: {error}": "Error: no hay una copia de seguridad legible en {path}: {error}",
+    "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up": "El ratón no devuelve valores básicos (firmware, DPI, frecuencia de sondeo); no se guardó nada"
   }
 }

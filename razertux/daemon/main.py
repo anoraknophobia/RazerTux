@@ -19,6 +19,7 @@ from razertux.config.migrate import (
 from razertux.config.model import NAGA_MODEL, Profile
 from razertux.config.store import ConfigStore
 from razertux.devices.db import DeviceInfo, by_pid, load_devices
+from razertux.i18n import apply_settings, tr
 from razertux.razer.transport import HidrawTransport, find_control_hidraw, find_vendor_hidraw
 
 from .battery import notify_desktop
@@ -141,8 +142,8 @@ class Daemon:
 
     def _warn_openrazer(self) -> None:
         if self._openrazer():
-            logger.warning("OpenRazer-Treiber (razermouse) ist geladen und kann mit "
-                           "RazerTux kollidieren – bitte entladen oder deaktivieren")
+            logger.warning("OpenRazer driver (razermouse) is loaded and may conflict with "
+                           "RazerTux - please unload or disable it")
 
 
 async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,
@@ -159,18 +160,18 @@ async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,
             if waited >= timeout:
                 raise
             if waited == 0:
-                logger.warning("Kann /dev/uinput noch nicht öffnen (%s) – neuer Versuch alle "
-                               "%g s, höchstens %g s lang", e, interval, timeout)
+                logger.warning("Cannot open /dev/uinput yet (%s) - retrying every "
+                               "%g s for at most %g s", e, interval, timeout)
             await sleep(interval)
             waited += interval
 
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="razertuxd",
-                                 description="RazerTux service (Razer mice)")
-    ap.add_argument("--debug", action="store_true", help="verbose log")
+                                 description=tr("daemon", "RazerTux service (Razer mice)"))
+    ap.add_argument("--debug", action="store_true", help=tr("daemon", "verbose log"))
     ap.add_argument("--config-dir", type=Path, default=None,
-                    help="configuration directory (default: ~/.config/razertux)")
+                    help=tr("daemon", "configuration directory (default: ~/.config/razertux)"))
     return ap
 
 
@@ -184,7 +185,7 @@ async def run(config_dir: Path) -> int:
     try:
         out = await open_uinput(UinputOutput)
     except OSError as e:
-        logger.error("Kann /dev/uinput nicht öffnen (udev-Regel installiert?): %s", e)
+        logger.error("Cannot open /dev/uinput (udev rule installed?): %s", e)
         return 1
     daemon = Daemon(ConfigStore(config_dir), out)
     bus = None
@@ -198,13 +199,13 @@ async def run(config_dir: Path) -> int:
                 try:
                     await notify_desktop(bus, summary, body)
                 except Exception as e:  # no notification daemon running
-                    logger.warning("Benachrichtigung nicht gesendet: %s", e)
+                    logger.warning("Notification not sent: %s", e)
             daemon._spawn(send())
         daemon.notify = notify
         bus.export(OBJECT_PATH, daemon.service)
         reply = await bus.request_name(BUS_NAME, NameFlag.DO_NOT_QUEUE)
         if reply != RequestNameReply.PRIMARY_OWNER:
-            logger.error("%s ist bereits belegt – läuft der Dienst schon?", BUS_NAME)
+            logger.error("%s is already taken - is the service already running?", BUS_NAME)
             return 1
         loop = asyncio.get_running_loop()
         stop = asyncio.Event()
@@ -212,9 +213,9 @@ async def run(config_dir: Path) -> int:
             loop.add_signal_handler(sig, stop.set)
         watcher.start()  # monitor first, then scan: nothing is missed
         watcher.scan()
-        logger.info("razertuxd läuft")
+        logger.info("razertuxd running")
         await stop.wait()
-        logger.info("Beende …")
+        logger.info("Shutting down ...")
         return 0
     finally:
         watcher.stop()
@@ -224,6 +225,10 @@ async def run(config_dir: Path) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    pre = argparse.ArgumentParser(add_help=False)  # language of --help: from the config dir
+    pre.add_argument("--config-dir", type=Path, default=None)
+    known, _ = pre.parse_known_args(argv)
+    apply_settings(ConfigStore(known.config_dir or default_config_dir()).load_settings())
     args = build_parser().parse_args(argv)
     logging.basicConfig(stream=sys.stderr,
                         level=logging.DEBUG if args.debug else logging.INFO,

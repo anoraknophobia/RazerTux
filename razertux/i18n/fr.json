@@ -289,7 +289,10 @@
     "Naga V2 Pro: Low battery": "Naga V2 Pro : batterie faible",
     "Unknown device: {model}": "Appareil inconnu : {model}",
     "Unknown profile: {profile}": "Profil inconnu : {profile}",
-    "{name}: Low battery": "{name} : batterie faible"
+    "{name}: Low battery": "{name} : batterie faible",
+    "RazerTux service (Razer mice)": "Service RazerTux (souris Razer)",
+    "verbose log": "journal détaillé",
+    "configuration directory (default: ~/.config/razertux)": "dossier de configuration (par défaut : ~/.config/razertux)"
   },
   "keynames": {
     "Acute": "Aigu",
@@ -413,5 +416,27 @@
   "OsdWindow": {
     "DPI": "DPI",
     "PROFILE": "PROFIL"
+  },
+  "cli": {
+    "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again": "La version du service ne correspond pas : redémarrez le service RazerTux (systemctl --user restart razertuxd) ou reconnectez-vous",
+    "No Naga V2 Pro found (hidraw)": "Aucune Naga V2 Pro trouvée (hidraw)",
+    "No {name} found (hidraw)": "{name} introuvable (hidraw)",
+    "Unknown model: {model} (known: {known})": "Modèle inconnu : {model} (connus : {known})",
+    "Several devices connected – please specify --model: {models}": "Plusieurs appareils connectés – veuillez préciser --model : {models}",
+    "USB product ID of {path} cannot be determined – {name} has several variants (wired/wireless), please connect the mouse directly or pass --hidraw": "L'ID produit USB de {path} est indéterminable – {name} existe en plusieurs variantes (filaire/sans fil), branchez la souris directement ou indiquez --hidraw",
+    "Probe of {name} failed ({problems}) – nothing written": "Le sondage de {name} a échoué ({problems}) – rien n'a été écrit",
+    "hidraw path instead of auto-detection": "chemin hidraw au lieu de la détection automatique",
+    "device model (default: the only connected device)": "modèle d'appareil (par défaut : le seul appareil connecté)",
+    "print the mouse state as JSON": "afficher l'état de la souris en JSON",
+    "back up the mouse state once": "sauvegarder une fois l'état de la souris",
+    "restore the mouse state from the backup": "restaurer l'état de la souris depuis la sauvegarde",
+    "Error: {error}": "Erreur : {error}",
+    "Backup already exists, nothing overwritten: {path}": "La sauvegarde existe déjà, rien n'a été écrasé : {path}",
+    "Warning: unreadable fields: {fields}": "Avertissement : champs illisibles : {fields}",
+    "Backup written: {path}": "Sauvegarde écrite : {path}",
+    "Not restored: {fields}": "Non restauré : {fields}",
+    "Restored.": "Restauré.",
+    "Error: No readable backup at {path}: {error}": "Erreur : aucune sauvegarde lisible à {path} : {error}",
+    "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up": "La souris ne renvoie aucune valeur de base (firmware, DPI, fréquence d'interrogation) ; rien n'a été sauvegardé"
   }
 }

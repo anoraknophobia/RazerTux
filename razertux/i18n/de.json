@@ -289,7 +289,10 @@
     "Naga V2 Pro: Low battery": "Naga V2 Pro: Akku schwach",
     "Unknown device: {model}": "Unbekanntes Gerät: {model}",
     "Unknown profile: {profile}": "Unbekanntes Profil: {profile}",
-    "{name}: Low battery": "{name}: Akku schwach"
+    "{name}: Low battery": "{name}: Akku schwach",
+    "RazerTux service (Razer mice)": "RazerTux-Dienst (Razer-Mäuse)",
+    "verbose log": "ausführliches Protokoll",
+    "configuration directory (default: ~/.config/razertux)": "Konfigurationsordner (Standard: ~/.config/razertux)"
   },
   "keynames": {
     "Acute": "Akut",
@@ -413,5 +416,27 @@
   "OsdWindow": {
     "DPI": "DPI",
     "PROFILE": "PROFIL"
+  },
+  "cli": {
+    "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again": "Die Dienstversion passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden",
+    "No Naga V2 Pro found (hidraw)": "Keine Naga V2 Pro gefunden (hidraw)",
+    "No {name} found (hidraw)": "Kein {name} gefunden (hidraw)",
+    "Unknown model: {model} (known: {known})": "Unbekanntes Modell: {model} (bekannt: {known})",
+    "Several devices connected – please specify --model: {models}": "Mehrere Geräte verbunden – bitte --model angeben: {models}",
+    "USB product ID of {path} cannot be determined – {name} has several variants (wired/wireless), please connect the mouse directly or pass --hidraw": "Die USB-Produkt-ID von {path} lässt sich nicht bestimmen – {name} gibt es in mehreren Varianten (Kabel/Funk), bitte die Maus direkt anschließen oder --hidraw angeben",
+    "Probe of {name} failed ({problems}) – nothing written": "Probe von {name} fehlgeschlagen ({problems}) – nichts geschrieben",
+    "hidraw path instead of auto-detection": "hidraw-Pfad statt automatischer Erkennung",
+    "device model (default: the only connected device)": "Gerätemodell (Standard: das einzige verbundene Gerät)",
+    "print the mouse state as JSON": "Mauszustand als JSON ausgeben",
+    "back up the mouse state once": "Mauszustand einmalig sichern",
+    "restore the mouse state from the backup": "Mauszustand aus der Sicherung wiederherstellen",
+    "Error: {error}": "Fehler: {error}",
+    "Backup already exists, nothing overwritten: {path}": "Sicherung existiert bereits, nichts überschrieben: {path}",
+    "Warning: unreadable fields: {fields}": "Warnung: nicht lesbare Felder: {fields}",
+    "Backup written: {path}": "Sicherung geschrieben: {path}",
+    "Not restored: {fields}": "Nicht wiederhergestellt: {fields}",
+    "Restored.": "Wiederhergestellt.",
+    "Error: No readable backup at {path}: {error}": "Fehler: Keine lesbare Sicherung unter {path}: {error}",
+    "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up": "Die Maus liefert keine Grundwerte (Firmware, DPI, Abfragerate); nichts gesichert"
   }
 }

@@ -10,15 +10,18 @@ from pathlib import Path
 from .backup import BackupError, backup_path, load_backup, restore_backup, save_backup
 from .config.migrate import default_config_dir, migrate_legacy_config, migrate_schema_2
 from .config.model import NAGA_MODEL
+from .config.store import ConfigStore
 from .devices.db import load_devices
+from .i18n import apply_settings, tr
 from .razer.mouse import make_mouse
 from .razer.naga_v2_pro import NagaV2Pro
 from .razer.probe import probe
 from .razer.transport import HidrawTransport, find_control_hidraw, hidraw_pid
 
 
-VERSION_MISMATCH = ("Service version does not match – please restart the RazerTux service "
-                    "(systemctl --user restart razertuxd) or log in again")
+def _version_mismatch() -> str:
+    return tr("cli", "Service version does not match – please restart the RazerTux service "
+                     "(systemctl --user restart razertuxd) or log in again")
 
 
 def default_backup_path(model: str = NAGA_MODEL) -> Path:
@@ -33,7 +36,7 @@ def _device_info(model: str):
 def _open_transport(hidraw: str | None):
     path = hidraw or find_control_hidraw()
     if path is None:
-        raise FileNotFoundError("No Naga V2 Pro found (hidraw)")
+        raise FileNotFoundError(tr("cli", "No Naga V2 Pro found (hidraw)"))
     return HidrawTransport(path)
 
 
@@ -78,7 +81,7 @@ async def _daemon_call_async(member: str, *args):
         try:
             iface = bus.get_proxy_object(BUS_NAME, OBJECT_PATH, intro).get_interface(INTERFACE)
         except InterfaceNotFoundError as e:  # an older daemon with the single-device API
-            raise RestoreError(VERSION_MISMATCH) from e
+            raise RestoreError(_version_mismatch()) from e
         return await getattr(iface, member)(*args)
     except DBusError as e:
         raise RestoreError(e.text) from e
@@ -111,14 +114,15 @@ def resolve_model(model: str | None, hidraw: str | None = None) -> str:
     known = load_devices()
     if model is not None:
         if model not in known:
-            raise ModelError(f"Unknown model: {model} (known: {', '.join(known)})")
+            raise ModelError(tr("cli", "Unknown model: {model} (known: {known})",
+                               model=model, known=", ".join(known)))
         return model
     if hidraw is not None:
         return NAGA_MODEL
     connected = _connected_models()
     if len(connected) > 1:
-        raise ModelError("Several devices connected – please specify --model: "
-                         + ", ".join(connected))
+        raise ModelError(tr("cli", "Several devices connected – please specify --model: {models}",
+                            models=", ".join(connected)))
     return connected[0] if connected else NAGA_MODEL
 
 
@@ -133,7 +137,7 @@ def _control_path(args, model: str) -> str | None:
     info = _device_info(model)
     path = args.hidraw or find_control_hidraw(tuple(info.pids))
     if path is None:
-        raise FileNotFoundError(f"No {info.name} found (hidraw)")
+        raise FileNotFoundError(tr("cli", "No {name} found (hidraw)", name=info.name))
     return path
 
 
@@ -154,9 +158,9 @@ def _node_pid(model: str, path: str | None) -> int | None:
         return pid
     if len(info.pids) == 1:
         return next(iter(info.pids))
-    raise WriteRefused(f"USB product ID of {path} cannot be determined – {info.name} has "
-                       "several variants (wired/wireless), please connect the mouse directly "
-                       "or pass --hidraw")
+    raise WriteRefused(tr("cli", "USB product ID of {path} cannot be determined – {name} has "
+                              "several variants (wired/wireless), please connect the mouse "
+                              "directly or pass --hidraw", path=path, name=info.name))
 
 
 def _driver(model: str, transport, pid: int | None = None):
@@ -167,25 +171,30 @@ def _driver(model: str, transport, pid: int | None = None):
 
 def _check_probe(model: str, dev) -> None:
     """Experimental (unverified) mice: read-only probe before anything is written
-    (Ruling M8, as in the daemon)."""
+    (as in the daemon)."""
     info = _device_info(model)
     if info.verified:
         return
     result = probe(dev)
     if not result.ok:
-        raise WriteRefused(f"Probe of {info.name} failed ("
-                           + "; ".join(result.problems) + ") – nothing written")
+        raise WriteRefused(tr("cli", "Probe of {name} failed ({problems}) – nothing written",
+                              name=info.name, problems="; ".join(result.problems)))
+
+
+def _error_text(e: Exception) -> str:
+    return tr("cli", "Error: {error}", error=e)
 
 
 def main(argv=None) -> int:
+    apply_settings(ConfigStore(default_config_dir()).load_settings())  # also for --help
     ap = argparse.ArgumentParser(prog="razertux")
-    ap.add_argument("--hidraw", help="hidraw path instead of auto-detection")
-    ap.add_argument("--model", help="device model (default: the only connected device)")
+    ap.add_argument("--hidraw", help=tr("cli", "hidraw path instead of auto-detection"))
+    ap.add_argument("--model", help=tr("cli", "device model (default: the only connected device)"))
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("status", help="print the mouse state as JSON")
-    b = sub.add_parser("backup", help="back up the mouse state once")
+    sub.add_parser("status", help=tr("cli", "print the mouse state as JSON"))
+    b = sub.add_parser("backup", help=tr("cli", "back up the mouse state once"))
     b.add_argument("--path", type=Path, default=None)
-    r = sub.add_parser("restore", help="restore the mouse state from the backup")
+    r = sub.add_parser("restore", help=tr("cli", "restore the mouse state from the backup"))
     r.add_argument("--path", type=Path, default=None)
     # allow --hidraw / --model after the subcommand too
     for p in sub.choices.values():
@@ -195,7 +204,7 @@ def main(argv=None) -> int:
     try:
         model = resolve_model(args.model, args.hidraw)
     except ModelError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(_error_text(e), file=sys.stderr)
         return 1
     if getattr(args, "path", None) is None and args.cmd != "status":
         migrate_legacy_config()  # the default backup may still be in ~/.config/naga-config
@@ -204,7 +213,8 @@ def main(argv=None) -> int:
     if args.cmd == "backup":
         path = args.path or default_backup_path(model)
         if path.exists():
-            print(f"Backup already exists, nothing overwritten: {path}", file=sys.stderr)
+            print(tr("cli", "Backup already exists, nothing overwritten: {path}", path=path),
+                  file=sys.stderr)
             return 1
     if args.cmd == "restore":
         return _restore(args, model)
@@ -220,22 +230,20 @@ def main(argv=None) -> int:
                 snap = save_backup(dev, path)
                 missing = [k for k, v in snap.items() if v is None]
                 if missing:
-                    print(
-                        "Warning: unreadable fields: " + ", ".join(missing),
-                        file=sys.stderr,
-                    )
-                print(f"Backup written: {path}")
+                    print(tr("cli", "Warning: unreadable fields: {fields}",
+                             fields=", ".join(missing)), file=sys.stderr)
+                print(tr("cli", "Backup written: {path}", path=path))
     except (OSError, BackupError, WriteRefused) as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(_error_text(e), file=sys.stderr)
         return 1
     return 0
 
 
 def _report_restore(failed: list[str]) -> int:
     if failed:
-        print("Not restored: " + ", ".join(failed), file=sys.stderr)
+        print(tr("cli", "Not restored: {fields}", fields=", ".join(failed)), file=sys.stderr)
         return 2
-    print("Restored.")
+    print(tr("cli", "Restored."))
     return 0
 
 
@@ -252,7 +260,8 @@ def _restore(args, model: str = NAGA_MODEL) -> int:
         try:
             data = load_backup(path)
         except (OSError, ValueError) as e:
-            print(f"Error: No readable backup at {path}: {e}", file=sys.stderr)
+            print(tr("cli", "Error: No readable backup at {path}: {error}", path=path, error=e),
+                  file=sys.stderr)
             return 1
         node = _control_path(args, model)
         pid = _node_pid(model, node)
@@ -261,7 +270,7 @@ def _restore(args, model: str = NAGA_MODEL) -> int:
             _check_probe(model, dev)
             return _report_restore(restore_backup(dev, data))
     except (OSError, RestoreError, WriteRefused) as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(_error_text(e), file=sys.stderr)
         return 1
 
 

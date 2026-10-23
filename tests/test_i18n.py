@@ -268,3 +268,41 @@ async def test_low_battery_notification_in_german(tmp_path):
     d.sessions["naga_v2_pro"]._battery.poll()
     assert sent == [("Naga V2 Pro: Akku schwach", "Akkustand 10 % – bitte die Maus laden.")]
     await d.shutdown()
+
+
+# -- command line texts ------------------------------------------------------------
+def _german_config(home):
+    ConfigStore(home / ".config/razertux").save_settings(Settings("default", language="de"))
+
+
+def test_cli_prints_german_with_language_de(monkeypatch, fake_home, capsys):
+    from razertux import cli
+    _german_config(fake_home)
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": [])
+    assert cli.main(["restore"]) == 0
+    assert capsys.readouterr().out == "Wiederhergestellt.\n"
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": ["dpi"])
+    assert cli.main(["restore"]) == 2
+    assert capsys.readouterr().err == "Nicht wiederhergestellt: dpi\n"
+    assert cli.main(["status", "--model", "nope"]) == 1
+    assert capsys.readouterr().err.startswith("Fehler: Unbekanntes Modell: nope")
+
+
+def test_cli_and_daemon_help_follow_the_language(fake_home, capsys):
+    from razertux import cli
+    from razertux.daemon import main as daemon_main
+    _german_config(fake_home)
+    with pytest.raises(SystemExit):
+        cli.main(["--help"])
+    out = capsys.readouterr().out
+    assert "Mauszustand als JSON ausgeben" in out and "Mauszustand einmalig sichern" in out
+    with pytest.raises(SystemExit):
+        daemon_main.main(["--help"])
+    assert "ausführliches Protokoll" in capsys.readouterr().out
+
+
+def test_cli_stays_english_with_language_en(monkeypatch, capsys):
+    from razertux import cli
+    monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": [])
+    assert cli.main(["restore"]) == 0
+    assert capsys.readouterr().out == "Restored.\n"
