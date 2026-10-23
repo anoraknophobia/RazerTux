@@ -22,6 +22,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--tray", action="store_true",
                    help=_help_tr("nur Tray-Symbol starten (Fenster versteckt)"))
     p.add_argument("--config-dir", type=Path, default=None, help=_help_tr("Konfigurationsverzeichnis"))
+    p.add_argument("--restarted", action="store_true", help=argparse.SUPPRESS)  # language restart
     return p.parse_args(argv)
 
 
@@ -43,7 +44,14 @@ def main(argv: list[str] | None = None) -> int:
     from razertux.gui.theme import ThemeController
     from razertux.gui.tray import TrayIcon, app_icon
 
+    from razertux.gui.single_instance import InstanceServer, notify_running, wait_until_gone
+
     app = QApplication([sys.argv[0]])
+    if args.restarted:
+        wait_until_gone()  # the old instance quits right after starting us
+    if notify_running(show=not args.tray):
+        return 0  # already running: it shows its window (unless --tray)
+    instance = InstanceServer()
     app.setApplicationName("razertux")
     app.setDesktopFileName("razertux")  # Wayland: window icon and task bar entry
     app.setQuitOnLastWindowClosed(False)
@@ -93,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     tray.showWindowRequested.connect(show_window)
     tray.toggleWindowRequested.connect(toggle_window)
     tray.quitRequested.connect(quit_app)
+    instance.showRequested.connect(show_window)
     if have_tray:
         tray.show()
     if not args.tray or not have_tray:

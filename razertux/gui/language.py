@@ -78,10 +78,14 @@ def install_language(app: QApplication, store: ConfigStore) -> JsonTranslator:
 
 
 def restart_args(args: list[str], window_visible: bool) -> list[str]:
-    """Original options; --tray only if the window is hidden now."""
+    """Original options; --tray only if the window is hidden now. --restarted makes the
+    new instance wait for this one to quit (only one GUI may run)."""
+    args = [a for a in args if a != "--restarted"]
     if window_visible:
-        return [a for a in args if a != "--tray"]
-    return list(args) if "--tray" in args else [*args, "--tray"]
+        out = [a for a in args if a != "--tray"]
+    else:
+        out = list(args) if "--tray" in args else [*args, "--tray"]
+    return [*out, "--restarted"]
 
 
 def restart_command(args: list[str]) -> tuple[str, list[str]]:

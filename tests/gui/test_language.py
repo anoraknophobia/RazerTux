@@ -117,10 +117,12 @@ def test_restart_dialog_texts(store, monkeypatch):
 
 def test_restart_arguments_keep_options_and_window_state():
     args = ["--tray", "--config-dir", "/x"]
-    assert language.restart_args(args, window_visible=True) == ["--config-dir", "/x"]
+    assert language.restart_args(args, window_visible=True) == ["--config-dir", "/x", "--restarted"]
     assert language.restart_args(["--config-dir", "/x"], window_visible=False) == [
-        "--config-dir", "/x", "--tray"]
-    assert language.restart_args(args, window_visible=False) == args
+        "--config-dir", "/x", "--tray", "--restarted"]
+    assert language.restart_args(args, window_visible=False) == [*args, "--restarted"]
+    # a second restart does not pile up the flag
+    assert language.restart_args([*args, "--restarted"], window_visible=False) == [*args, "--restarted"]
     exe, argv = language.restart_command(["--tray"])
     assert exe == sys.executable and argv == ["-m", "razertux.gui.app", "--tray"]
 
