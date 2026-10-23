@@ -82,7 +82,7 @@ class OsdWindow(QWidget):
         return QColor(ACCENT)
 
     def _kind_text(self) -> str:
-        return {"DPI": self.tr("DPI"), "PROFIL": self.tr("PROFIL")}.get(self.kind, self.kind)
+        return {"DPI": self.tr("DPI"), "PROFIL": self.tr("PROFILE")}.get(self.kind, self.kind)
 
     def _value_font(self) -> QFont:
         font = QFont(self.font())

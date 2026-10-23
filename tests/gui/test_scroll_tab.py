@@ -14,7 +14,7 @@ def tab(qapp):
 
 def test_six_stages_with_names(tab):
     tab.load(Settings("default"))
-    assert [r.title.text() for r in tab.rows] == [f"Stufe {n}" for n in range(1, 7)]
+    assert [r.title.text() for r in tab.rows] == [f"Stage {n}" for n in range(1, 7)]
     assert [r.name_edit.text() for r in tab.rows] == ["Ultra-fine", "Standard", "Distinct",
                                                      "Adaptive", "Smooth Scroll", "Custom"]
     assert tab.changes == []
@@ -31,14 +31,14 @@ def test_active_stage_highlight_and_big_name(tab):
     assert tab.active_name.text() == "Standard"
     tab.load(Settings("default", scroll_stage_names={}))
     tab.set_status({"scroll_stage": 2})
-    assert tab.active_name.text() == "Stufe 2"  # no name given
+    assert tab.active_name.text() == "Stage 2"  # no name given
 
 
 def test_unknown_stage(tab):
     tab.load(Settings("default"))
     for status in ({"scroll_stage": -1}, {}, {"scroll_stage": 9}):
         tab.set_status(status)
-        assert tab.active_name.text() == "unbekannt"
+        assert tab.active_name.text() == "unknown"
         assert not any(r.property("active") for r in tab.rows)
 
 
@@ -58,9 +58,9 @@ def test_editing_names_updates_settings(tab):
 def test_hint_and_reference(tab):
     names = tab.findChildren(type(tab.hint))
     texts = " ".join(w.text() for w in names)
-    assert "nicht bekannt" not in texts and "außer Stufe 6" not in texts
-    assert "Reihenfolge" in texts and "umbenennen" in texts
-    assert "oberen Taste vorne" in tab.hint.text() and "Razer Synapse" in tab.hint.text()
+    assert "not known" not in texts and "except stage 6" not in texts
+    assert "order" in texts and "rename" in texts
+    assert "front top button" in tab.hint.text() and "Razer Synapse" in tab.hint.text()
     assert [p[0] for p in SYNAPSE_PRESETS] == ["Ultra-fine", "Standard", "Distinct",
                                                 "Adaptive", "Smooth Scroll", "Custom"]
     t = tab.reference

@@ -37,13 +37,13 @@ class StageRow(QFrame):
         self.setObjectName("stageRow")
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setProperty("active", False)
-        self.title = QLabel(self.tr("Stufe %1").replace("%1", str(slot)))
+        self.title = QLabel(self.tr("Stage %1").replace("%1", str(slot)))
         self.title.setObjectName("stageSlot")
         self.title.setMinimumWidth(64)
         self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText(self.tr("Namen vergeben …"))
+        self.name_edit.setPlaceholderText(self.tr("Enter a name …"))
         self.name_edit.setMaxLength(40)
-        self.marker = QLabel("● " + self.tr("aktiv"))
+        self.marker = QLabel("● " + self.tr("active"))
         self.marker.setObjectName("stageMarker")
         self.marker.setVisible(False)
         lay = QHBoxLayout(self)
@@ -82,10 +82,10 @@ class ScrollTab(QWidget):
         self.settings: Settings | None = None
         self._active = -1
 
-        stages = Card(self.tr("Mausrad-Stufen"))
+        stages = Card(self.tr("Scroll wheel stages"))
         stages.add(description(self.tr(
-            "Die Maus hat sechs Mausrad-Stufen. Die Namen folgen der Reihenfolge in Synapse "
-            "(Stufe 1 = Ultra-fine … Stufe 6 = Custom); du kannst sie beliebig umbenennen.")))
+            "The mouse has six scroll wheel stages. The names follow the order in Synapse "
+            "(stage 1 = Ultra-fine … stage 6 = Custom); you can rename them as you like.")))
         self.rows: list[StageRow] = []
         for slot in range(1, SCROLL_STAGES + 1):
             row = StageRow(slot)
@@ -94,7 +94,7 @@ class ScrollTab(QWidget):
             stages.add(row)
         stages.body.addStretch(1)
 
-        active = Card(self.tr("Aktive Stufe"))
+        active = Card(self.tr("Active stage"))
         self.active_name = QLabel()
         self.active_name.setObjectName("activeName")
         self.active_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -103,22 +103,22 @@ class ScrollTab(QWidget):
         self.active_name.setFont(font)
         self.active_slot = QLabel()
         self.active_slot.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        tension, self.tension_value = _tile(self.tr("Widerstand (Synapse)"))
-        steps, self.steps_value = _tile(self.tr("Rasten (Synapse)"))
+        tension, self.tension_value = _tile(self.tr("Tension (Synapse)"))
+        steps, self.steps_value = _tile(self.tr("Steps (Synapse)"))
         tiles = QHBoxLayout()
         tiles.addWidget(tension)
         tiles.addWidget(steps)
         self.hint = description(self.tr(
-            "Umschalten mit der oberen Taste vorne (wenn „Obere Tasten frei belegen“ aus ist). "
-            "Widerstand und Rasten der Stufen lassen sich derzeit nur in Razer Synapse unter "
-            "Windows ändern."))
+            "Switch with the front top button (when “Assign top buttons freely” is off). "
+            "Tension and steps of the stages can currently only be changed in Razer Synapse on "
+            "Windows."))
         for item in (self.active_name, self.active_slot, tiles, self.hint):
             active.add(item)
 
-        ref = Card(self.tr("Referenz (Synapse)"))
+        ref = Card(self.tr("Reference (Synapse)"))
         self.reference = QTableWidget(len(SYNAPSE_PRESETS), 3)
         self.reference.setHorizontalHeaderLabels(
-            [self.tr("Stufe"), self.tr("Widerstand"), self.tr("Rasten")])
+            [self.tr("Stage"), self.tr("Tension"), self.tr("Steps")])
         for r, values in enumerate(SYNAPSE_PRESETS):
             for c, v in enumerate(values):
                 item = QTableWidgetItem(str(v))
@@ -137,15 +137,15 @@ class ScrollTab(QWidget):
         ref.add(self.reference)
 
         self.profile: Profile | None = None
-        self.options_card = Card(self.tr("Scroll-Optionen"))
+        self.options_card = Card(self.tr("Scroll options"))
         self.options_card.add(description(self.tr(
-            "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.")))
+            "Applies to the profile. “Don't change” leaves the mouse's setting as it is.")))
         self.mode_row, self.mode_buttons = self._option_row(
-            self.tr("Modus"), "mode", ((0, self.tr("Gerastert")), (1, self.tr("Frei drehend"))))
+            self.tr("Mode"), "mode", ((0, self.tr("Notched")), (1, self.tr("Free-spinning"))))
         self.accel_row, self.accel_buttons = self._option_row(
-            self.tr("Beschleunigung"), "acceleration", ((True, self.tr("An")), (False, self.tr("Aus"))))
+            self.tr("Acceleration"), "acceleration", ((True, self.tr("On")), (False, self.tr("Off"))))
         self.reel_row, self.reel_buttons = self._option_row(
-            self.tr("Smart Reel"), "smart_reel", ((True, self.tr("An")), (False, self.tr("Aus"))))
+            self.tr("Smart Reel"), "smart_reel", ((True, self.tr("On")), (False, self.tr("Off"))))
         self.options_card.hide()
 
         self.naga_cards = QWidget()
@@ -175,7 +175,7 @@ class ScrollTab(QWidget):
         lay.addWidget(label)
         group = QButtonGroup(row)
         buttons: dict = {}
-        for value, text in ((None, self.tr("Nicht ändern")), *choices):
+        for value, text in ((None, self.tr("Don't change")), *choices):
             b = QPushButton(text)
             b.setCheckable(True)
             b.setMinimumWidth(72)
@@ -227,17 +227,17 @@ class ScrollTab(QWidget):
 
     def _name(self, slot: int) -> str:
         names = self.settings.scroll_stage_names if self.settings else {}
-        return names.get(slot) or self.tr("Stufe %1").replace("%1", str(slot))
+        return names.get(slot) or self.tr("Stage %1").replace("%1", str(slot))
 
     def _show_active(self) -> None:
         if self._active < 0:
-            self.active_name.setText(self.tr("unbekannt"))
-            self.active_slot.setText(self.tr("Noch keine Meldung der Maus – einmal umschalten."))
+            self.active_name.setText(self.tr("unknown"))
+            self.active_slot.setText(self.tr("No report from the mouse yet – switch once."))
             preset = None
         else:
             name = self._name(self._active)
             self.active_name.setText(name)
-            self.active_slot.setText(self.tr("Stufe %1").replace("%1", str(self._active)))
+            self.active_slot.setText(self.tr("Stage %1").replace("%1", str(self._active)))
             preset = next((p for p in SYNAPSE_PRESETS if p[0].casefold() == name.casefold()), None)
         self.tension_value.setText(str(preset[1]) if preset else "–")
         self.steps_value.setText(str(preset[2]) if preset else "–")

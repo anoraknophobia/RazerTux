@@ -1,5 +1,5 @@
 """Translations without Qt tooling: JSON catalogs `<lang>.json` next to this file,
-structured {"<context>": {"<German source>": "<translation>"}}. German is the
+structured {"<context>": {"<English source>": "<translation>"}}. English is the
 source language and needs no catalog.
 
 This module is plain Python (the daemon and the config store use `tr()`); the GUI
@@ -15,8 +15,8 @@ from typing import Any
 
 SUPPORTED = ("de", "en", "es", "fr")
 CHOICES = ("system", *SUPPORTED)
-SOURCE_LANGUAGE = "de"
-FALLBACK = "en"  # system language not supported
+SOURCE_LANGUAGE = "en"
+FALLBACK = SOURCE_LANGUAGE  # system language not supported
 CATALOG_DIR = Path(__file__).parent
 
 _current = SOURCE_LANGUAGE
@@ -24,7 +24,7 @@ _current = SOURCE_LANGUAGE
 
 @lru_cache(maxsize=None)
 def catalog(lang: str) -> dict[str, dict[str, str]]:
-    """The catalog of `lang` ({} for German or a missing/broken file)."""
+    """The catalog of `lang` ({} for English or a missing/broken file)."""
     if lang == SOURCE_LANGUAGE:
         return {}
     try:

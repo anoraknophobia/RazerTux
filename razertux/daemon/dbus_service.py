@@ -71,7 +71,7 @@ class Daemon1Service(ServiceInterface):
             return self._sessions()[model]
         except KeyError:
             raise DBusError(_ERR + "UnknownDevice",
-                            tr("daemon", "Unbekanntes Gerät: {model}", model=model)) from None
+                            tr("daemon", "Unknown device: {model}", model=model)) from None
 
     def list_devices(self) -> list[list]:
         out = []
@@ -89,7 +89,7 @@ class Daemon1Service(ServiceInterface):
             await session.activate(profile_id)
         except KeyError:
             raise DBusError(_ERR + "UnknownProfile",
-                            tr("daemon", "Unbekanntes Profil: {profile}", profile=profile_id)) from None
+                            tr("daemon", "Unknown profile: {profile}", profile=profile_id)) from None
         self.ProfileChanged(model, session.active_profile_id)
 
     async def reload(self) -> None:
@@ -149,14 +149,14 @@ class Daemon1Service(ServiceInterface):
             backup = load_backup(session.backup_path)
         except (OSError, ValueError) as e:
             raise DBusError(_ERR + "NoBackup",
-                            tr("daemon", "Keine lesbare Sicherung unter {path}: {error}",
+                            tr("daemon", "No readable backup at {path}: {error}",
                                path=session.backup_path, error=e)) from e
         try:
             return list(session.restore_backup(backup) or [])
         except NotConnected:
-            raise DBusError(_ERR + "NotConnected", tr("daemon", "Maus nicht verbunden")) from None
+            raise DBusError(_ERR + "NotConnected", tr("daemon", "Mouse not connected")) from None
         except ReadOnly:
-            raise DBusError(_ERR + "ReadOnly", tr("daemon", "Maus ist schreibgeschützt")) from None
+            raise DBusError(_ERR + "ReadOnly", tr("daemon", "Mouse is read-only")) from None
 
     # -- D-Bus ---------------------------------------------------------------
 

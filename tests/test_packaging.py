@@ -237,7 +237,7 @@ def test_translations_and_icon_are_packaged():
     pd = data["tool"]["setuptools"]["package-data"]
     assert pd["razertux.i18n"] == ["*.json"]
     assert pd["razertux.gui"] == ["assets/*.svg", "assets/layouts/*.json"]
-    for lang in ("en", "es", "fr"):
+    for lang in ("de", "es", "fr"):
         assert (ROOT / "razertux" / "i18n" / f"{lang}.json").is_file()
 
 
@@ -256,7 +256,7 @@ def test_descriptions_name_all_razer_mice_like_the_pkgbuild():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
     assert "Razer Naga V2 Pro and other Razer mice" in project["description"]
     assert "(Razer Naga V2 Pro and other Razer mice)" in " ".join(razertux.__doc__.split())
-    assert build_parser().description == "RazerTux-Dienst (Razer-Mäuse)"
+    assert build_parser().description == "RazerTux service (Razer mice)"
 
 
 def test_readme_wording_and_line_width():

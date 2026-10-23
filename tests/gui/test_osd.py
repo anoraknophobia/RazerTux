@@ -133,6 +133,22 @@ def test_one_window_replaced_by_new_message(qapp):
     w.hide()
 
 
+def test_kind_line_in_english_and_german(qapp):
+    from razertux.i18n.qt_translator import JsonTranslator
+    w = OsdWindow()
+    w.show_message("Zwei", "PROFIL")
+    assert w._kind_text() == "PROFILE"
+    t = JsonTranslator("de")
+    qapp.installTranslator(t)
+    try:
+        assert w._kind_text() == "PROFIL"
+        w.show_message("1800", "DPI")
+        assert w._kind_text() == "DPI"
+    finally:
+        qapp.removeTranslator(t)
+        w.hide()
+
+
 def test_long_name_is_fitted(qapp):
     w = OsdWindow()
     w.show_message("Ein sehr sehr langer Profilname hier", "PROFIL")

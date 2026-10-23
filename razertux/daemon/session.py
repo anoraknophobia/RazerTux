@@ -801,11 +801,11 @@ class DeviceSession:
     def _low_battery(self, level: int) -> None:
         logger.warning("Akku schwach (%s): %d %%", self.info.name, level)
         if self._is_naga_model:
-            title = tr("daemon", "Naga V2 Pro: Akku schwach")
+            title = tr("daemon", "Naga V2 Pro: Low battery")
         else:
-            title = tr("daemon", "{name}: Akku schwach", name=self.info.name)
+            title = tr("daemon", "{name}: Low battery", name=self.info.name)
         try:
-            self._notify(title, tr("daemon", "Akkustand {level} % – bitte die Maus laden.",
+            self._notify(title, tr("daemon", "Battery at {level} % – please charge the mouse.",
                                    level=level))
         except Exception:
             logger.exception("Benachrichtigung nicht gesendet")

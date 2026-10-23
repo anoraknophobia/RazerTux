@@ -4,15 +4,15 @@ from razertux import i18n
 
 
 @pytest.fixture(autouse=True)
-def german_locale(monkeypatch):
-    """Tests expect the German source texts: pin the system locale to German and
+def english_locale(monkeypatch):
+    """Tests expect the English source texts: pin the system locale to English and
     reset the process language (the daemon/GUI set it from settings.json)."""
     for var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("LANG", "de_DE.UTF-8")
-    i18n.set_language("de")
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    i18n.set_language("en")
     yield
-    i18n.set_language("de")
+    i18n.set_language("en")
 
 
 @pytest.fixture(autouse=True)

@@ -221,13 +221,13 @@ def test_header_title_and_battery_glyph(window):
 
 def test_profile_actions_in_the_dots_menu(window):
     texts = [a.text() for a in window.header.menu_button.menu().actions()]
-    assert texts == ["Neu", "Umbenennen", "Duplizieren", "Löschen", "Export …", "Import …"]
+    assert texts == ["New", "Rename", "Duplicate", "Delete", "Export …", "Import …"]
 
 
 def test_footer_language_combo_syncs_with_menu_and_offers_restart(window, store):
     combo = window.language_combo
     assert [combo.itemText(i) for i in range(combo.count())] == [
-        "Systemsprache", "Deutsch", "English", "Español", "Français"]
+        "System language", "Deutsch", "English", "Español", "Français"]
     assert combo.currentData() == "system"
     # wired like app.py
     controller = language.LanguageController(store)

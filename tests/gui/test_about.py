@@ -53,25 +53,25 @@ def test_app_icon_is_the_razertux_svg(qapp):
 
 def test_help_menu_opens_about(window, monkeypatch):
     menus = {a.text(): a.menu() for a in window.menuBar().actions()}
-    assert list(menus) == ["Ansicht", "Hilfe"]
-    assert [a.text() for a in menus["Hilfe"].actions()] == ["Über RazerTux"]
+    assert list(menus) == ["View", "Help"]
+    assert [a.text() for a in menus["Help"].actions()] == ["About RazerTux"]
     shown = []
     monkeypatch.setattr(AboutDialog, "exec", lambda self: shown.append(_text(self)) or 0)
-    menus["Hilfe"].actions()[0].trigger()
+    menus["Help"].actions()[0].trigger()
     assert len(shown) == 1 and __version__ in shown[0]
 
 
 def test_about_dialog_german(qapp):
     d = AboutDialog()
     text = _text(d)
-    assert d.windowTitle() == "Über RazerTux"
+    assert d.windowTitle() == "About RazerTux"
     for part in ("RazerTux", f"Version {__version__}",
-                 "Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden.",
-                 "GPL-2.0-or-later", "Protokollwissen aus OpenRazer (GPL-2.0)",
+                 "Not an official Razer product; not affiliated with Razer Inc.",
+                 "GPL-2.0-or-later", "Protocol knowledge from OpenRazer (GPL-2.0)",
                  "https://github.com/anoraknophobia/razertux"):
         assert part in text, part
     assert not d.windowIcon().isNull()
-    assert d.close_button.text() == "Schließen"
+    assert d.close_button.text() == "Close"
 
 
 def test_project_url():

@@ -50,7 +50,7 @@ def test_cli_backup_writes_then_refuses(monkeypatch, tmp_path, capsys):
     assert cli.main(["backup", "--path", str(p)]) == 0
     first = p.read_text()
     assert cli.main(["backup", "--path", str(p)]) == 1
-    assert "existiert bereits" in capsys.readouterr().err
+    assert "already exists" in capsys.readouterr().err
     assert p.read_text() == first
 
 
@@ -72,7 +72,7 @@ def test_cli_backup_dead_device_exit1_no_file(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(cli, "_open_transport", lambda path: _Ctx(FakeTransport(default=5)))
     p = tmp_path / "bk.json"
     assert cli.main(["backup", "--path", str(p)]) == 1
-    assert "nichts gesichert" in capsys.readouterr().err
+    assert "nothing backed up" in capsys.readouterr().err
     assert not p.exists()
 
 
@@ -152,7 +152,7 @@ def test_cli_restore_prefers_dbus(monkeypatch, tmp_path, capsys):
         raise AssertionError("must not open hidraw when the daemon answers")
     monkeypatch.setattr(cli, "_open_transport", no_hidraw)
     assert cli.main(["restore"]) == 0
-    assert "Wiederhergestellt" in capsys.readouterr().out
+    assert "Restored" in capsys.readouterr().out
 
 
 def test_cli_restore_dbus_reports_partial(monkeypatch, tmp_path, capsys):
@@ -166,10 +166,10 @@ def test_cli_restore_dbus_error(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("HOME", str(tmp_path))
 
     def boom(model):
-        raise cli.RestoreError("Keine lesbare Sicherung")
+        raise cli.RestoreError("No readable backup")
     monkeypatch.setattr(cli, "_dbus_restore", boom)
     assert cli.main(["restore"]) == 1
-    assert "Keine lesbare Sicherung" in capsys.readouterr().err
+    assert "No readable backup" in capsys.readouterr().err
 
 
 def test_cli_restore_falls_back_to_hidraw(monkeypatch, tmp_path, capsys):
@@ -197,7 +197,7 @@ def test_cli_restore_custom_path_skips_dbus(monkeypatch, tmp_path):
 def test_cli_restore_missing_backup_direct(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(cli, "_dbus_restore", lambda model="naga_v2_pro": None)
     assert cli.main(["restore", "--path", str(tmp_path / "nope.json")]) == 1
-    assert "Sicherung" in capsys.readouterr().err
+    assert "backup" in capsys.readouterr().err
 
 
 def test_dbus_restore_returns_none_without_bus(monkeypatch, tmp_path):
@@ -252,7 +252,7 @@ def test_cli_several_devices_need_model(daemon_devices, capsys):
 
 def test_cli_unknown_model(daemon_devices, capsys):
     assert cli.main(["status", "--model", "nope"]) == 1
-    assert "Unbekanntes Modell" in capsys.readouterr().err
+    assert "Unknown model" in capsys.readouterr().err
 
 
 def test_cli_status_with_model_uses_that_devices_hidraw(daemon_devices, monkeypatch, capsys):
@@ -287,7 +287,7 @@ def test_cli_restore_old_daemon_prints_version_hint(daemon_devices, monkeypatch,
     monkeypatch.setattr(cli, "_dbus_restore", old)
     assert cli.main(["restore"]) == 1
     err = capsys.readouterr().err
-    assert "Dienst-Version passt nicht" in err
+    assert "Service version does not match" in err
     assert "systemctl --user restart razertuxd" in err  # I2: names the real remedy
 
 
@@ -332,7 +332,7 @@ def test_cli_uses_the_pid_of_the_opened_node(bv3, capsys):
 def test_cli_refuses_when_the_pid_is_unknown_for_a_multi_pid_model(bv3, capsys):
     bv3["pid"] = None
     assert cli.main(["backup", "--model", BV3]) == 1
-    assert "Produkt-ID" in capsys.readouterr().err
+    assert "product ID" in capsys.readouterr().err
     assert bv3["made"] == [] and bv3["t"].sent == []
 
 
@@ -340,7 +340,7 @@ def test_cli_backup_of_experimental_mouse_needs_a_passing_probe(bv3, tmp_path, c
     bv3["t"] = _bad_probe_transport()
     assert cli.main(["backup", "--model", BV3]) == 1
     err = capsys.readouterr().err
-    assert "Probe" in err and "nichts geschrieben" in err
+    assert "Probe" in err and "nothing written" in err
     assert not cli.default_backup_path(BV3).exists()
 
 

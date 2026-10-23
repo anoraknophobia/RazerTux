@@ -44,14 +44,14 @@ class StageRow(QWidget):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.radio = QRadioButton()
-        self.radio.setToolTip(self.tr("Aktive Stufe"))
+        self.radio.setToolTip(self.tr("Active stage"))
         self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setRange(DPI_MIN // DPI_STEP, DPI_MAX // DPI_STEP)
         self.spin_x = _dpi_spin()
         self.y_label = QLabel(self.tr("Y"))
         self.spin_y = _dpi_spin()
         self.remove_btn = QPushButton("×")
-        self.remove_btn.setToolTip(self.tr("Stufe entfernen"))
+        self.remove_btn.setToolTip(self.tr("Remove stage"))
         self.remove_btn.setObjectName("iconButton")
         self.remove_btn.setFixedWidth(32)
         lay = QHBoxLayout(self)
@@ -115,17 +115,17 @@ class PerformanceTab(QWidget):
         self._limit = DEFAULT_DPI_LIMIT
         self._dpi_max = DPI_MAX  # the selected mouse's own maximum (device database)
 
-        self.sens_card = sens = Card(self.tr("Empfindlichkeit"))
-        sens.add(description(self.tr("Anzahl der Punkte pro Zoll (DPI), um die sich der Zeiger bewegt.")))
-        self.set_dpi_box = QCheckBox(self.tr("DPI dieses Profils festlegen"))
-        self.set_dpi_box.setToolTip(self.tr("Aus: Die Maus behält ihre eigenen DPI-Stufen (nicht ändern)."))
+        self.sens_card = sens = Card(self.tr("Sensitivity"))
+        sens.add(description(self.tr("Number of dots per inch (DPI) the cursor moves.")))
+        self.set_dpi_box = QCheckBox(self.tr("Set DPI for this profile"))
+        self.set_dpi_box.setToolTip(self.tr("Off: the mouse keeps its own sensitivity stages (no change)."))
         sens.add(self.set_dpi_box)
         self.rows_box = QWidget()
         rows_lay = QVBoxLayout(self.rows_box)
         rows_lay.setContentsMargins(0, 0, 0, 0)
         opts = QHBoxLayout()
-        self.stages_toggle = ToggleSwitch(self.tr("Empfindlichkeitsstufen"))
-        self.split_box = QCheckBox(self.tr("X/Y getrennt"))
+        self.stages_toggle = ToggleSwitch(self.tr("Sensitivity Stages"))
+        self.split_box = QCheckBox(self.tr("Enable X-Y sensitivity"))
         opts.addWidget(self.stages_toggle)
         opts.addSpacing(24)
         opts.addWidget(self.split_box)
@@ -137,9 +137,9 @@ class PerformanceTab(QWidget):
         self.scale_label = QLabel()
         scale.addWidget(self.scale_label)
         scale.addSpacing(16)
-        scale.addWidget(QLabel(self.tr("Reglergrenze")))
+        scale.addWidget(QLabel(self.tr("Slider limit")))
         self.limit_combo = QComboBox()
-        self.limit_combo.setToolTip(self.tr("Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.")
+        self.limit_combo.setToolTip(self.tr("Highest value of the DPI sliders. The mouse itself goes up to %1 DPI.")
                                     .replace("%1", str(DPI_MAX)))
         for v in DPI_LIMIT_CHOICES:
             self.limit_combo.addItem(str(v), v)
@@ -149,18 +149,18 @@ class PerformanceTab(QWidget):
         rows_lay.addLayout(scale)
         self.rows_layout = QVBoxLayout()
         rows_lay.addLayout(self.rows_layout)
-        self.add_btn = QPushButton(self.tr("Stufe hinzufügen"))
+        self.add_btn = QPushButton(self.tr("Add stage"))
         rows_lay.addWidget(self.add_btn, 0, Qt.AlignmentFlag.AlignLeft)
         sens.add(self.rows_box)
         self.radio_group = QButtonGroup(self)
 
-        self.poll_card = poll = Card(self.tr("Abfragerate"))
-        poll.add(description(self.tr("Wie oft pro Sekunde (Hz) die Maus Daten sendet.")))
+        self.poll_card = poll = Card(self.tr("Polling Rate"))
+        poll.add(description(self.tr("How often per second (Hz) the mouse sends data.")))
         row = QHBoxLayout()
         self.poll_buttons: dict[int | None, QPushButton] = {}
         group = QButtonGroup(self)
         for rate in (None, *POLL_RATES):
-            b = QPushButton(self.tr("Nicht ändern") if rate is None else str(rate))
+            b = QPushButton(self.tr("Don't change") if rate is None else str(rate))
             b.setCheckable(True)
             b.setMinimumWidth(72)
             group.addButton(b)
@@ -194,7 +194,7 @@ class PerformanceTab(QWidget):
         self.poll_card.setVisible("poll_rate" in info.features)
         for rate, b in self.poll_buttons.items():
             b.setVisible(rate is None or rate in info.poll_rates)
-        self.limit_combo.setToolTip(self.tr("Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.")
+        self.limit_combo.setToolTip(self.tr("Highest value of the DPI sliders. The mouse itself goes up to %1 DPI.")
                                     .replace("%1", str(self._dpi_max)))
         self._apply_limit(self.limit_combo.currentData())
 
@@ -226,7 +226,7 @@ class PerformanceTab(QWidget):
         return max(min(_round_dpi(v * 2), self._limit), v)
 
     def _update_scale_label(self) -> None:
-        self.scale_label.setText(self.tr("%1 – %2, Schritte von %3").replace("%1", str(DPI_MIN))
+        self.scale_label.setText(self.tr("%1 – %2, steps of %3").replace("%1", str(DPI_MIN))
                                  .replace("%2", str(self._limit)).replace("%3", str(DPI_STEP)))
 
     # -- loading ---------------------------------------------------------------

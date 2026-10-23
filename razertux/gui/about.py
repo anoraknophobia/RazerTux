@@ -13,7 +13,7 @@ LICENSE = "GPL-2.0-or-later"
 class AboutDialog(QDialog):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Über RazerTux"))
+        self.setWindowTitle(self.tr("About RazerTux"))
         icon = app_icon()
         self.setWindowIcon(icon)
 
@@ -23,12 +23,12 @@ class AboutDialog(QDialog):
         name = QLabel(f"<b style='font-size: 18pt'>{APP_NAME}</b>")
         version = QLabel(self.tr("Version %1").replace("%1", __version__))
         description = QLabel(self.tr(
-            "Inoffizieller Ersatz für Razer Synapse unter Linux: Tastenbelegung, Makros, "
-            "DPI, Beleuchtung und Energie für die Razer Naga V2 Pro."))
-        disclaimer = QLabel(self.tr("Kein offizielles Razer-Produkt, nicht mit Razer Inc. verbunden."))
+            "Unofficial Razer Synapse replacement for Linux: button assignments, macros, DPI, "
+            "lighting and power for the Razer Naga V2 Pro."))
+        disclaimer = QLabel(self.tr("Not an official Razer product; not affiliated with Razer Inc."))
         disclaimer.setObjectName("aboutDisclaimer")
-        licence = QLabel(self.tr("Lizenz: %1").replace("%1", LICENSE))
-        credit = QLabel(self.tr("Protokollwissen aus OpenRazer (GPL-2.0)"))
+        licence = QLabel(self.tr("License: %1").replace("%1", LICENSE))
+        credit = QLabel(self.tr("Protocol knowledge from OpenRazer (GPL-2.0)"))
         self.url_label: QLabel | None = None
         if PROJECT_URL:
             self.url_label = QLabel(f'<a href="{PROJECT_URL}">{PROJECT_URL}</a>')
@@ -49,7 +49,7 @@ class AboutDialog(QDialog):
         row.addLayout(text, 1)
 
         buttons = QDialogButtonBox()
-        self.close_button = buttons.addButton(self.tr("Schließen"), QDialogButtonBox.ButtonRole.RejectRole)
+        self.close_button = buttons.addButton(self.tr("Close"), QDialogButtonBox.ButtonRole.RejectRole)
         buttons.rejected.connect(self.reject)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 12)

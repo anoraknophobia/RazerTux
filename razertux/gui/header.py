@@ -27,20 +27,20 @@ class HeaderBar(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.profile_combo = QComboBox()
         self.profile_combo.setMinimumWidth(200)
-        self.profile_combo.setToolTip(self.tr("Profil"))
+        self.profile_combo.setToolTip(self.tr("Profile"))
         self.menu_button = QToolButton()
         self.menu_button.setObjectName("dotsButton")
         self.menu_button.setText("•••")
-        self.menu_button.setToolTip(self.tr("Profilaktionen"))
+        self.menu_button.setToolTip(self.tr("Profile actions"))
         self.menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         menu = QMenu(self.menu_button)
-        for text, key in ((self.tr("Neu"), "new"), (self.tr("Umbenennen"), "rename"),
-                          (self.tr("Duplizieren"), "duplicate"), (self.tr("Löschen"), "delete"),
+        for text, key in ((self.tr("New"), "new"), (self.tr("Rename"), "rename"),
+                          (self.tr("Duplicate"), "duplicate"), (self.tr("Delete"), "delete"),
                           (self.tr("Export …"), "export"), (self.tr("Import …"), "import")):
             menu.addAction(text).triggered.connect(lambda _=False, s=slots[key]: s())
         self.menu_button.setMenu(menu)
-        self.activate_btn = QPushButton(self.tr("Aktivieren"))
-        self.activate_btn.setToolTip(self.tr("Dieses Profil für die Maus verwenden"))
+        self.activate_btn = QPushButton(self.tr("Activate"))
+        self.activate_btn.setToolTip(self.tr("Use this profile for the mouse"))
         self.activate_btn.clicked.connect(lambda _=False: slots["activate"]())
         self.title = QLabel(self)  # product name of the selected mouse, plain text, no logo
         self.title.setObjectName("deviceTitle")

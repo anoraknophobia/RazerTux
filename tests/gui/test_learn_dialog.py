@@ -27,7 +27,7 @@ def test_start_asks_the_daemon_and_shows_the_prompt(env):
     d, transport, _ = env
     d.start()
     assert ("StartLearning", (DA,)) in transport.calls
-    assert d.message.text() == "Drück jetzt die Taste an der Maus …"
+    assert d.message.text() == "Press the button on the mouse now …"
     assert d.timer.isActive() and d.timer.interval() == LEARN_TIMEOUT_MS == 15000
 
 
@@ -67,7 +67,7 @@ def test_timeout_stops_learning_and_says_so(env):
     d.start()
     d.timer.timeout.emit()
     assert ("StopLearning", (DA,)) in transport.calls
-    assert "Keine Taste erkannt" in d.message.text()
+    assert "No button detected" in d.message.text()
     d.client.handle_signal("ButtonLearned", [DA, "mouse", 1, 275])
     assert ms.load_device_settings().learned == {}
 
@@ -77,7 +77,7 @@ def test_disconnected_mouse_gets_a_message_not_a_learn_call(env):
     transport.statuses[DA] = {"connected": False}
     d.start()
     assert not any(c[0] == "StartLearning" for c in transport.calls)
-    assert d.message.text() == "Die Maus ist nicht verbunden – zum Anlernen bitte anschließen."
+    assert d.message.text() == "The mouse is not connected – please connect it to learn."
     assert not d.timer.isActive()
 
 
@@ -87,18 +87,18 @@ def test_daemon_error_becomes_a_message(env):
 
     def failing(member, signature="", args=()):
         if member == "StartLearning":
-            raise DaemonError("io.github.razertux.Error.NotConnected", "Maus nicht verbunden")
+            raise DaemonError("io.github.razertux.Error.NotConnected", "Mouse not connected")
         return orig(member, signature, args)
     transport.call = failing
     d.start()  # no traceback
-    assert "Maus nicht verbunden" in d.message.text() and not d.timer.isActive()
+    assert "Mouse not connected" in d.message.text() and not d.timer.isActive()
 
 
 def test_daemon_away_becomes_a_message(env):
     d, transport, _ = env
     transport.up = False
     d.start()
-    assert d.message.text() == "Der Dienst läuft nicht – Anlernen ist nur mit laufendem Dienst möglich."
+    assert d.message.text() == "The service is not running – learning needs the running service."
 
 
 def test_action_dialog_offers_learning_only_when_asked(qapp):
@@ -106,6 +106,6 @@ def test_action_dialog_offers_learning_only_when_asked(qapp):
     assert plain.learn_btn is None
     calls = []
     d = ActionDialog(None, DefaultAction(), {}, button=ButtonId.SIDE_1, on_learn=lambda: calls.append(1))
-    assert d.learn_btn.text() == "Taste anlernen …"
+    assert d.learn_btn.text() == "Learn button …"
     d.learn_btn.click()
     assert calls == [1]

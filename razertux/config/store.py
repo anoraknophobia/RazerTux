@@ -55,7 +55,7 @@ class ConfigStore:
         return json.loads(path.read_text(encoding="utf-8"))
 
     def _error(self, path: Path, exc: Exception) -> None:
-        self.errors.append(tr("store", "{file} ist beschädigt und wurde ignoriert: {error}",
+        self.errors.append(tr("store", "{file} is corrupt and was ignored: {error}",
                               file=path.name, error=exc))
 
     def for_model(self, model: str) -> ModelStore:
@@ -144,7 +144,7 @@ class ModelStore:
 
     def _profile_path(self, profile_id: str) -> Path:
         if not _SAFE_ID.fullmatch(profile_id):
-            raise ValueError(tr("store", "Ungültige Profil-ID: {profile}", profile=repr(profile_id)))
+            raise ValueError(tr("store", "Invalid profile ID: {profile}", profile=repr(profile_id)))
         return self._profiles_dir / f"{profile_id}.json"
 
     def _read(self, path: Path) -> Any:
@@ -177,12 +177,12 @@ class ModelStore:
         try:
             path = self._profile_path(profile_id)
         except ValueError as e:
-            self.errors.append(tr("store", "Profil {profile} nicht lesbar: {error}",
+            self.errors.append(tr("store", "Profile {profile} not readable: {error}",
                                   profile=repr(profile_id), error=e))
             return self.default_profile()
         if not path.exists():
             if profile_id != "default":
-                self.errors.append(tr("store", "{file} fehlt, Standardprofil wird verwendet", file=path.name))
+                self.errors.append(tr("store", "{file} is missing, using the default profile", file=path.name))
             return self.default_profile()
         try:
             return self._load_path(path)
@@ -202,12 +202,12 @@ class ModelStore:
             try:
                 profile = self._load_path(src)
             except _READ_ERRORS as e:
-                raise ValueError(tr("store", "{file} ist beschädigt und kann nicht exportiert werden: {error}",
+                raise ValueError(tr("store", "{file} is corrupt and cannot be exported: {error}",
                                     file=src.name, error=e)) from e
         elif profile_id == "default":
             profile = self.default_profile()
         else:
-            raise ValueError(tr("store", "{file} fehlt und kann nicht exportiert werden", file=src.name))
+            raise ValueError(tr("store", "{file} is missing and cannot be exported", file=src.name))
         _write_json(Path(path), profile.to_dict())
 
     def import_profile(self, path: Path) -> Profile:

@@ -64,23 +64,23 @@ class DeviceBar(QWidget):
 
         self.banner = QFrame()
         self.banner.setStyleSheet(f"QFrame {{ background: {BANNER_COLOUR}; }} QLabel {{ color: white; }}")
-        self.banner_title = QLabel(self.tr("Experimentell – ungetestet"))
+        self.banner_title = QLabel(self.tr("Experimental – untested"))
         font = self.banner_title.font()
         font.setBold(True)
         self.banner_title.setFont(font)
         self.banner_text = QLabel(self.tr(
-            "Diese Maus ist mit RazerTux noch nicht getestet. Funktionen können fehlen oder "
-            "falsch sein – eine Diagnose hilft, sie zu unterstützen."))
+            "This mouse has not been tested with RazerTux yet. Features may be missing or wrong "
+            "– a diagnostic report helps to support it."))
         self.banner_text.setWordWrap(True)
         self.readonly_label = QLabel(self.tr(
-            "Nur lesend: die Maus hat auf die Prüfbefehle nicht wie erwartet geantwortet."))
+            "Read-only: the mouse did not answer the probe commands as expected."))
         self.readonly_label.setWordWrap(True)
-        self.diag_btn = QPushButton(self.tr("Diagnose kopieren"))
-        self.diag_btn.setToolTip(self.tr("Diagnosetext in die Zwischenablage kopieren"))
+        self.diag_btn = QPushButton(self.tr("Copy diagnostics"))
+        self.diag_btn.setToolTip(self.tr("Copy the diagnostic text to the clipboard"))
         self.diag_btn.clicked.connect(lambda _=False: self.copy_diagnostics())
-        self.remap_toggle = ToggleSwitch(self.tr("Tastenbelegung aktivieren"))
+        self.remap_toggle = ToggleSwitch(self.tr("Enable button assignment"))
         self.remap_toggle.setToolTip(self.tr(
-            "An: RazerTux übernimmt die Tasten dieser Maus (Belegungen und Makros)."))
+            "On: RazerTux takes over the buttons of this mouse (assignments and macros)."))
         self.remap_toggle.toggled.connect(self.remapToggled)
         texts = QVBoxLayout()
         for w in (self.banner_title, self.banner_text, self.readonly_label):
@@ -109,7 +109,7 @@ class DeviceBar(QWidget):
         self.pills = {}
         for model, name, _connection, connected in devices:
             b = self._pill.add(short_name(name))
-            b.setToolTip(name if connected else self.tr("%1 (nicht verbunden)").replace("%1", name))
+            b.setToolTip(name if connected else self.tr("%1 (not connected)").replace("%1", name))
             b.clicked.connect(lambda _=False, m=model: self._clicked(m))
             self.pills[model] = b
         self._pill.setVisible(bool(self.pills))
@@ -141,5 +141,5 @@ class DeviceBar(QWidget):
         except DaemonError as e:
             text = str(e)
         if not text:
-            text = self.tr("Keine Diagnose verfügbar (Dienst läuft nicht oder Maus nicht geprüft).")
+            text = self.tr("No diagnostics available (service not running or mouse not probed).")
         QGuiApplication.clipboard().setText(text)

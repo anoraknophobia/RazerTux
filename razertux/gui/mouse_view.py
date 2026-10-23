@@ -91,7 +91,7 @@ class MouseView(QWidget):
             locked = top_locked and b in TOP_BUTTONS
             label = firmware_top_label(b) if locked else action_label(a, b, macros, layout)
             btn.setEnabled(not locked)
-            self._tips[b] = (self.tr("Belegbar, wenn „Obere Tasten frei belegen“ an ist")
+            self._tips[b] = (self.tr("Assignable when “Assign top buttons freely” is on")
                              if locked else "")
             if self.device_layout.buttons[b].side == "left":
                 self._texts[b] = f"{button_name(b)}  →  {label}"

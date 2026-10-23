@@ -82,7 +82,7 @@ def action_to_dict(a: Action) -> dict[str, Any]:
 def action_from_dict(d: dict[str, Any]) -> Action:
     cls = _ACTION_TYPES.get(d.get("type"))  # type: ignore[arg-type]
     if cls is None:
-        raise ValueError(f"Unbekannter Aktionstyp: {d.get('type')!r}")
+        raise ValueError(f"Unknown action type: {d.get('type')!r}")
     return cls(**{k: v for k, v in d.items() if k != "type"})
 
 
@@ -126,7 +126,7 @@ class Macro:
         for s in d["steps"]:
             step_cls = _STEP_TYPES.get(s.get("type"))
             if step_cls is None:
-                raise ValueError(f"Unbekannter Schritttyp: {s.get('type')!r}")
+                raise ValueError(f"Unknown step type: {s.get('type')!r}")
             steps.append(step_cls(**{k: v for k, v in s.items() if k != "type"}))
         return cls(d["id"], d["name"], steps)
 
@@ -359,42 +359,42 @@ def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[s
         isinstance(a, KeyAction) and a.code == E.BTN_LEFT
         for a in profile.standard.values()
     ):
-        errors.append(tr("validate", "Linksklick nicht erreichbar"))
+        errors.append(tr("validate", "Left click unreachable"))
     if sum(isinstance(a, HypershiftAction) for a in profile.standard.values()) > 1:
-        errors.append(tr("validate", "Mehr als eine Hypershift-Taste"))
+        errors.append(tr("validate", "More than one Hypershift key"))
     if any(isinstance(a, HypershiftAction) for a in profile.hypershift.values()):
-        errors.append(tr("validate", "Hypershift-Taste in der Hypershift-Ebene nicht erlaubt"))
+        errors.append(tr("validate", "Hypershift key not allowed in the Hypershift layer"))
     if not profile.remap_top_buttons and any(
             isinstance(profile.standard.get(b), HypershiftAction)
             for b in (ButtonId.TOP_1, ButtonId.TOP_2)):
         # normal mode: the firmware owns the top buttons, the key would never be seen
-        errors.append(tr("validate", "Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“"))
+        errors.append(tr("validate", "Hypershift key on a top button only with “Assign top buttons freely”"))
     if macros is not None:
         for layer in (profile.standard, profile.hypershift):
             for a in layer.values():
                 if isinstance(a, MacroAction) and a.macro_id not in macros:
-                    msg = tr("validate", "Makro fehlt: {macro}", macro=a.macro_id)
+                    msg = tr("validate", "Macro missing: {macro}", macro=a.macro_id)
                     if msg not in errors:
                         errors.append(msg)
     if profile.dpi_stages:
         if len(profile.dpi_stages) > MAX_STAGES:
-            errors.append(tr("validate", "Maximal {count} DPI-Stufen erlaubt", count=MAX_STAGES))
+            errors.append(tr("validate", "At most {count} sensitivity stages allowed", count=MAX_STAGES))
         if any(not DPI_MIN <= v <= DPI_MAX for s in profile.dpi_stages for v in s):
-            errors.append(tr("validate", "DPI muss zwischen {min} und {max} liegen",
+            errors.append(tr("validate", "DPI must be between {min} and {max}",
                              min=DPI_MIN, max=DPI_MAX))
         if not 1 <= profile.active_stage <= len(profile.dpi_stages):
-            errors.append(tr("validate", "Aktive DPI-Stufe ungültig"))
+            errors.append(tr("validate", "Invalid active sensitivity stage"))
     if profile.poll_rate is not None and profile.poll_rate not in POLL_RATES:
-        errors.append(tr("validate", "Abtastrate muss 125, 500 oder 1000 Hz sein"))
+        errors.append(tr("validate", "Polling rate must be 125, 500 or 1000 Hz"))
     mode = profile.scroll.get("mode")
     if "mode" in profile.scroll and (isinstance(mode, bool) or mode not in (0, 1)):
-        errors.append(tr("validate", "Mausrad-Modus ungültig"))
+        errors.append(tr("validate", "Invalid scroll wheel mode"))
     for key in ("acceleration", "smart_reel"):
         if key in profile.scroll and not isinstance(profile.scroll[key], bool):
-            errors.append(tr("validate", "Mausrad-Option ungültig"))
+            errors.append(tr("validate", "Invalid scroll wheel option"))
     for zone, lz in profile.lighting.items():
         if not 0 <= lz.brightness <= 255:
-            errors.append(tr("validate", "Helligkeit ({zone}) muss zwischen 0 und 255 liegen", zone=zone))
+            errors.append(tr("validate", "Brightness ({zone}) must be between 0 and 255", zone=zone))
         if any(not 0 <= c <= 255 for c in lz.color):
-            errors.append(tr("validate", "Farbwerte ({zone}) müssen zwischen 0 und 255 liegen", zone=zone))
+            errors.append(tr("validate", "Color values ({zone}) must be between 0 and 255", zone=zone))
     return errors

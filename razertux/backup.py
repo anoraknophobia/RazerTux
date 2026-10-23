@@ -34,7 +34,7 @@ def save_backup(dev: RazerMouse, path: Path) -> dict:
     snap = dev.snapshot()
     if all(snap.get(k) is None for k in CORE_FIELDS):
         raise BackupError(
-            "Maus liefert keine Kernwerte (Firmware, DPI, Abfragerate); nichts gesichert"
+            "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up"
         )
     path.parent.mkdir(parents=True, exist_ok=True)
     try:

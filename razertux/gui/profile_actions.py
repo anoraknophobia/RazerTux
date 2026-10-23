@@ -18,7 +18,7 @@ class ProfileActions:
     _show_profile(), select_profile(), reload_profile_list(), _update_dirty(), _refresh()."""
 
     def _ask_name(self, title: str, default: str = "") -> str | None:
-        name, ok = QInputDialog.getText(self, title, self.tr("Name des Profils:"), text=default)
+        name, ok = QInputDialog.getText(self, title, self.tr("Profile name:"), text=default)
         return name.strip() if ok and name.strip() else None
 
     def _add_profile(self, profile: Profile) -> None:
@@ -28,14 +28,14 @@ class ProfileActions:
         self.client.reload()
 
     def new_profile(self) -> None:
-        name = self._ask_name(self.tr("Neues Profil")) if self._resolve_unsaved() else None
+        name = self._ask_name(self.tr("New profile")) if self._resolve_unsaved() else None
         if name:
             self._add_profile(Profile(id=new_profile_id(name), name=name,
                                       standard=self.profiles.default_profile().standard))
 
     def duplicate_profile(self) -> None:
-        name = self._ask_name(self.tr("Profil duplizieren"),
-                                    self.tr("%1 (Kopie)").replace("%1", self.profile.name)) \
+        name = self._ask_name(self.tr("Duplicate profile"),
+                                    self.tr("%1 (copy)").replace("%1", self.profile.name)) \
             if self._resolve_unsaved() else None
         if name:
             copy_ = Profile.from_dict(self.profile.to_dict())
@@ -43,7 +43,7 @@ class ProfileActions:
             self._add_profile(copy_)
 
     def rename_profile(self) -> None:
-        name = self._ask_name(self.tr("Profil umbenennen"), self.profile.name)
+        name = self._ask_name(self.tr("Rename profile"), self.profile.name)
         if name:
             self.profile.name = name
             self.profile_combo.setItemText(self.profile_combo.currentIndex(), name)
@@ -51,10 +51,10 @@ class ProfileActions:
 
     def delete_profile(self) -> None:
         if len(self.profiles.list_profiles()) < 2:
-            self._warn(self.tr("Löschen nicht möglich"), self.tr("Das letzte Profil kann nicht gelöscht werden."))
+            self._warn(self.tr("Cannot delete"), self.tr("The last profile cannot be deleted."))
             return
-        if not self._confirm(self.tr("Profil löschen"),
-                             self.tr("Profil „%1“ wirklich löschen?").replace("%1", self.profile.name)):
+        if not self._confirm(self.tr("Delete profile"),
+                             self.tr("Really delete profile “%1”?").replace("%1", self.profile.name)):
             return
         self.profiles.delete_profile(self.profile.id)
         self.reload_profile_list()
@@ -64,17 +64,17 @@ class ProfileActions:
     def export_profile(self) -> None:
         if not self._resolve_unsaved():
             return
-        path, _ = QFileDialog.getSaveFileName(self, self.tr("Profil exportieren"),
-                                              f"{self.profile.name}.json", self.tr("Profil (*.json)"))
+        path, _ = QFileDialog.getSaveFileName(self, self.tr("Export profile"),
+                                              f"{self.profile.name}.json", self.tr("Profile (*.json)"))
         if path:
             try:
                 self.profiles.export_profile(self.profile.id, Path(path))
             except (OSError, ValueError) as e:
-                self._warn(self.tr("Export fehlgeschlagen"),
-                           self.tr("Das Profil konnte nicht exportiert werden:") + f"\n{e}")
+                self._warn(self.tr("Export failed"),
+                           self.tr("The profile could not be exported:") + f"\n{e}")
 
     def import_profile(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, self.tr("Profil importieren"), "", self.tr("Profil (*.json)"))
+        path, _ = QFileDialog.getOpenFileName(self, self.tr("Import profile"), "", self.tr("Profile (*.json)"))
         if path:
             self.import_profile_from(Path(path))
 
@@ -84,8 +84,8 @@ class ProfileActions:
         try:
             profile = self.profiles.import_profile(path)
         except Exception as e:  # corrupt JSON, wrong structure, unreadable file
-            self._warn(self.tr("Import fehlgeschlagen"),
-                       self.tr("Die Datei „%1“ ist kein gültiges Profil und wurde nicht importiert.")
+            self._warn(self.tr("Import failed"),
+                       self.tr("The file “%1” is not a valid profile and was not imported.")
                        .replace("%1", path.name) + f"\n\n{e}")
             return
         self.reload_profile_list()
@@ -94,10 +94,10 @@ class ProfileActions:
 
     def _ask_unsaved(self) -> str:
         box = QMessageBox(QMessageBox.Icon.Question, APP_NAME,
-                          self.tr("Das Profil hat ungespeicherte Änderungen."), parent=self)
-        save = box.addButton(self.tr("Speichern"), QMessageBox.ButtonRole.AcceptRole)
-        discard = box.addButton(self.tr("Verwerfen"), QMessageBox.ButtonRole.DestructiveRole)
-        box.addButton(self.tr("Abbrechen"), QMessageBox.ButtonRole.RejectRole)
+                          self.tr("The profile has unsaved changes."), parent=self)
+        save = box.addButton(self.tr("Save"), QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton(self.tr("Discard"), QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(self.tr("Cancel"), QMessageBox.ButtonRole.RejectRole)
         box.exec()
         return {save: "save", discard: "discard"}.get(box.clickedButton(), "cancel")
 
@@ -114,8 +114,8 @@ class ProfileActions:
             on_disk.pop(macro_id, None)
             self.store.save_macros(on_disk)
         except OSError as e:
-            self._warn(self.tr("Speichern fehlgeschlagen"),
-                       self.tr("Das Makro konnte nicht gelöscht werden:") + f"\n{e}")
+            self._warn(self.tr("Saving failed"),
+                       self.tr("The macro could not be deleted:") + f"\n{e}")
             return
         strip_macro(self.profile, macro_id)  # unsaved edits stay, only the binding goes
         base = Profile.from_dict(self._baseline)

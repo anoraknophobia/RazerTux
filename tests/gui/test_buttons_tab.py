@@ -24,7 +24,7 @@ def tab(qapp, store):
 
 def test_combo_offers_the_three_plates(tab):
     assert [tab.plate_combo.itemText(i) for i in range(3)] == [
-        "Seitenplatte: 12 Tasten", "Seitenplatte: 6 Tasten", "Seitenplatte: 2 Tasten"]
+        "Side plate: 12 buttons", "Side plate: 6 buttons", "Side plate: 2 buttons"]
     assert tab.plate_combo.currentData() == 12
     assert tab.plate_hint.isHidden()
 
@@ -37,7 +37,7 @@ def test_choosing_a_plate_saves_and_swaps_the_layout(tab, store, plate, index):
     assert set(view.device_layout.buttons_on("left")) == {ButtonId(f"side_{n}") for n in range(1, plate + 1)}
     assert view.device_layout.views[0].asset == f"naga_v2_pro_plate{plate}.svg"
     assert not tab.plate_hint.isHidden()
-    assert tab.plate_hint.text() == "Belegung ungeprüft – falls eine Taste nicht stimmt: Taste anlernen"
+    assert tab.plate_hint.text() == "Assignment unverified – if a button is wrong: learn the button"
     tab.plate_combo.setCurrentIndex(0)
     assert tab.plate_hint.isHidden()
     assert len(tab.mouse_view.device_layout.buttons_on("left")) == 12
@@ -125,7 +125,7 @@ def test_generic_layout_shows_learned_slots_only(qapp, store):
     t.set_device(load_devices()["abyssus"], ms)
     learn = {b for b in t.mouse_view._buttons if b.startswith("learn_")}
     assert learn == {ButtonId.LEARN_2}
-    assert t.learn_btn.isVisibleTo(t) and t.learn_btn.text() == "Taste anlernen …"
+    assert t.learn_btn.isVisibleTo(t) and t.learn_btn.text() == "Learn button …"
     got = []
     t.learnRequested.connect(got.append)
     t.learn_btn.click()

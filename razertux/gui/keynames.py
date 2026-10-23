@@ -24,23 +24,23 @@ MODIFIER_CODES = frozenset({
 })
 
 _MODIFIER_NAMES = {
-    E.KEY_LEFTCTRL: QT_TRANSLATE_NOOP("keynames", "Strg"), E.KEY_RIGHTCTRL: QT_TRANSLATE_NOOP("keynames", "Strg"), E.KEY_LEFTSHIFT: QT_TRANSLATE_NOOP("keynames", "Shift"),
-    E.KEY_RIGHTSHIFT: QT_TRANSLATE_NOOP("keynames", "Shift"), E.KEY_LEFTALT: QT_TRANSLATE_NOOP("keynames", "Alt"), E.KEY_RIGHTALT: QT_TRANSLATE_NOOP("keynames", "Alt Gr"),
+    E.KEY_LEFTCTRL: QT_TRANSLATE_NOOP("keynames", "Ctrl"), E.KEY_RIGHTCTRL: QT_TRANSLATE_NOOP("keynames", "Ctrl"), E.KEY_LEFTSHIFT: QT_TRANSLATE_NOOP("keynames", "Shift"),
+    E.KEY_RIGHTSHIFT: QT_TRANSLATE_NOOP("keynames", "Shift"), E.KEY_LEFTALT: QT_TRANSLATE_NOOP("keynames", "Alt"), E.KEY_RIGHTALT: QT_TRANSLATE_NOOP("keynames", "AltGr"),
     E.KEY_LEFTMETA: QT_TRANSLATE_NOOP("keynames", "Meta"), E.KEY_RIGHTMETA: QT_TRANSLATE_NOOP("keynames", "Meta"),
 }
 _SPECIAL_NAMES = {
-    E.KEY_ENTER: QT_TRANSLATE_NOOP("keynames", "Enter"), E.KEY_ESC: QT_TRANSLATE_NOOP("keynames", "Esc"), E.KEY_BACKSPACE: QT_TRANSLATE_NOOP("keynames", "Rücktaste"),
-    E.KEY_TAB: QT_TRANSLATE_NOOP("keynames", "Tab"), E.KEY_SPACE: QT_TRANSLATE_NOOP("keynames", "Leertaste"), E.KEY_DELETE: QT_TRANSLATE_NOOP("keynames", "Entf"),
-    E.KEY_INSERT: QT_TRANSLATE_NOOP("keynames", "Einfg"), E.KEY_HOME: QT_TRANSLATE_NOOP("keynames", "Pos1"), E.KEY_END: QT_TRANSLATE_NOOP("keynames", "Ende"),
-    E.KEY_PAGEUP: QT_TRANSLATE_NOOP("keynames", "Bild hoch"), E.KEY_PAGEDOWN: QT_TRANSLATE_NOOP("keynames", "Bild runter"),
-    E.KEY_UP: QT_TRANSLATE_NOOP("keynames", "Hoch"), E.KEY_DOWN: QT_TRANSLATE_NOOP("keynames", "Runter"), E.KEY_LEFT: QT_TRANSLATE_NOOP("keynames", "Links"), E.KEY_RIGHT: QT_TRANSLATE_NOOP("keynames", "Rechts"),
-    E.KEY_CAPSLOCK: QT_TRANSLATE_NOOP("keynames", "Feststelltaste"), E.KEY_SYSRQ: QT_TRANSLATE_NOOP("keynames", "Druck"), E.KEY_SCROLLLOCK: QT_TRANSLATE_NOOP("keynames", "Rollen"),
-    E.KEY_PAUSE: QT_TRANSLATE_NOOP("keynames", "Pause"), E.KEY_NUMLOCK: QT_TRANSLATE_NOOP("keynames", "Num"), E.KEY_COMPOSE: QT_TRANSLATE_NOOP("keynames", "Menü"),
+    E.KEY_ENTER: QT_TRANSLATE_NOOP("keynames", "Enter"), E.KEY_ESC: QT_TRANSLATE_NOOP("keynames", "Esc"), E.KEY_BACKSPACE: QT_TRANSLATE_NOOP("keynames", "Backspace"),
+    E.KEY_TAB: QT_TRANSLATE_NOOP("keynames", "Tab"), E.KEY_SPACE: QT_TRANSLATE_NOOP("keynames", "Space"), E.KEY_DELETE: QT_TRANSLATE_NOOP("keynames", "Del"),
+    E.KEY_INSERT: QT_TRANSLATE_NOOP("keynames", "Ins"), E.KEY_HOME: QT_TRANSLATE_NOOP("keynames", "Home"), E.KEY_END: QT_TRANSLATE_NOOP("keynames", "End"),
+    E.KEY_PAGEUP: QT_TRANSLATE_NOOP("keynames", "PgUp"), E.KEY_PAGEDOWN: QT_TRANSLATE_NOOP("keynames", "PgDn"),
+    E.KEY_UP: QT_TRANSLATE_NOOP("keynames", "Up"), E.KEY_DOWN: QT_TRANSLATE_NOOP("keynames", "Down"), E.KEY_LEFT: QT_TRANSLATE_NOOP("keynames", "Left"), E.KEY_RIGHT: QT_TRANSLATE_NOOP("keynames", "Right"),
+    E.KEY_CAPSLOCK: QT_TRANSLATE_NOOP("keynames", "Caps Lock"), E.KEY_SYSRQ: QT_TRANSLATE_NOOP("keynames", "Print"), E.KEY_SCROLLLOCK: QT_TRANSLATE_NOOP("keynames", "Scroll Lock"),
+    E.KEY_PAUSE: QT_TRANSLATE_NOOP("keynames", "Pause"), E.KEY_NUMLOCK: QT_TRANSLATE_NOOP("keynames", "Num"), E.KEY_COMPOSE: QT_TRANSLATE_NOOP("keynames", "Menu"),
 }
 _BUTTON_NAMES = {
-    E.BTN_LEFT: QT_TRANSLATE_NOOP("keynames", "Linke Maustaste"), E.BTN_RIGHT: QT_TRANSLATE_NOOP("keynames", "Rechte Maustaste"),
-    E.BTN_MIDDLE: QT_TRANSLATE_NOOP("keynames", "Mittlere Maustaste"), E.BTN_SIDE: QT_TRANSLATE_NOOP("keynames", "Maustaste Seite"),
-    E.BTN_EXTRA: QT_TRANSLATE_NOOP("keynames", "Maustaste Extra"),
+    E.BTN_LEFT: QT_TRANSLATE_NOOP("keynames", "Left Click"), E.BTN_RIGHT: QT_TRANSLATE_NOOP("keynames", "Right Click"),
+    E.BTN_MIDDLE: QT_TRANSLATE_NOOP("keynames", "Middle Click"), E.BTN_SIDE: QT_TRANSLATE_NOOP("keynames", "Mouse Button 4"),
+    E.BTN_EXTRA: QT_TRANSLATE_NOOP("keynames", "Mouse Button 5"),
 }
 
 
@@ -49,21 +49,21 @@ def _tr(text: str) -> str:
 
 
 _DEAD_KEYS = {
-    "circumflex": QT_TRANSLATE_NOOP("keynames", "Zirkumflex"),
-    "acute": QT_TRANSLATE_NOOP("keynames", "Akut"),
-    "grave": QT_TRANSLATE_NOOP("keynames", "Gravis"),
+    "circumflex": QT_TRANSLATE_NOOP("keynames", "Circumflex"),
+    "acute": QT_TRANSLATE_NOOP("keynames", "Acute"),
+    "grave": QT_TRANSLATE_NOOP("keynames", "Grave"),
     "tilde": QT_TRANSLATE_NOOP("keynames", "Tilde"),
-    "diaeresis": QT_TRANSLATE_NOOP("keynames", "Trema"),
-    "cedilla": QT_TRANSLATE_NOOP("keynames", "Cedille"),
+    "diaeresis": QT_TRANSLATE_NOOP("keynames", "Diaeresis"),
+    "cedilla": QT_TRANSLATE_NOOP("keynames", "Cedilla"),
     "abovering": QT_TRANSLATE_NOOP("keynames", "Ring"),
 }
 _KP_NAMES = {
-    "End": QT_TRANSLATE_NOOP("keynames", "Ende"), "Home": QT_TRANSLATE_NOOP("keynames", "Pos1"),
-    "Prior": QT_TRANSLATE_NOOP("keynames", "Bild hoch"), "Next": QT_TRANSLATE_NOOP("keynames", "Bild runter"),
-    "Insert": QT_TRANSLATE_NOOP("keynames", "Einfg"), "Delete": QT_TRANSLATE_NOOP("keynames", "Entf"),
-    "Left": QT_TRANSLATE_NOOP("keynames", "Links"), "Right": QT_TRANSLATE_NOOP("keynames", "Rechts"),
-    "Up": QT_TRANSLATE_NOOP("keynames", "Hoch"), "Down": QT_TRANSLATE_NOOP("keynames", "Runter"),
-    "Begin": QT_TRANSLATE_NOOP("keynames", "Mitte"), "Add": "+", "Subtract": "-",
+    "End": QT_TRANSLATE_NOOP("keynames", "End"), "Home": QT_TRANSLATE_NOOP("keynames", "Home"),
+    "Prior": QT_TRANSLATE_NOOP("keynames", "PgUp"), "Next": QT_TRANSLATE_NOOP("keynames", "PgDn"),
+    "Insert": QT_TRANSLATE_NOOP("keynames", "Ins"), "Delete": QT_TRANSLATE_NOOP("keynames", "Del"),
+    "Left": QT_TRANSLATE_NOOP("keynames", "Left"), "Right": QT_TRANSLATE_NOOP("keynames", "Right"),
+    "Up": QT_TRANSLATE_NOOP("keynames", "Up"), "Down": QT_TRANSLATE_NOOP("keynames", "Down"),
+    "Begin": QT_TRANSLATE_NOOP("keynames", "Center"), "Add": "+", "Subtract": "-",
     "Multiply": "*", "Divide": "/", "Decimal": ",", "Enter": "Enter",
 }
 
@@ -120,7 +120,7 @@ class _Xkb:
         names = _RuleNames(None, None, layout.encode(), None, None)
         keymap = lib.xkb_keymap_new_from_names(ctx, ctypes.byref(names), 0)
         if not ctx or not keymap:
-            raise OSError(f"xkb-Keymap für Layout {layout!r} nicht ladbar")
+            raise OSError(f"xkb keymap for layout {layout!r} cannot be loaded")
         self._lib, self._state = lib, lib.xkb_state_new(keymap)
 
     def label(self, code: int) -> str:
@@ -149,7 +149,7 @@ def _evdev_name(code: int) -> str:
     if isinstance(name, list):
         name = name[0]
     if not name:
-        return _tr("Taste %1").replace("%1", str(code))
+        return _tr("Key %1").replace("%1", str(code))
     return name.split("_", 1)[-1].capitalize()
 
 

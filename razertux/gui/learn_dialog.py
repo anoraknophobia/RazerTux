@@ -22,11 +22,11 @@ class LearnDialog(QDialog):
         self.client, self.model, self.button, self.model_store = client, model, button, model_store
         self.learning = False
         self.signal: InputSignal | None = None
-        self.setWindowTitle(self.tr("Taste anlernen: %1").replace("%1", button_name(button)))
+        self.setWindowTitle(self.tr("Learn button: %1").replace("%1", button_name(button)))
         self.message = QLabel()
         self.message.setWordWrap(True)
         self.message.setMinimumWidth(360)
-        self.cancel_btn = QPushButton(self.tr("Abbrechen"))
+        self.cancel_btn = QPushButton(self.tr("Cancel"))
         self.cancel_btn.clicked.connect(lambda _=False: self.reject())
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
@@ -46,23 +46,23 @@ class LearnDialog(QDialog):
         try:
             status = self.client.status(self.model)
             if not self.client.is_available:
-                return self._fail(self.tr("Der Dienst läuft nicht – Anlernen ist nur mit laufendem "
-                                          "Dienst möglich."))
+                return self._fail(self.tr("The service is not running – learning needs the "
+                                          "running service."))
             if not status.get("connected"):
-                return self._fail(self.tr("Die Maus ist nicht verbunden – zum Anlernen bitte anschließen."))
+                return self._fail(self.tr("The mouse is not connected – please connect it to learn."))
             if not self.client.start_learning(self.model):
-                return self._fail(self.tr("Der Dienst läuft nicht – Anlernen ist nur mit laufendem "
-                                          "Dienst möglich."))
+                return self._fail(self.tr("The service is not running – learning needs the "
+                                          "running service."))
         except DaemonError as e:
-            return self._fail(self.tr("Anlernen nicht möglich: %1").replace("%1", str(e)))
+            return self._fail(self.tr("Learning not possible: %1").replace("%1", str(e)))
         self.learning = True
-        self.message.setText(self.tr("Drück jetzt die Taste an der Maus …"))
+        self.message.setText(self.tr("Press the button on the mouse now …"))
         self.timer.start()
         return True
 
     def _fail(self, text: str) -> bool:
         self.message.setText(text)
-        self.cancel_btn.setText(self.tr("Schließen"))
+        self.cancel_btn.setText(self.tr("Close"))
         return False
 
     def _stop(self) -> None:
@@ -76,7 +76,7 @@ class LearnDialog(QDialog):
 
     def _timed_out(self) -> None:
         self._stop()
-        self._fail(self.tr("Keine Taste erkannt – bitte erneut versuchen."))
+        self._fail(self.tr("No button detected – please try again."))
 
     def _on_learned(self, model: str, source: str, ev_type: int, code: int) -> None:
         if not self.learning or model != self.model:
@@ -90,7 +90,7 @@ class LearnDialog(QDialog):
         try:
             self.model_store.save_device_settings(ds)
         except OSError as e:
-            self._fail(self.tr("Speichern fehlgeschlagen:") + f" {e}")
+            self._fail(self.tr("Saving failed:") + f" {e}")
             return
         self.client.reload()
         self.accept()

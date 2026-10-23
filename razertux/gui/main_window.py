@@ -75,13 +75,13 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.profile_combo.activated.connect(lambda _i: self.select_profile(self.profile_combo.currentData()))
 
         self._no_daemon_text = self.tr(
-            "Der Dienst (razertuxd) läuft nicht. Änderungen werden gespeichert, "
-            "aber erst nach dem Start des Dienstes angewendet.")
+            "The service (razertuxd) is not running. Changes are saved but only applied once "
+            "the service starts.")
         self.banner = make_banner(self._no_daemon_text)
         self.openrazer_banner = make_banner(self.tr(
-            "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme"))
+            "The OpenRazer driver is loaded – please uninstall it, otherwise both programs interfere with each other"))
         self.errors_banner = make_banner("", "#8a5a00")
-        self.errors_dismiss = QPushButton(self.tr("Ausblenden"), self.errors_banner)
+        self.errors_dismiss = QPushButton(self.tr("Dismiss"), self.errors_banner)
         self.errors_dismiss.clicked.connect(lambda _=False: self._dismiss_errors())
         self.errors_banner.layout().addWidget(self.errors_dismiss)
 
@@ -102,27 +102,27 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.macro_tab.changed.connect(self._refresh)
         self.macro_tab.macroDeleted.connect(self._on_macro_deleted)
         self.tabs = QTabWidget()  # filled per mouse (_show_tabs)
-        self.tab_pages = {"buttons": (self.buttons_tab, self.tr("TASTEN")),
-                          "performance": (self.performance_tab, self.tr("LEISTUNG")),
-                          "scroll": (self.scroll_tab, self.tr("MAUSRAD")),
-                          "lighting": (self.lighting_tab, self.tr("BELEUCHTUNG")),
-                          "power": (self.power_tab, self.tr("ENERGIE")), "macros": (self.macro_tab, self.tr("MAKROS"))}
+        self.tab_pages = {"buttons": (self.buttons_tab, self.tr("CUSTOMIZE")),
+                          "performance": (self.performance_tab, self.tr("PERFORMANCE")),
+                          "scroll": (self.scroll_tab, self.tr("SCROLL WHEEL")),
+                          "lighting": (self.lighting_tab, self.tr("LIGHTING")),
+                          "power": (self.power_tab, self.tr("POWER")), "macros": (self.macro_tab, self.tr("MACROS"))}
         self.power_tab.load(self.settings)
         self.scroll_tab.load(self.settings)
         self.performance_tab.load_settings(self.settings)
-        view = self.menuBar().addMenu(self.tr("Ansicht"))
-        self.system_colors_action = view.addAction(self.tr("Systemfarben verwenden"))
+        view = self.menuBar().addMenu(self.tr("View"))
+        self.system_colors_action = view.addAction(self.tr("Use system colors"))
         self.system_colors_action.setCheckable(True)
         self.system_colors_action.triggered.connect(
             lambda on: self.themeRequested.emit("system" if on else "synapse"))
         self.language_menu = add_language_menu(view, self.settings.language, self.languageRequested.emit)
-        help_menu = self.menuBar().addMenu(self.tr("Hilfe"))
-        self.about_action = help_menu.addAction(self.tr("Über RazerTux"))
+        help_menu = self.menuBar().addMenu(self.tr("Help"))
+        self.about_action = help_menu.addAction(self.tr("About RazerTux"))
         self.about_action.triggered.connect(lambda _=False: self.show_about())
 
-        self.save_btn = QPushButton(self.tr("Speichern"))
+        self.save_btn = QPushButton(self.tr("Save"))
         self.save_btn.clicked.connect(lambda _=False: self.save())
-        self.revert_btn = QPushButton(self.tr("Verwerfen"))
+        self.revert_btn = QPushButton(self.tr("Discard"))
         self.revert_btn.clicked.connect(lambda _=False: self.revert())
         self.language_combo = make_language_combo(self.settings.language, self.languageRequested.emit)
         footer = QHBoxLayout()
@@ -288,8 +288,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.macro_tab.commit_recording()
         errors = validate(self.profile, self.macros)
         if errors:
-            self._warn(self.tr("Speichern nicht möglich"),
-                       self.tr("Das Profil enthält Fehler:") + "\n\n" + "\n".join(f"• {e}" for e in errors))
+            self._warn(self.tr("Cannot save"),
+                       self.tr("The profile contains errors:") + "\n\n" + "\n".join(f"• {e}" for e in errors))
             return False
         try:
             if self._macro_dicts() != self._macros_baseline:
@@ -303,8 +303,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
                 self._settings_baseline = self._power_dict()
             self.profiles.save_profile(self.profile)
         except OSError as e:
-            self._warn(self.tr("Speichern fehlgeschlagen"),
-                       self.tr("Das Profil konnte nicht geschrieben werden:") + f"\n{e}")
+            self._warn(self.tr("Saving failed"),
+                       self.tr("The profile could not be written:") + f"\n{e}")
             return False
         self._baseline = copy.deepcopy(self.profile.to_dict())
         self.client.reload()
@@ -326,7 +326,7 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
     def _update_warnings(self) -> None:
         """Config errors from the daemon and from our own store (dismissible)."""
         lines = list(dict.fromkeys([*map(str, self._daemon_errors), *self.store.errors]))
-        self.errors_banner.label.setText(self.tr("Konfigurationsprobleme:") + "\n"
+        self.errors_banner.label.setText(self.tr("Configuration problems:") + "\n"
                                          + "\n".join(f"• {e}" for e in lines))
         self.errors_banner.setVisible(bool(lines) and lines != self._dismissed_errors)
         self._current_errors = lines

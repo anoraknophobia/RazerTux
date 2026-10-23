@@ -17,9 +17,9 @@ from razertux import i18n
 from razertux.config.store import ConfigStore
 from razertux.i18n.qt_translator import JsonTranslator
 
-# language names always in their own language; only "Systemsprache" is translated
+# language names always in their own language; only "System language" is translated
 LANGUAGES = (
-    ("system", QT_TRANSLATE_NOOP("LanguageMenu", "Systemsprache")),
+    ("system", QT_TRANSLATE_NOOP("LanguageMenu", "System language")),
     ("de", "Deutsch"), ("en", "English"), ("es", "Español"), ("fr", "Français"),
 )
 
@@ -30,7 +30,7 @@ def _tr(text: str) -> str:
 
 def add_language_menu(parent: QMenu, current: str, pick: Callable[[str], None]) -> QMenu:
     """Submenu "Sprache" with one radio entry per language."""
-    menu = parent.addMenu(_tr("Sprache"))
+    menu = parent.addMenu(_tr("Language"))
     group = QActionGroup(menu)
     group.setExclusive(True)
     for key, name in LANGUAGES:
@@ -52,7 +52,7 @@ def make_language_combo(current: str, pick: Callable[[str], None]) -> QComboBox:
     """Compact language dropdown (window footer); same entries as the menu."""
     combo = QComboBox()
     combo.setObjectName("languageCombo")
-    combo.setToolTip(_tr("Sprache"))
+    combo.setToolTip(_tr("Language"))
     for key, name in LANGUAGES:
         combo.addItem(_tr(name) if key == "system" else name, key)
     select_language(combo, current)
@@ -112,11 +112,11 @@ class LanguageController(QObject):
         self.name = store.load_settings().language
 
     def _ask_restart(self) -> bool:
-        box = QMessageBox(QMessageBox.Icon.Information, self.tr("Sprache"),
-                          self.tr("Die Sprache wird nach einem Neustart übernommen."),
+        box = QMessageBox(QMessageBox.Icon.Information, self.tr("Language"),
+                          self.tr("The language will change after a restart."),
                           parent=self._dialog_parent)
-        now = box.addButton(self.tr("Jetzt neu starten"), QMessageBox.ButtonRole.AcceptRole)
-        box.addButton(self.tr("Später"), QMessageBox.ButtonRole.RejectRole)
+        now = box.addButton(self.tr("Restart now"), QMessageBox.ButtonRole.AcceptRole)
+        box.addButton(self.tr("Later"), QMessageBox.ButtonRole.RejectRole)
         box.exec()
         return box.clickedButton() is now
 

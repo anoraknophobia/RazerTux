@@ -19,21 +19,21 @@ from razertux.gui.labels import WHEEL_BUTTONS, button_name
 from razertux.hw.buttons import ButtonId
 
 _TYPES = [
-    ("default", QT_TRANSLATE_NOOP("ActionDialog", "Standard")),
-    ("disabled", QT_TRANSLATE_NOOP("ActionDialog", "Deaktiviert")),
-    ("key", QT_TRANSLATE_NOOP("ActionDialog", "Taste")),
-    ("combo", QT_TRANSLATE_NOOP("ActionDialog", "Kombination")),
-    ("macro", QT_TRANSLATE_NOOP("ActionDialog", "Makro")),
-    ("hypershift", QT_TRANSLATE_NOOP("ActionDialog", "Hypershift-Taste")),
-    ("dpi_up", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe hoch")),
-    ("dpi_down", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe runter")),
-    ("dpi_cycle", QT_TRANSLATE_NOOP("ActionDialog", "DPI-Stufe weiter")),
+    ("default", QT_TRANSLATE_NOOP("ActionDialog", "Default")),
+    ("disabled", QT_TRANSLATE_NOOP("ActionDialog", "Disabled")),
+    ("key", QT_TRANSLATE_NOOP("ActionDialog", "Key")),
+    ("combo", QT_TRANSLATE_NOOP("ActionDialog", "Key combination")),
+    ("macro", QT_TRANSLATE_NOOP("ActionDialog", "Macro")),
+    ("hypershift", QT_TRANSLATE_NOOP("ActionDialog", "Hypershift key")),
+    ("dpi_up", QT_TRANSLATE_NOOP("ActionDialog", "Sensitivity stage up")),
+    ("dpi_down", QT_TRANSLATE_NOOP("ActionDialog", "Sensitivity stage down")),
+    ("dpi_cycle", QT_TRANSLATE_NOOP("ActionDialog", "Sensitivity stage cycle")),
 ]
 _MODES = [
-    ("once", QT_TRANSLATE_NOOP("ActionDialog", "Einmal ausführen")),
-    ("repeat_n", QT_TRANSLATE_NOOP("ActionDialog", "n-mal wiederholen")),
-    ("while_held", QT_TRANSLATE_NOOP("ActionDialog", "Solange gedrückt")),
-    ("toggle", QT_TRANSLATE_NOOP("ActionDialog", "Umschalten (an/aus)")),
+    ("once", QT_TRANSLATE_NOOP("ActionDialog", "Play once")),
+    ("repeat_n", QT_TRANSLATE_NOOP("ActionDialog", "Repeat n times")),
+    ("while_held", QT_TRANSLATE_NOOP("ActionDialog", "While pressed")),
+    ("toggle", QT_TRANSLATE_NOOP("ActionDialog", "Toggle (on/off)")),
 ]
 
 
@@ -66,11 +66,11 @@ class KeyCapture(QPushButton):
 
     def _refresh(self) -> None:
         if self.hasFocus() and not self._done:
-            self.setText(self.tr("Jetzt Taste drücken …"))
+            self.setText(self.tr("Press a key now …"))
         elif self.codes:
             self.setText(combo_label(self.codes))
         else:
-            self.setText(self.tr("Drücken zum Aufnehmen"))
+            self.setText(self.tr("Click to record"))
         self.changed.emit()
 
     def press(self, code: int) -> None:
@@ -111,7 +111,7 @@ class KeyCapture(QPushButton):
     def focusInEvent(self, e) -> None:
         super().focusInEvent(e)
         self._done = True
-        self.setText(self.tr("Taste drücken …"))
+        self.setText(self.tr("Press a key …"))
 
     def focusOutEvent(self, e) -> None:
         super().focusOutEvent(e)
@@ -124,8 +124,8 @@ class ActionDialog(QDialog):
                  on_learn: Callable[[], object] | None = None):
         """on_learn: offer "Taste anlernen …" (an unchecked or experimental key)."""
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Belegung: %1").replace("%1", button_name(button))
-                            if button else self.tr("Belegung"))
+        self.setWindowTitle(self.tr("Assignment: %1").replace("%1", button_name(button))
+                            if button else self.tr("Assignment"))
         self._macros = macros
         allow_hypershift = layer == "standard" and button not in WHEEL_BUTTONS
 
@@ -147,25 +147,25 @@ class ActionDialog(QDialog):
         self.hint.setWordWrap(True)
 
         form = QFormLayout()
-        form.addRow(self.tr("Aktion:"), self.type_combo)
+        form.addRow(self.tr("Action:"), self.type_combo)
         self._rows = {
-            "capture": (QLabel(self.tr("Eingabe:")), self.capture),
-            "macro": (QLabel(self.tr("Makro:")), self.macro_combo),
-            "mode": (QLabel(self.tr("Modus:")), self.mode_combo),
-            "count": (QLabel(self.tr("Anzahl:")), self.count_spin),
+            "capture": (QLabel(self.tr("Input:")), self.capture),
+            "macro": (QLabel(self.tr("Macro:")), self.macro_combo),
+            "mode": (QLabel(self.tr("Mode:")), self.mode_combo),
+            "count": (QLabel(self.tr("Count:")), self.count_spin),
         }
         for label, field in self._rows.values():
             form.addRow(label, field)
         self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
                                         | QDialogButtonBox.StandardButton.Cancel)
-        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(self.tr("Übernehmen"))
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(self.tr("Abbrechen"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(self.tr("Apply"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(self.tr("Cancel"))
         self.ok_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
         self.learn_btn: QPushButton | None = None
         if on_learn is not None:
-            self.learn_btn = self.buttons.addButton(self.tr("Taste anlernen …"),
+            self.learn_btn = self.buttons.addButton(self.tr("Learn button …"),
                                                     QDialogButtonBox.ButtonRole.ActionRole)
-            self.learn_btn.setToolTip(self.tr("RazerTux zeigen, welches Signal diese Taste sendet"))
+            self.learn_btn.setToolTip(self.tr("Show RazerTux which signal this button sends"))
             self.learn_btn.clicked.connect(lambda _=False: on_learn())
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
@@ -226,7 +226,7 @@ class ActionDialog(QDialog):
         for name, (label, field) in self._rows.items():
             label.setVisible(show[name])
             field.setVisible(show[name])
-        self.hint.setText(self.tr("Noch keine Makros vorhanden (Reiter „Makros“).")
+        self.hint.setText(self.tr("No macros yet (see the “Macros” tab).")
                           if t == "macro" and not self._macros else "")
         self.ok_button.setEnabled(self.result_action() is not None)
 

@@ -15,23 +15,23 @@ def _tr(text: str) -> str:
 
 
 _BUTTON_NAMES: dict[ButtonId, str] = {
-    ButtonId.LEFT: QT_TRANSLATE_NOOP("labels", "Linksklick"),
-    ButtonId.RIGHT: QT_TRANSLATE_NOOP("labels", "Rechtsklick"),
-    ButtonId.MIDDLE: QT_TRANSLATE_NOOP("labels", "Mausrad-Klick"),
-    ButtonId.WHEEL_UP: QT_TRANSLATE_NOOP("labels", "Rad hoch"),
-    ButtonId.WHEEL_DOWN: QT_TRANSLATE_NOOP("labels", "Rad runter"),
-    ButtonId.WHEEL_LEFT: QT_TRANSLATE_NOOP("labels", "Rad links"),
-    ButtonId.WHEEL_RIGHT: QT_TRANSLATE_NOOP("labels", "Rad rechts"),
-    ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Obere Taste vorn"),
-    ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Obere Taste hinten"),
-    ButtonId.BACK: QT_TRANSLATE_NOOP("labels", "Seitentaste hinten"),
-    ButtonId.FORWARD: QT_TRANSLATE_NOOP("labels", "Seitentaste vorn"),
-    ButtonId.DPI_UP: QT_TRANSLATE_NOOP("labels", "DPI hoch"),
-    ButtonId.DPI_DOWN: QT_TRANSLATE_NOOP("labels", "DPI runter"),
-    ButtonId.CLUTCH: QT_TRANSLATE_NOOP("labels", "Sniper-Taste"),
-    ButtonId.PROFILE: QT_TRANSLATE_NOOP("labels", "Profiltaste"),
+    ButtonId.LEFT: QT_TRANSLATE_NOOP("labels", "Left Click"),
+    ButtonId.RIGHT: QT_TRANSLATE_NOOP("labels", "Right Click"),
+    ButtonId.MIDDLE: QT_TRANSLATE_NOOP("labels", "Scroll Click"),
+    ButtonId.WHEEL_UP: QT_TRANSLATE_NOOP("labels", "Scroll Up"),
+    ButtonId.WHEEL_DOWN: QT_TRANSLATE_NOOP("labels", "Scroll Down"),
+    ButtonId.WHEEL_LEFT: QT_TRANSLATE_NOOP("labels", "Scroll Left"),
+    ButtonId.WHEEL_RIGHT: QT_TRANSLATE_NOOP("labels", "Scroll Right"),
+    ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Top button front"),
+    ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Top button rear"),
+    ButtonId.BACK: QT_TRANSLATE_NOOP("labels", "Side button rear"),
+    ButtonId.FORWARD: QT_TRANSLATE_NOOP("labels", "Side button front"),
+    ButtonId.DPI_UP: QT_TRANSLATE_NOOP("labels", "DPI up"),
+    ButtonId.DPI_DOWN: QT_TRANSLATE_NOOP("labels", "DPI down"),
+    ButtonId.CLUTCH: QT_TRANSLATE_NOOP("labels", "Sniper button"),
+    ButtonId.PROFILE: QT_TRANSLATE_NOOP("labels", "Profile button"),
 }
-LEARN_NAME = QT_TRANSLATE_NOOP("labels", "Angelernte Taste %1")
+LEARN_NAME = QT_TRANSLATE_NOOP("labels", "Learned button %1")
 
 
 def button_name(b: ButtonId) -> str:
@@ -39,26 +39,26 @@ def button_name(b: ButtonId) -> str:
         return _tr(_BUTTON_NAMES[b])
     if b.value.startswith("learn_"):
         return _tr(LEARN_NAME).replace("%1", b.value.removeprefix("learn_"))
-    return _tr("Taste %1").replace("%1", b.value.removeprefix("side_"))
+    return _tr("Button %1").replace("%1", b.value.removeprefix("side_"))
 
 
 def battery_text(status: dict) -> str:
     """Battery for header and tray: percent with charging mark, "Kabel" when wired."""
     if status and not status.get("connected", True):
-        return _tr("Maus nicht verbunden")
+        return _tr("Mouse not connected")
     if status and status.get("connection") == "wired":
-        return _tr("Kabel")
+        return _tr("Wired")
     b = int(status.get("battery", -1)) if status else -1
     if b < 0:
-        return _tr("Akku: –")
-    text = _tr("Akku: %1 %").replace("%1", str(b))
-    return text + " ⚡ " + _tr("lädt") if status.get("charging") else text
+        return _tr("Battery: –")
+    text = _tr("Battery: %1 %").replace("%1", str(b))
+    return text + " ⚡ " + _tr("charging") if status.get("charging") else text
 
 
 # Top buttons while "Obere Tasten frei belegen" is off: the firmware handles them.
 _FIRMWARE_TOP = {
-    ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Mausrad-Stufe weiter (Maus)"),
-    ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "DPI-Stufe weiter (Maus)"),
+    ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Scroll wheel stage cycle (mouse)"),
+    ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Sensitivity stage cycle (mouse)"),
 }
 
 
@@ -74,12 +74,12 @@ def action_label(action: Action, button: ButtonId, macros: dict[str, Macro],
     match action:
         case DefaultAction():
             if button == ButtonId.TOP_1:
-                return _tr("DPI hoch")
+                return _tr("DPI up")
             if button == ButtonId.TOP_2:
-                return _tr("DPI-Stufe weiter")
-            return _tr("Standard")
+                return _tr("Sensitivity stage cycle")
+            return _tr("Default")
         case DisabledAction():
-            return _tr("Aus")
+            return _tr("Off")
         case KeyAction(code):
             return key_label(code, layout)
         case ComboAction(codes):
@@ -87,12 +87,12 @@ def action_label(action: Action, button: ButtonId, macros: dict[str, Macro],
         case MacroAction(macro_id):
             m = macros.get(macro_id)
             if m:
-                return _tr("Makro: %1").replace("%1", m.name)
-            return _tr("Makro: ? (fehlt)")
+                return _tr("Macro: %1").replace("%1", m.name)
+            return _tr("Macro: ? (missing)")
         case HypershiftAction():
             return _tr("Hypershift")
         case DpiStageAction(direction):
             if direction == "cycle":
-                return _tr("DPI-Stufe weiter")
-            return _tr("DPI hoch") if direction == "up" else _tr("DPI runter")
+                return _tr("Sensitivity stage cycle")
+            return _tr("DPI up") if direction == "up" else _tr("DPI down")
     return "?"

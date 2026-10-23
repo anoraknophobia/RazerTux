@@ -45,7 +45,7 @@ _EFFECTS = ("off", "static", "breath", "spectrum", "wave", "reactive")
 
 def _check_dpi(value: int) -> None:
     if not isinstance(value, int) or not 100 <= value <= 30000:
-        raise ValueError(f"DPI {value!r} ausserhalb 100-30000")
+        raise ValueError(f"DPI {value!r} outside 100-30000")
 
 
 def _led(zone: str | int) -> int:
@@ -135,14 +135,14 @@ class NagaV2Pro(RazerMouse):
         active and stage ids are 1-based (as Synapse writes them; 0-based ids made the
         back top button land on an invalid stage); 1-5 stages, 100-30000 in steps of 50."""
         if not 1 <= len(stages) <= 5:
-            raise ValueError(f"1-5 DPI-Stufen erlaubt, nicht {len(stages)}")
+            raise ValueError(f"1-5 DPI stages allowed, not {len(stages)}")
         if not 1 <= active <= len(stages):
-            raise ValueError(f"aktive Stufe {active} ausserhalb 1-{len(stages)}")
+            raise ValueError(f"active stage {active} outside 1-{len(stages)}")
         for x, y in stages:
             for v in (x, y):
                 _check_dpi(v)
                 if v % 50:
-                    raise ValueError(f"DPI {v} ist kein Vielfaches von 50")
+                    raise ValueError(f"DPI {v} is not a multiple of 50")
         args = bytearray([store, active, len(stages)])
         for i, (x, y) in enumerate(stages):
             args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])  # 1-based ids
@@ -173,7 +173,7 @@ class NagaV2Pro(RazerMouse):
     def set_brightness(self, zone: str | int, value: int, *, store: int = NOSTORE) -> None:
         """razer_chroma_extended_matrix_brightness: class 0x0F id 0x04 size 3."""
         if not isinstance(value, int) or not 0 <= value <= 255:
-            raise ValueError(f"Helligkeit {value!r} ausserhalb 0-255")
+            raise ValueError(f"brightness {value!r} outside 0-255")
         self._run(C.razer_chroma_extended_matrix_brightness(store, _led(zone), value))
 
     def set_effect(self, zone: str | int, lz: LightingZone, *, store: int = NOSTORE) -> None:
@@ -194,5 +194,5 @@ class NagaV2Pro(RazerMouse):
         elif eff == "reactive":
             built = C.razer_chroma_extended_matrix_effect_reactive(store, led, REACTIVE_SPEED, rgb)
         else:
-            raise ValueError(f"unbekannter Effekt {eff!r}")
+            raise ValueError(f"unknown effect {eff!r}")
         self._run(built)

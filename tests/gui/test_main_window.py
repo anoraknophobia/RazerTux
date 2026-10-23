@@ -57,7 +57,7 @@ def test_save_blocked_on_validation_error(env):
     w, store, transport = env
     w.set_action(ButtonId.LEFT, DisabledAction())  # left click unreachable
     assert w.save() is False
-    assert w.messages and "Linksklick nicht erreichbar" in w.messages[0][1]
+    assert w.messages and "Left click unreachable" in w.messages[0][1]
     assert store.load_profile("p2").standard == {}
     assert not any(c[0] == "Reload" for c in transport.calls)
     assert w.is_dirty
@@ -115,7 +115,7 @@ def test_banner_shows_version_hint_for_old_daemon(env):
     transport.call = old
     assert w.client.status() == {}  # does not raise
     assert w.banner.isVisible()
-    assert w.banner.label.text() == "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
+    assert w.banner.label.text() == "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again"
     assert "systemctl --user restart razertuxd" in w.banner.label.text()  # I2: real remedy
 
 
@@ -173,7 +173,7 @@ def test_openrazer_warning(env):
     assert not w.openrazer_banner.isVisible()
     w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True})
     assert w.openrazer_banner.isVisible()
-    assert "OpenRazer-Treiber ist geladen" in w.openrazer_banner.label.text()
+    assert "OpenRazer driver is loaded" in w.openrazer_banner.label.text()
     w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": False})
     assert not w.openrazer_banner.isVisible()
 
@@ -186,7 +186,7 @@ def tab_names(w):
 
 def test_tab_order(env):
     w, *_ = env
-    assert tab_names(w) == ["TASTEN", "LEISTUNG", "MAUSRAD", "BELEUCHTUNG", "ENERGIE", "MAKROS"]
+    assert tab_names(w) == ["CUSTOMIZE", "PERFORMANCE", "SCROLL WHEEL", "LIGHTING", "POWER", "MACROS"]
 
 
 def test_performance_edit_marks_dirty_saves_and_reverts(env):
@@ -238,11 +238,11 @@ def test_battery_label_wired_and_charging(env):
     w, *_ = env
     w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 100, "charging": True,
                                  "connection": "wired"})
-    assert w.battery_label.text() == "Kabel"
+    assert w.battery_label.text() == "Wired"
     w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 42, "charging": True,
                                  "connection": "wireless"})
     assert w.battery_label.text() == "42 %" and w.battery_label.charging  # drawn bolt, no emoji
-    assert w.battery_label.level == 42 and "lädt" in w.battery_label.toolTip()
+    assert w.battery_label.level == 42 and "charging" in w.battery_label.toolTip()
     w.client.statusChanged.emit("naga_v2_pro", {"connected": False, "battery": -1})
     assert w.battery_label.text() == ""
 
@@ -272,15 +272,15 @@ def test_top_buttons_locked_unless_remap(env):
     view = w.mouse_view
     assert w.profile.remap_top_buttons is False
     assert not w.buttons_tab.remap_toggle.isChecked()
-    assert view.button_text(ButtonId.TOP_1).endswith("Mausrad-Stufe weiter (Maus)")
-    assert view.button_text(ButtonId.TOP_2).endswith("DPI-Stufe weiter (Maus)")
+    assert view.button_text(ButtonId.TOP_1).endswith("Scroll wheel stage cycle (mouse)")
+    assert view.button_text(ButtonId.TOP_2).endswith("Sensitivity stage cycle (mouse)")
     assert not view._buttons[ButtonId.TOP_1].isEnabled()
     assert not view._buttons[ButtonId.TOP_2].isEnabled()
     assert view._buttons[ButtonId.SIDE_1].isEnabled()
     w.buttons_tab.remap_toggle.click()
     assert w.profile.remap_top_buttons is True and w.is_dirty
     assert view._buttons[ButtonId.TOP_1].isEnabled()
-    assert "(Maus)" not in view.button_text(ButtonId.TOP_1)
+    assert "(mouse)" not in view.button_text(ButtonId.TOP_1)
     assert w.save() is True
     assert store.load_profile("p2").remap_top_buttons is True
     w.select_profile("default")
@@ -371,11 +371,11 @@ def test_switching_with_unsaved_changes_can_be_cancelled(two):
 def test_deathadder_has_no_energy_or_wheel_tab(two):
     w, *_ = two
     w.switch_device(DA)
-    assert tab_names(w) == ["TASTEN", "LEISTUNG", "BELEUCHTUNG", "MAKROS"]
+    assert tab_names(w) == ["CUSTOMIZE", "PERFORMANCE", "LIGHTING", "MACROS"]
     assert not w.buttons_tab.plate_combo.isVisibleTo(w.buttons_tab)
     assert set(w.lighting_tab.effect_combos) == {"all", "logo", "scroll"}
     w.switch_device("naga_v2_pro")
-    assert tab_names(w) == ["TASTEN", "LEISTUNG", "MAUSRAD", "BELEUCHTUNG", "ENERGIE", "MAKROS"]
+    assert tab_names(w) == ["CUSTOMIZE", "PERFORMANCE", "SCROLL WHEEL", "LIGHTING", "POWER", "MACROS"]
     assert set(w.lighting_tab.effect_combos) == {"all", "logo", "thumb"}
 
 
@@ -397,7 +397,7 @@ def test_status_of_the_other_mouse_is_ignored(two):
     w, *_ = two
     w.switch_device(DA)
     w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 80, "connection": "wireless"})
-    assert w.battery_label.text() == "Kabel"  # still the DeathAdder's
+    assert w.battery_label.text() == "Wired"  # still the DeathAdder's
     w.client.statusChanged.emit(DA, {**DA_STATUS, "dpi": 1600})
     assert w.dpi_label.text() == "1600 DPI"
 

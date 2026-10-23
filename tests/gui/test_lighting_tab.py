@@ -93,7 +93,7 @@ def test_zones_follow_the_device(tab):
     from razertux.devices.db import load_devices
     tab.set_device(load_devices()["death_adder_v2"])
     assert set(tab.effect_combos) == {"all", "logo", "scroll"}
-    assert tab.zone_labels["scroll"].text() == "Mausrad"
+    assert tab.zone_labels["scroll"].text() == "Scroll wheel"
     p = Profile(id="p", name="P", lighting={"thumb": LightingZone("static", (1, 2, 3), 9)})
     tab.load(p)
     tab.set_effect("all", "breath")
@@ -113,5 +113,5 @@ def test_zone_names_are_translated_and_unknown_ones_raw(tab):
              "right": ("static",), "backlight": ("static",), "chroma_x": ("static",)}
     tab.set_device(replace(info, zones=zones))
     names = {k: tab.zone_labels[k].text() for k in zones}
-    assert names == {"logo": "Logo", "scroll": "Mausrad", "thumb": "Daumenfeld", "left": "Links",
-                     "right": "Rechts", "backlight": "Hintergrund", "chroma_x": "chroma_x"}
+    assert names == {"logo": "Logo", "scroll": "Scroll wheel", "thumb": "Thumb grid", "left": "Left",
+                     "right": "Right", "backlight": "Backlight", "chroma_x": "chroma_x"}

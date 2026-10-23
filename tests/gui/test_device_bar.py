@@ -36,7 +36,7 @@ def test_pills_for_every_device_and_switching(bar):
 
 def test_disconnected_device_is_marked(bar):
     bar.set_devices([DEVICES[0], (DA, "Razer DeathAdder V2", "wired", False)], NAGA)
-    assert "nicht verbunden" in bar.pills[DA].toolTip()
+    assert "not connected" in bar.pills[DA].toolTip()
 
 
 def test_banner_only_for_experimental_devices(bar):
@@ -44,9 +44,9 @@ def test_banner_only_for_experimental_devices(bar):
     assert not bar.banner.isVisible()
     bar.set_status(EXPERIMENTAL, remap_enabled=False)
     assert bar.banner.isVisible()
-    assert bar.banner_title.text() == "Experimentell – ungetestet"
-    assert bar.diag_btn.text() == "Diagnose kopieren"
-    assert bar.remap_toggle.text() == "Tastenbelegung aktivieren"
+    assert bar.banner_title.text() == "Experimental – untested"
+    assert bar.diag_btn.text() == "Copy diagnostics"
+    assert bar.remap_toggle.text() == "Enable button assignment"
     assert not bar.remap_toggle.isChecked() and not bar.readonly_label.isVisible()
 
 
@@ -54,7 +54,7 @@ def test_read_only_hint(bar):
     bar.set_status({**EXPERIMENTAL, "writable": False}, remap_enabled=True)
     assert bar.readonly_label.isVisible()
     assert bar.readonly_label.text() == (
-        "Nur lesend: die Maus hat auf die Prüfbefehle nicht wie erwartet geantwortet.")
+        "Read-only: the mouse did not answer the probe commands as expected.")
     assert bar.remap_toggle.isChecked()
 
 

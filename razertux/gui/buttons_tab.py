@@ -35,23 +35,23 @@ class ButtonsTab(QWidget):
         for key, text in (("standard", self.tr("Standard")), ("hypershift", self.tr("Hypershift"))):
             b = self.layer_pill.add(text)
             b.setChecked(key == "standard")
-            b.setToolTip(self.tr("Hypershift-Ebene: gilt, solange die Hypershift-Taste gehalten wird")
-                         if key == "hypershift" else self.tr("Normale Belegung"))
+            b.setToolTip(self.tr("Hypershift layer: active while the Hypershift key is held")
+                         if key == "hypershift" else self.tr("Standard assignments"))
             b.clicked.connect(lambda _=False, k=key: self.layerChanged.emit(k))
             self.layer_buttons[key] = b
-        self.remap_toggle = ToggleSwitch(self.tr("Obere Tasten frei belegen"))
+        self.remap_toggle = ToggleSwitch(self.tr("Assign top buttons freely"))
         self.remap_toggle.setToolTip(self.tr(
-            "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der "
-            "hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen."))
+            "Off: the front top button cycles the scroll wheel stage and the rear one the "
+            "sensitivity stage. On: both buttons can be assigned freely."))
         self.remap_toggle.toggled.connect(self.remapToggled)
         self.plate_combo = QComboBox()
-        for plate, text in ((12, self.tr("Seitenplatte: 12 Tasten")), (6, self.tr("Seitenplatte: 6 Tasten")),
-                            (2, self.tr("Seitenplatte: 2 Tasten"))):
+        for plate, text in ((12, self.tr("Side plate: 12 buttons")), (6, self.tr("Side plate: 6 buttons")),
+                            (2, self.tr("Side plate: 2 buttons"))):
             self.plate_combo.addItem(text, plate)
-        self.plate_hint = QLabel(self.tr("Belegung ungeprüft – falls eine Taste nicht stimmt: Taste anlernen"))
+        self.plate_hint = QLabel(self.tr("Assignment unverified – if a button is wrong: learn the button"))
         self.plate_hint.setObjectName("hint")
-        self.learn_btn = QPushButton(self.tr("Taste anlernen …"))
-        self.learn_btn.setToolTip(self.tr("Eine weitere Taste der Maus anlernen und belegen"))
+        self.learn_btn = QPushButton(self.tr("Learn button …"))
+        self.learn_btn.setToolTip(self.tr("Learn another button of the mouse and assign it"))
         self.learn_btn.clicked.connect(lambda _=False: self._learn_next())
         top = QHBoxLayout()
         top.addWidget(self.plate_combo)

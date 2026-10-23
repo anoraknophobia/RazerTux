@@ -385,7 +385,7 @@ class RazerMouse:
 
     def _check_dpi(self, value: int) -> None:
         if not isinstance(value, int) or not DPI_MIN <= value <= self.info.dpi_max:
-            raise ValueError(f"DPI {value!r} ausserhalb {DPI_MIN}-{self.info.dpi_max}")
+            raise ValueError(f"DPI {value!r} outside {DPI_MIN}-{self.info.dpi_max}")
 
     def set_dpi(self, x: int, y: int, *, store: int = NOSTORE) -> None:
         """razer_chroma_misc_set_dpi_xy. OpenRazer's builder always writes VARSTORE, so
@@ -400,9 +400,9 @@ class RazerMouse:
         """razer_chroma_misc_set_dpi_stages: active 1-based, stage ids 0-based (OpenRazer)."""
         cmd = self._need("dpi_stages", "set_dpi_stages")
         if not 1 <= len(stages) <= MAX_DPI_STAGES:
-            raise ValueError(f"1-{MAX_DPI_STAGES} DPI-Stufen erlaubt, nicht {len(stages)}")
+            raise ValueError(f"1-{MAX_DPI_STAGES} DPI stages allowed, not {len(stages)}")
         if not 1 <= active <= len(stages):
-            raise ValueError(f"aktive Stufe {active} ausserhalb 1-{len(stages)}")
+            raise ValueError(f"active stage {active} outside 1-{len(stages)}")
         flat: list[int] = []
         for x, y in stages:
             self._check_dpi(x)
@@ -413,26 +413,26 @@ class RazerMouse:
     def set_poll_rate(self, hz: int) -> None:
         cmd = self._need("poll_rate", "set_poll_rate")
         if hz not in self.info.poll_rates or hz not in C._POLL_BYTE:
-            raise ValueError(f"Abfragerate {hz!r} nicht in {sorted(self.info.poll_rates)}")
+            raise ValueError(f"polling rate {hz!r} not in {sorted(self.info.poll_rates)}")
         self._send(cmd.txn, C.BUILDERS[cmd.fn](hz))
 
     def set_idle_time(self, seconds: int) -> None:
         cmd = self._need("idle_time", "set_idle_time")
         if not isinstance(seconds, int) or not 60 <= seconds <= 900:
-            raise ValueError(f"Leerlaufzeit {seconds!r} ausserhalb 60-900 s")
+            raise ValueError(f"idle time {seconds!r} outside 60-900 s")
         self._send(cmd.txn, C.BUILDERS[cmd.fn](seconds))
 
     def set_low_battery_threshold(self, percent: int) -> None:
         """Raw 0x0C=5%, 0x26=15%, 0x3F=25%, i.e. raw = percent*255//100."""
         cmd = self._need("low_battery_threshold", "set_low_battery_threshold")
         if not isinstance(percent, int) or not 5 <= percent <= 25:
-            raise ValueError(f"Akku-Schwelle {percent!r} ausserhalb 5-25 %")
+            raise ValueError(f"battery threshold {percent!r} outside 5-25 %")
         self._send(cmd.txn, C.BUILDERS[cmd.fn](percent * 255 // 100))
 
     def set_scroll_mode(self, mode: int) -> None:
         cmd = self._need("scroll_mode", "set_scroll_mode")
         if mode not in (0, 1):  # razer_attr_write_scroll_mode: > 1 is -EINVAL
-            raise ValueError(f"Scroll-Modus {mode!r} nicht 0 oder 1")
+            raise ValueError(f"scroll mode {mode!r} not 0 or 1")
         self._send(cmd.txn, C.BUILDERS[cmd.fn](mode))
 
     def set_scroll_acceleration(self, enabled: bool) -> None:
@@ -446,7 +446,7 @@ class RazerMouse:
         if plan is None:
             raise UnsupportedFeature(f"{self.info.model}: set_brightness:{zone}")
         if not isinstance(value, int) or not 0 <= value <= 255:
-            raise ValueError(f"Helligkeit {value!r} ausserhalb 0-255")
+            raise ValueError(f"brightness {value!r} outside 0-255")
         cmd, led = plan
         args = (store, *led, value) if led else (value,)
         self._send(cmd.txn, C.BUILDERS[cmd.fn](*args))

@@ -90,15 +90,15 @@ def test_incomplete_input_is_not_ok(qapp):
 
 
 def test_hypershift_option_rules(qapp):
-    assert "Hypershift-Taste" in type_names(dlg(qapp))
-    assert "Hypershift-Taste" not in type_names(dlg(qapp, layer="hypershift"))
-    assert "Hypershift-Taste" not in type_names(dlg(qapp, button=ButtonId.WHEEL_UP))
-    assert "Hypershift-Taste" not in type_names(dlg(qapp, button=ButtonId.WHEEL_LEFT))
+    assert "Hypershift key" in type_names(dlg(qapp))
+    assert "Hypershift key" not in type_names(dlg(qapp, layer="hypershift"))
+    assert "Hypershift key" not in type_names(dlg(qapp, button=ButtonId.WHEEL_UP))
+    assert "Hypershift key" not in type_names(dlg(qapp, button=ButtonId.WHEEL_LEFT))
 
 
 def test_dpi_options_offered(qapp):
     names = type_names(dlg(qapp))
-    assert "DPI-Stufe hoch" in names and "DPI-Stufe runter" in names
+    assert "Sensitivity stage up" in names and "Sensitivity stage down" in names
 
 
 def test_macro_without_macros_disabled(qapp):

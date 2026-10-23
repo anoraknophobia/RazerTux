@@ -61,32 +61,32 @@ class MacroTab(QWidget):
         return QMessageBox.question(self, title, text) == QMessageBox.StandardButton.Yes
 
     def _ask_name(self, title: str, default: str = "") -> str | None:
-        name, ok = QInputDialog.getText(self, title, self.tr("Name des Makros:"), text=default)
+        name, ok = QInputDialog.getText(self, title, self.tr("Macro name:"), text=default)
         return name.strip() if ok and name.strip() else None
 
     def _ask_key(self) -> int | None:
-        return self._dialog(self.tr("Taste einfügen"), KeyCapture(),
+        return self._dialog(self.tr("Insert key"), KeyCapture(),
                             lambda w: w.codes[0] if w.codes else None)
 
     def _ask_button(self) -> int | None:
         combo = QComboBox()
         for c in _BUTTONS:
             combo.addItem(key_label(c), c)
-        return self._dialog(self.tr("Maustaste einfügen"), combo, lambda w: w.currentData())
+        return self._dialog(self.tr("Insert mouse button"), combo, lambda w: w.currentData())
 
     def _ask_delay(self, current: int = 50) -> int | None:
         spin = QSpinBox()
         spin.setRange(1, MAX_DELAY_MS)
         spin.setSuffix(" ms")
         spin.setValue(current)
-        return self._dialog(self.tr("Pause"), spin, lambda w: w.value())
+        return self._dialog(self.tr("Delay"), spin, lambda w: w.value())
 
     def _dialog(self, title: str, widget: QWidget, result: Callable):
         d = QDialog(self)
         d.setWindowTitle(title)
         box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        box.button(QDialogButtonBox.StandardButton.Ok).setText(self.tr("Übernehmen"))
-        box.button(QDialogButtonBox.StandardButton.Cancel).setText(self.tr("Abbrechen"))
+        box.button(QDialogButtonBox.StandardButton.Ok).setText(self.tr("Apply"))
+        box.button(QDialogButtonBox.StandardButton.Cancel).setText(self.tr("Cancel"))
         box.accepted.connect(d.accept)
         box.rejected.connect(d.reject)
         lay = QVBoxLayout(d)
@@ -105,22 +105,22 @@ class MacroTab(QWidget):
         self.macro_list = QListWidget()
         self.macro_list.currentRowChanged.connect(lambda _r: self._show_steps())
         left = QVBoxLayout()
-        left.addWidget(QLabel(self.tr("Makros")))
+        left.addWidget(QLabel(self.tr("Macros")))
         left.addWidget(self.macro_list, 1)
         row = QHBoxLayout()
-        for text, slot in ((self.tr("Neu"), self.new_macro), (self.tr("Umbenennen"), self.rename_macro),
-                           (self.tr("Löschen"), self.delete_macro)):
+        for text, slot in ((self.tr("New"), self.new_macro), (self.tr("Rename"), self.rename_macro),
+                           (self.tr("Delete"), self.delete_macro)):
             row.addWidget(self._button(text, slot))
         left.addLayout(row)
 
         self.step_list = QListWidget()
         self.step_list.itemDoubleClicked.connect(lambda _i: self.edit_delay())
         edit = QHBoxLayout()
-        for text, slot in ((self.tr("Taste …"), self.add_key), (self.tr("Maustaste …"), self.add_button),
-                           (self.tr("Pause …"), self.add_delay), (self.tr("Pause bearbeiten …"), self.edit_delay),
-                           (self.tr("Schritt löschen"), self.delete_step),
-                           (self.tr("Hoch"), lambda: self.move_step(-1)),
-                           (self.tr("Runter"), lambda: self.move_step(1))):
+        for text, slot in ((self.tr("Key …"), self.add_key), (self.tr("Mouse button …"), self.add_button),
+                           (self.tr("Delay …"), self.add_delay), (self.tr("Edit delay …"), self.edit_delay),
+                           (self.tr("Delete step"), self.delete_step),
+                           (self.tr("Up"), lambda: self.move_step(-1)),
+                           (self.tr("Down"), lambda: self.move_step(1))):
             edit.addWidget(self._button(text, slot))
 
         self.record_field = RecordField()
@@ -128,14 +128,14 @@ class MacroTab(QWidget):
         self.record_field.installEventFilter(self.recorder)
         self.record_btn = self._button("", self.toggle_recording)
         self.record_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # clicking it must not steal field focus
-        self.delays_check = QCheckBox(self.tr("Pausen aufnehmen"))
+        self.delays_check = QCheckBox(self.tr("Record delays"))
         self.delays_check.setChecked(True)
-        self.fixed_check = QCheckBox(self.tr("Pausen fest:"))
+        self.fixed_check = QCheckBox(self.tr("Fixed delays:"))
         self.fixed_spin = QSpinBox()
         self.fixed_spin.setRange(1, MAX_DELAY_MS)
         self.fixed_spin.setSuffix(" ms")
         self.fixed_spin.setValue(10)
-        self.apply_btn = self._button(self.tr("Auf alle Pausen anwenden"), self.apply_fixed_to_all)
+        self.apply_btn = self._button(self.tr("Apply to all delays"), self.apply_fixed_to_all)
         opts = QHBoxLayout()
         for w in (self.delays_check, self.fixed_check, self.fixed_spin, self.apply_btn):
             opts.addWidget(w)
@@ -148,7 +148,7 @@ class MacroTab(QWidget):
         right.addWidget(self.title)
         right.addWidget(self.step_list, 1)
         right.addLayout(edit)
-        right.addWidget(QLabel(self.tr("Aufnahme (nur im Feld unten):")))
+        right.addWidget(QLabel(self.tr("Recording (only in the field below):")))
         right.addWidget(self.record_field)
         right.addWidget(self.record_btn)
         right.addLayout(opts)
@@ -188,14 +188,14 @@ class MacroTab(QWidget):
     def step_text(self, s: MacroStep) -> str:
         arrow = "↓" if getattr(s, "down", True) else "↑"
         if isinstance(s, DelayStep):
-            return self.tr("Pause %1 ms").replace("%1", str(s.ms))
-        kind = self.tr("Taste") if isinstance(s, KeyStep) else self.tr("Maustaste")
+            return self.tr("Delay %1 ms").replace("%1", str(s.ms))
+        kind = self.tr("Key") if isinstance(s, KeyStep) else self.tr("Mouse button")
         return f"{kind} {key_label(s.code)} {arrow}"
 
     def _show_steps(self, select: int | None = None) -> None:
         m = self.current
-        self.title.setText(self.tr("Schritte von „%1“ (%2)").replace("%1", m.name)
-                           .replace("%2", str(len(m.steps))) if m else self.tr("Kein Makro ausgewählt."))
+        self.title.setText(self.tr("Steps of “%1” (%2)").replace("%1", m.name)
+                           .replace("%2", str(len(m.steps))) if m else self.tr("No macro selected."))
         self.step_list.clear()
         for s in (m.steps if m else []):
             self.step_list.addItem(self.step_text(s))
@@ -218,13 +218,13 @@ class MacroTab(QWidget):
         return mid
 
     def new_macro(self) -> None:
-        name = self._ask_name(self.tr("Neues Makro"))
+        name = self._ask_name(self.tr("New macro"))
         if name:
             self.add_macro(name)
 
     def rename_macro(self) -> None:
         m = self.current
-        name = self._ask_name(self.tr("Makro umbenennen"), m.name) if m else None
+        name = self._ask_name(self.tr("Rename macro"), m.name) if m else None
         if m and name:
             m.name = name
             self.macro_list.currentItem().setText(name)
@@ -235,12 +235,12 @@ class MacroTab(QWidget):
         if not m:
             return False
         used = profiles_using(self._profiles(), mid)
-        text = self.tr("Makro „%1“ wirklich löschen?").replace("%1", m.name)
+        text = self.tr("Really delete macro “%1”?").replace("%1", m.name)
         if used:
-            text += "\n\n" + self.tr("Es wird in diesen Profilen verwendet:") + "\n" \
+            text += "\n\n" + self.tr("It is used in these profiles:") + "\n" \
                 + "\n".join(f"• {n}" for n in used) \
-                + "\n\n" + self.tr("Die Belegungen werden auf „Standard“ zurückgesetzt.")
-        if not self._confirm(self.tr("Makro löschen"), text):
+                + "\n\n" + self.tr("Its assignments will be reset to “Default”.")
+        if not self._confirm(self.tr("Delete macro"), text):
             return False
         del self.macros[mid]
         self.refresh()
@@ -254,7 +254,7 @@ class MacroTab(QWidget):
         if not m:
             return
         if len(m.steps) + len(steps) > MAX_STEPS:
-            self.hint.setText(self.tr("Ein Makro darf höchstens %1 Schritte haben.").replace("%1", str(MAX_STEPS)))
+            self.hint.setText(self.tr("A macro can have at most %1 steps.").replace("%1", str(MAX_STEPS)))
             return
         self.hint.setText("")
         pos = self.step_list.currentRow() + 1 if self.step_list.currentRow() >= 0 else len(m.steps)
@@ -316,9 +316,9 @@ class MacroTab(QWidget):
 
     # -- recording ------------------------------------------------------------
     def _set_recording_ui(self, on: bool) -> None:
-        self.record_btn.setText(self.tr("Aufnahme beenden") if on else self.tr("Aufnahme starten"))
-        self.record_field.setText(self.tr("Aufnahme läuft – jetzt hier tippen oder klicken …") if on
-                                  else self.tr("Aufnahmefeld (Aufnahme starten, dann hier eingeben)"))
+        self.record_btn.setText(self.tr("Stop recording") if on else self.tr("Start recording"))
+        self.record_field.setText(self.tr("Recording – type or click here now …") if on
+                                  else self.tr("Recording field (start recording, then type here)"))
         for w in (self.delays_check, self.fixed_check, self.fixed_spin, self.macro_list, self.step_list):
             w.setEnabled(not on)
         if on:
@@ -366,5 +366,5 @@ class MacroTab(QWidget):
 
     def _on_limit(self) -> None:
         self.stop_recording()
-        self.hint.setText(self.tr("Maximale Länge von %1 Schritten erreicht – Aufnahme beendet.")
+        self.hint.setText(self.tr("Maximum length of %1 steps reached – recording stopped.")
                           .replace("%1", str(MAX_STEPS)))

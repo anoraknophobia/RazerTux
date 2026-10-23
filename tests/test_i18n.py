@@ -14,7 +14,7 @@ from razertux.hw.buttons import ButtonId
 
 ROOT = Path(__file__).resolve().parent.parent
 PKG = ROOT / "razertux"
-LANGS = ("en", "es", "fr")
+LANGS = ("de", "es", "fr")
 # self.tr() in a mixin runs with the context of the class it is mixed into
 MIXIN_CONTEXT = {"ProfileActions": "MainWindow"}
 
@@ -110,12 +110,12 @@ _PLACEHOLDER = re.compile(r"%\d+|%n|\{\w+\}")
 
 def test_extractor_sees_all_kinds_of_calls():
     found, noops, dynamic, _ = extract()
-    assert ("MainWindow", "TASTEN") in found                     # self.tr in a class
-    assert ("MainWindow", "Neues Profil") in found               # mixin -> MainWindow
-    assert ("keynames", "Taste %1") in found                     # module _tr wrapper
-    assert ("ActionDialog", "Kombination") in noops              # QT_TRANSLATE_NOOP table
-    assert ("validate", "Linksklick nicht erreichbar") in found  # plain-Python i18n.tr
-    assert ("daemon", "Naga V2 Pro: Akku schwach") in found
+    assert ("MainWindow", "CUSTOMIZE") in found                  # self.tr in a class
+    assert ("MainWindow", "New profile") in found                # mixin -> MainWindow
+    assert ("keynames", "Key %1") in found                       # module _tr wrapper
+    assert ("ActionDialog", "Key combination") in noops          # QT_TRANSLATE_NOOP table
+    assert ("validate", "Left click unreachable") in found       # plain-Python i18n.tr
+    assert ("daemon", "Naga V2 Pro: Low battery") in found
     assert any(ctx == "LightingTab" for ctx, _ in dynamic)
 
 
@@ -146,8 +146,15 @@ def test_placeholders_match(lang):
     assert wrong == []
 
 
-def test_german_needs_no_catalog():
-    assert i18n.catalog("de") == {}
+def test_english_is_the_source_and_needs_no_catalog():
+    assert i18n.SOURCE_LANGUAGE == "en"
+    assert i18n.catalog("en") == {}
+    assert not (PKG / "i18n" / "en.json").exists()
+
+
+def test_german_is_a_catalog_like_the_others():
+    assert i18n.lookup("de", "MainWindow", "CUSTOMIZE") == "TASTEN"
+    assert i18n.lookup("de", "validate", "Left click unreachable") == "Linksklick nicht erreichbar"
 
 
 # -- language resolution ---------------------------------------------------------
@@ -157,10 +164,23 @@ def test_resolve_language_explicit_and_system():
     assert i18n.resolve_language("system", "it_IT") == "en"   # unsupported -> English
     assert i18n.resolve_language("klingon", "de_DE") == "de"  # unknown setting = system
     assert i18n.resolve_language("system", "") == "en"
+    assert i18n.resolve_language("system", "de_AT") == "de"   # German locale -> German catalog
+    assert i18n.resolve_language("system", "en_GB") == "en"
+    for lang in ("de", "en", "es", "fr"):
+        assert i18n.resolve_language(lang, "it_IT") == lang
+
+
+def test_unknown_language_falls_back_to_the_english_source():
+    i18n.set_language("klingon")
+    assert i18n.current_language() == "en"
+    assert i18n.tr("validate", "Left click unreachable") == "Left click unreachable"
 
 
 def test_system_language_from_environment(monkeypatch):
+    assert i18n.system_language() == "en"
+    monkeypatch.setenv("LANG", "de_DE.UTF-8")
     assert i18n.system_language() == "de"
+    assert i18n.resolve_language("system") == "de"
     monkeypatch.setenv("LANGUAGE", "fr:en")
     assert i18n.system_language() == "fr"
     monkeypatch.delenv("LANGUAGE")
@@ -169,17 +189,27 @@ def test_system_language_from_environment(monkeypatch):
 
 
 def test_tr_formats_and_translates():
-    assert i18n.tr("validate", "Makro fehlt: {macro}", macro="x") == "Makro fehlt: x"
-    i18n.set_language("en")
-    assert i18n.current_language() == "en"
-    text = i18n.tr("validate", "Makro fehlt: {macro}", macro="x")
-    assert text.endswith("x") and "fehlt" not in text
-    assert i18n.tr("nope", "Unbekannt {a}", a=1) == "Unbekannt 1"  # falls back to source
+    assert i18n.tr("validate", "Macro missing: {macro}", macro="x") == "Macro missing: x"
+    i18n.set_language("de")
+    assert i18n.current_language() == "de"
+    assert i18n.tr("validate", "Macro missing: {macro}", macro="x") == "Makro fehlt: x"
+    assert i18n.tr("nope", "Unknown {a}", a=1) == "Unknown 1"  # falls back to source
 
 
 def test_apply_settings_sets_language():
     assert i18n.apply_settings(Settings("default", language="es")) == "es"
     assert i18n.current_language() == "es"
+
+
+def test_gui_help_follows_the_language(capsys):
+    from razertux.gui.app import parse_args
+    with pytest.raises(SystemExit):
+        parse_args(["--help"])
+    assert "start only the tray icon (window hidden)" in capsys.readouterr().out
+    i18n.set_language("de")
+    with pytest.raises(SystemExit):
+        parse_args(["--help"])
+    assert "nur Tray-Symbol starten (Fenster versteckt)" in capsys.readouterr().out
 
 
 # -- settings --------------------------------------------------------------------
@@ -194,13 +224,13 @@ def test_settings_language_round_trip():
 def test_validation_and_store_errors_follow_the_language(tmp_path):
     p = default_profile()
     p.standard[ButtonId.LEFT] = DisabledAction()
-    assert validate(p) == ["Linksklick nicht erreichbar"]
-    i18n.set_language("en")
     assert validate(p) == ["Left click unreachable"]
+    i18n.set_language("de")
+    assert validate(p) == ["Linksklick nicht erreichbar"]
     (tmp_path / "macros.json").write_text("{kaputt")
     store = ConfigStore(tmp_path)
     store.load_macros()
-    assert store.errors and store.errors[0].startswith("macros.json is corrupt")
+    assert store.errors and store.errors[0].startswith("macros.json ist beschädigt")
 
 
 async def test_service_reload_switches_daemon_language(tmp_path):
@@ -211,7 +241,7 @@ async def test_service_reload_switches_daemon_language(tmp_path):
     await call(svc, "Reload")
     assert i18n.current_language() == "fr"
     errors = (await call(svc, "GetStatus", "naga_v2_pro"))["config_errors"].value
-    assert errors and "macros.json" in errors[0] and "beschädigt" not in errors[0]
+    assert errors and "macros.json" in errors[0] and "corrupt" not in errors[0]
 
 
 async def test_low_battery_notification_is_translated(tmp_path):
@@ -224,4 +254,17 @@ async def test_low_battery_notification_is_translated(tmp_path):
     t.responses[(0x07, 0x84)] = bytes([0, 0])
     d.sessions["naga_v2_pro"]._battery.poll()
     assert sent == [("Naga V2 Pro: Low battery", "Battery at 10 % – please charge the mouse.")]
+    await d.shutdown()
+
+
+async def test_low_battery_notification_in_german(tmp_path):
+    from test_daemon_devices import connected
+    d, t = await connected(tmp_path, product=0x00A8, settings=Settings("default", language="de"))
+    await d.service.reload()
+    sent = []
+    d.notify = lambda title, body: sent.append((title, body))
+    t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
+    t.responses[(0x07, 0x84)] = bytes([0, 0])
+    d.sessions["naga_v2_pro"]._battery.poll()
+    assert sent == [("Naga V2 Pro: Akku schwach", "Akkustand 10 % – bitte die Maus laden.")]
     await d.shutdown()

@@ -20,10 +20,10 @@ def _help_tr(text: str) -> str:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="razertux-gui",
-                                description=_help_tr("Konfiguration für die Razer Naga V2 Pro"))
+                                description=_help_tr("Configuration for the Razer Naga V2 Pro"))
     p.add_argument("--tray", action="store_true",
-                   help=_help_tr("nur Tray-Symbol starten (Fenster versteckt)"))
-    p.add_argument("--config-dir", type=Path, default=None, help=_help_tr("Konfigurationsverzeichnis"))
+                   help=_help_tr("start only the tray icon (window hidden)"))
+    p.add_argument("--config-dir", type=Path, default=None, help=_help_tr("configuration directory"))
     p.add_argument("--restarted", action="store_true", help=argparse.SUPPRESS)  # language restart
     return p.parse_args(argv)
 
@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(argv if argv is not None else sys.argv[1:])
     if not any(a == "--config-dir" or a.startswith("--config-dir=") for a in argv):
         if migrate_legacy_config():  # once: ~/.config/naga-config -> ~/.config/razertux
-            print("RazerTux: ~/.config/naga-config nach ~/.config/razertux kopiert", file=sys.stderr)
+            print("RazerTux: copied ~/.config/naga-config to ~/.config/razertux", file=sys.stderr)
     if "-h" in argv or "--help" in argv:
         i18n.apply_settings(ConfigStore(default_config_dir()).load_settings())
     args = parse_args(argv)

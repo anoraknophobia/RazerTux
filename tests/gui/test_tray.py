@@ -22,11 +22,11 @@ def test_menu_when_up(tray):
     tr, t = tray
     tr.rebuild_menu()
     texts = tr.menu_texts()
-    assert "Aktives Profil: Zwei" in texts and "Standard" in texts
-    assert "Akku: 80 %" in texts
-    assert texts[-3:] == ["Fenster öffnen", "Originalzustand wiederherstellen", "Beenden"]
+    assert "Active profile: Zwei" in texts and "Standard" in texts
+    assert "Battery: 80 %" in texts
+    assert texts[-3:] == ["Open window", "Restore original state", "Quit"]
     radios = {a.text(): a.isChecked() for a in tr.menu.actions()
-              if a.isCheckable() and a.text() not in ("Systemfarben verwenden", "Bildschirmanzeige")}
+              if a.isCheckable() and a.text() not in ("Use system colors", "On-screen display")}
     assert radios == {"Standard": False, "Zwei": True}
 
 
@@ -35,7 +35,7 @@ def test_menu_when_daemon_down(tray):
     t.up = False
     tr.client.status()
     tr.rebuild_menu()
-    assert tr.menu_texts()[0] == "Dienst läuft nicht"
+    assert tr.menu_texts()[0] == "Service is not running"
 
 
 def test_profile_click_activates(tray):
@@ -53,7 +53,7 @@ def test_restore_asks_first_and_reports_failed_fields(tray):
     tr.confirm = True
     tr.restore_original()
     assert any(c[0] == "RestoreOriginal" for c in t.calls)
-    assert "DPI-Stufen" in tr.infos[-1][1]
+    assert "Sensitivity stages" in tr.infos[-1][1]
 
 
 def _all_restore_fields():
@@ -79,7 +79,7 @@ def _all_restore_fields():
     return restore_backup(Broken(), data)
 
 
-def test_restore_field_names_match_restore_backup_and_are_german(tray):
+def test_restore_field_names_match_restore_backup_and_are_translated(tray):
     from razertux.gui.tray import _FIELD_NAMES
     fields = _all_restore_fields()
     assert set(fields) == set(_FIELD_NAMES)
@@ -89,8 +89,8 @@ def test_restore_field_names_match_restore_backup_and_are_german(tray):
     shown = tr.infos[-1][1]
     for f in fields:
         assert f not in shown  # translated, never the raw field name
-    for label in ("Abfragerate", "DPI-Stufen", "Helligkeit Logo", "Leerlaufzeit",
-                  "Akku-Energiesparschwelle"):
+    for label in ("Polling rate", "Sensitivity stages", "Logo brightness", "Idle time",
+                  "Low power threshold"):
         assert label in shown
 
 
@@ -100,18 +100,18 @@ def test_restore_confirmation_names_what_is_restored(tray):
     tr._confirm = lambda title, text: asked.append(text) or False
     tr.restore_original()
     text = asked[0]
-    for word in ("DPI", "DPI-Stufen", "Abfragerate", "Helligkeit", "Energie"):
+    for word in ("DPI", "sensitivity stages", "polling rate", "brightness", "power settings"):
         assert word in text
-    assert "Beleuchtung" not in text and "Effekt" in text  # effects: replug the mouse
+    assert "lighting" not in text and "Effects" in text  # effects: replug the mouse
 
 
 def test_battery_text_variants():
     from razertux.gui.labels import battery_text
-    assert battery_text({"connected": True, "battery": 80}) == "Akku: 80 %"
+    assert battery_text({"connected": True, "battery": 80}) == "Battery: 80 %"
     assert battery_text({"connected": True, "battery": 80, "charging": True,
-                         "connection": "wireless"}) == "Akku: 80 % ⚡ lädt"
-    assert battery_text({"connected": True, "battery": 100, "connection": "wired"}) == "Kabel"
-    assert battery_text({"connected": True, "battery": -1}) == "Akku: –"
+                         "connection": "wireless"}) == "Battery: 80 % ⚡ charging"
+    assert battery_text({"connected": True, "battery": 100, "connection": "wired"}) == "Wired"
+    assert battery_text({"connected": True, "battery": -1}) == "Battery: –"
 
 
 def test_system_colours_toggle(tray):
@@ -120,13 +120,13 @@ def test_system_colours_toggle(tray):
     tr.themeRequested.connect(got.append)
     tr.set_theme_checked("synapse")
     tr.rebuild_menu()
-    action = next(a for a in tr.menu.actions() if a.text() == "Systemfarben verwenden")
+    action = next(a for a in tr.menu.actions() if a.text() == "Use system colors")
     assert action.isCheckable() and not action.isChecked()
     action.trigger()
     assert got == ["system"]
     tr.set_theme_checked("system")
     tr.rebuild_menu()
-    action = next(a for a in tr.menu.actions() if a.text() == "Systemfarben verwenden")
+    action = next(a for a in tr.menu.actions() if a.text() == "Use system colors")
     assert action.isChecked()
 
 
@@ -144,12 +144,12 @@ def test_daemon_error_mid_rebuild_keeps_menu_usable(tray):
 
     t.call = failing
     tr.rebuild_menu()
-    assert tr.menu_texts()[0] == "Dienst läuft nicht"
-    assert tr.menu_texts()[-1] == "Beenden"
+    assert tr.menu_texts()[0] == "Service not running"
+    assert tr.menu_texts()[-1] == "Quit"
     t.call = orig
     tr.rebuild_menu()  # must not raise on the old language submenu
     tr.rebuild_menu()
-    assert "Aktives Profil: Zwei" in tr.menu_texts() and tr.menu_texts()[-1] == "Beenden"
+    assert "Active profile: Zwei" in tr.menu_texts() and tr.menu_texts()[-1] == "Quit"
 
 
 def _two_device_tray(qapp, connected=True):
@@ -175,12 +175,12 @@ def test_two_devices_get_one_submenu_each(qapp):
     subs = _submenus(tr)
     assert set(subs) == {"Razer Naga V2 Pro", "Razer DeathAdder V2"}
     naga_texts = [a.text() for a in subs["Razer Naga V2 Pro"].actions() if not a.isSeparator()]
-    assert "Standard" in naga_texts and "Zwei" in naga_texts and "Akku: 80 %" in naga_texts
+    assert "Standard" in naga_texts and "Zwei" in naga_texts and "Battery: 80 %" in naga_texts
     da_texts = [a.text() for a in subs["Razer DeathAdder V2"].actions() if not a.isSeparator()]
-    assert "Präzision" in da_texts and "Akku: 55 %" in da_texts and "Zwei" not in da_texts
+    assert "Präzision" in da_texts and "Battery: 55 %" in da_texts and "Zwei" not in da_texts
     checked = {a.text() for a in subs["Razer DeathAdder V2"].actions() if a.isChecked()}
     assert checked == {"Präzision"}
-    assert "Aktives Profil: Zwei" not in tr.menu_texts()  # not flat any more
+    assert "Active profile: Zwei" not in tr.menu_texts()  # not flat any more
 
 
 def test_submenu_click_activates_in_that_device(qapp):
@@ -193,14 +193,14 @@ def test_submenu_click_activates_in_that_device(qapp):
 def test_submenu_restore_targets_that_device(qapp):
     tr, t = _two_device_tray(qapp)
     next(a for a in _submenus(tr)["Razer DeathAdder V2"].actions()
-         if a.text() == "Originalzustand wiederherstellen").trigger()
+         if a.text() == "Restore original state").trigger()
     assert ("RestoreOriginal", (DA,)) in t.calls
 
 
 def test_disconnected_second_device_keeps_flat_menu(qapp):
     tr, t = _two_device_tray(qapp, connected=False)
     assert _submenus(tr) == {}
-    assert "Aktives Profil: Zwei" in tr.menu_texts()
+    assert "Active profile: Zwei" in tr.menu_texts()
 
 
 def test_only_connected_device_is_not_the_naga(qapp):
@@ -212,8 +212,8 @@ def test_only_connected_device_is_not_the_naga(qapp):
     tr._confirm = lambda title, text: True
     tr._info = lambda title, text: None
     tr.rebuild_menu()
-    assert "Aktives Profil: Präzision" in tr.menu_texts()
-    assert "Akku: 55 %" in tr.menu_texts()
+    assert "Active profile: Präzision" in tr.menu_texts()
+    assert "Battery: 55 %" in tr.menu_texts()
     tr.restore_original()
     assert ("RestoreOriginal", (DA,)) in t.calls
 
@@ -236,8 +236,8 @@ def test_menu_shows_version_hint_for_old_daemon(qapp):
     c.status()
     tr = TrayIcon(c)
     tr.rebuild_menu()
-    assert tr.menu_texts()[0] == "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
-    assert tr.menu_texts()[-1] == "Beenden"
+    assert tr.menu_texts()[0] == "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again"
+    assert tr.menu_texts()[-1] == "Quit"
 
 
 def test_daemon_error_in_device_list_keeps_menu_usable(qapp):
@@ -252,7 +252,7 @@ def test_daemon_error_in_device_list_keeps_menu_usable(qapp):
 
     t.call = failing
     tr.rebuild_menu()
-    assert tr.menu_texts()[0] == "Dienst läuft nicht" and tr.menu_texts()[-1] == "Beenden"
+    assert tr.menu_texts()[0] == "Service not running" and tr.menu_texts()[-1] == "Quit"
     t.call = orig
     tr.rebuild_menu()
     assert set(_submenus(tr)) == {"Razer Naga V2 Pro", "Razer DeathAdder V2"}
@@ -262,12 +262,12 @@ def test_osd_toggle_in_menu(tray):
     tr, t = tray
     seen = []
     tr.osdRequested.connect(seen.append)
-    act = next(a for a in tr.menu.actions() if a.text() == "Bildschirmanzeige")
+    act = next(a for a in tr.menu.actions() if a.text() == "On-screen display")
     assert act.isCheckable() and act.isChecked()
     act.trigger()
     assert seen == [False]
     tr.set_osd_checked(False)
-    assert not next(a for a in tr.menu.actions() if a.text() == "Bildschirmanzeige").isChecked()
+    assert not next(a for a in tr.menu.actions() if a.text() == "On-screen display").isChecked()
 
 
 def test_daemon_vanishing_mid_rebuild_does_not_interleave_a_second_rebuild(tray):
@@ -278,5 +278,5 @@ def test_daemon_vanishing_mid_rebuild_does_not_interleave_a_second_rebuild(tray)
     t.up = False  # the next call inside rebuild_menu fails and emits available(False)
     tr.rebuild_menu()
     texts = tr.menu_texts()
-    assert texts.count("Beenden") == 1 and texts.count("Fenster öffnen") == 1
-    assert texts[0] == "Dienst läuft nicht"
+    assert texts.count("Quit") == 1 and texts.count("Open window") == 1
+    assert texts[0] == "Service is not running"

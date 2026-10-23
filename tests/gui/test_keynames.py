@@ -22,22 +22,22 @@ def test_key_label_uses_layout():
 
 def test_key_label_special_keys_german():
     assert key_label(E.KEY_ENTER, layout="de") == "Enter"
-    assert key_label(E.KEY_LEFTCTRL, layout="de") == "Strg"
+    assert key_label(E.KEY_LEFTCTRL, layout="de") == "Ctrl"
     assert key_label(E.KEY_LEFTSHIFT, layout="de") == "Shift"
     assert key_label(E.KEY_F5, layout="de") == "F5"
 
 
 def test_key_label_fallback_to_evdev_name():
-    assert key_label(E.BTN_LEFT, layout="de") == "Linke Maustaste"
+    assert key_label(E.BTN_LEFT, layout="de") == "Left Click"
     assert key_label(E.KEY_MICMUTE, layout="de")  # whatever, never empty
-    assert key_label(999, layout="de") == "Taste 999"
+    assert key_label(999, layout="de") == "Key 999"
 
 
 def test_combo_label():
-    assert combo_label([E.KEY_LEFTCTRL, E.KEY_LEFTSHIFT, E.KEY_M], layout="de") == "Strg+Shift+M"
+    assert combo_label([E.KEY_LEFTCTRL, E.KEY_LEFTSHIFT, E.KEY_M], layout="de") == "Ctrl+Shift+M"
 
 
 def test_sharp_s_not_uppercased_and_dead_keys_readable():
     assert key_label(E.KEY_MINUS, layout="de") == "ß"
-    assert key_label(E.KEY_GRAVE, layout="de") == "Zirkumflex"
-    assert key_label(E.KEY_EQUAL, layout="de") == "Akut"
+    assert key_label(E.KEY_GRAVE, layout="de") == "Circumflex"
+    assert key_label(E.KEY_EQUAL, layout="de") == "Acute"

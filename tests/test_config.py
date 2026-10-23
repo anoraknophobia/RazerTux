@@ -63,7 +63,7 @@ def test_profile_file_is_pretty_utf8(tmp_path):
 def test_left_click_lockout_rejected():
     p = default_profile()
     p.standard[ButtonId.LEFT] = DisabledAction()
-    assert "Linksklick nicht erreichbar" in validate(p)
+    assert "Left click unreachable" in validate(p)
 
 
 def test_left_click_remapped_elsewhere_ok():
@@ -83,7 +83,7 @@ def test_two_hypershift_keys_rejected():
 def test_missing_macro_reported():
     p = default_profile()
     p.standard[ButtonId.SIDE_1] = MacroAction("weg", "once")
-    assert "Makro fehlt: weg" in validate(p, {})
+    assert "Macro missing: weg" in validate(p, {})
     assert validate(p) == []
     assert validate(p, {"weg": Macro("weg", "W", [])}) == []
 
@@ -180,7 +180,7 @@ def test_new_profile_id_is_filesystem_safe():
 
 @pytest.mark.parametrize("button", [ButtonId.TOP_1, ButtonId.TOP_2])
 def test_hypershift_on_top_button_needs_remap(button):
-    msg = "Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“"
+    msg = "Hypershift key on a top button only with “Assign top buttons freely”"
     p = default_profile()
     p.standard[button] = HypershiftAction()
     assert msg in validate(p)
@@ -191,7 +191,7 @@ def test_hypershift_on_top_button_needs_remap(button):
 def test_hypershift_key_in_hypershift_layer_rejected():
     p = default_profile()
     p.hypershift[ButtonId.SIDE_1] = HypershiftAction()
-    assert "Hypershift-Taste in der Hypershift-Ebene nicht erlaubt" in validate(p)
+    assert "Hypershift key not allowed in the Hypershift layer" in validate(p)
 
 
 def test_load_profile_corrupt_returns_default_and_records(tmp_path):

@@ -22,8 +22,8 @@ OBJECT_PATH = "/io/github/razertux"
 INTERFACE = "io.github.razertux.Daemon1"
 CALL_TIMEOUT = 5.0
 # the service on the bus has no Daemon1 interface: it is an older RazerTux
-VERSION_MISMATCH = QT_TRANSLATE_NOOP("DaemonClient", "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden")
-NOT_RUNNING = QT_TRANSLATE_NOOP("DaemonClient", "Dienst läuft nicht")
+VERSION_MISMATCH = QT_TRANSLATE_NOOP("DaemonClient", "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again")
+NOT_RUNNING = QT_TRANSLATE_NOOP("DaemonClient", "Service is not running")
 _OLD_DAEMON_ERRORS = ("org.freedesktop.DBus.Error.UnknownMethod",
                       "org.freedesktop.DBus.Error.UnknownInterface",
                       "org.freedesktop.DBus.Error.UnknownObject")
@@ -140,7 +140,7 @@ class DBusNextTransport(QObject):
         try:
             return fut.result(CALL_TIMEOUT + 1)
         except TimeoutError as e:
-            raise DaemonUnavailable("Zeitüberschreitung") from e
+            raise DaemonUnavailable("Timeout") from e
 
 
 class DaemonClient(QObject):

@@ -20,23 +20,23 @@ from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, description
 
 EFFECTS = [
-    ("off", QT_TRANSLATE_NOOP("LightingTab", "Aus")),
-    ("static", QT_TRANSLATE_NOOP("LightingTab", "Statisch")),
-    ("breath", QT_TRANSLATE_NOOP("LightingTab", "Atmen")),
-    ("spectrum", QT_TRANSLATE_NOOP("LightingTab", "Spektrum")),
-    ("wave", QT_TRANSLATE_NOOP("LightingTab", "Welle")),
-    ("reactive", QT_TRANSLATE_NOOP("LightingTab", "Reaktiv")),
+    ("off", QT_TRANSLATE_NOOP("LightingTab", "Off")),
+    ("static", QT_TRANSLATE_NOOP("LightingTab", "Static")),
+    ("breath", QT_TRANSLATE_NOOP("LightingTab", "Breathing")),
+    ("spectrum", QT_TRANSLATE_NOOP("LightingTab", "Spectrum Cycling")),
+    ("wave", QT_TRANSLATE_NOOP("LightingTab", "Wave")),
+    ("reactive", QT_TRANSLATE_NOOP("LightingTab", "Reactive")),
 ]
 COLOUR_EFFECTS = {"static", "breath", "reactive"}
 ZONES = [
-    ("all", QT_TRANSLATE_NOOP("LightingTab", "Alle Zonen")),
+    ("all", QT_TRANSLATE_NOOP("LightingTab", "All zones")),
     ("logo", QT_TRANSLATE_NOOP("LightingTab", "Logo")),
-    ("thumb", QT_TRANSLATE_NOOP("LightingTab", "Daumenfeld")),
-    ("scroll", QT_TRANSLATE_NOOP("LightingTab", "Mausrad")),
-    ("matrix", QT_TRANSLATE_NOOP("LightingTab", "Leuchtfeld")),
-    ("backlight", QT_TRANSLATE_NOOP("LightingTab", "Hintergrund")),
-    ("left", QT_TRANSLATE_NOOP("LightingTab", "Links")),
-    ("right", QT_TRANSLATE_NOOP("LightingTab", "Rechts")),
+    ("thumb", QT_TRANSLATE_NOOP("LightingTab", "Thumb grid")),
+    ("scroll", QT_TRANSLATE_NOOP("LightingTab", "Scroll wheel")),
+    ("matrix", QT_TRANSLATE_NOOP("LightingTab", "Lighting area")),
+    ("backlight", QT_TRANSLATE_NOOP("LightingTab", "Backlight")),
+    ("left", QT_TRANSLATE_NOOP("LightingTab", "Left")),
+    ("right", QT_TRANSLATE_NOOP("LightingTab", "Right")),
 ]
 DEVICE_ZONES = ("logo", "thumb")  # the Naga V2 Pro's own zone names
 DEFAULT_ZONE = LightingZone("static", (68, 214, 44), 191)
@@ -68,10 +68,10 @@ class LightingTab(QWidget):
         self._zones: dict[str, LightingZone] = {z: DEFAULT_ZONE for z in DEVICE_ZONES}
         self._quiet = False
 
-        self.enable_box = QCheckBox(self.tr("Beleuchtung dieses Profils festlegen"))
-        self.enable_box.setToolTip(self.tr("Aus: Die Maus behält ihre Beleuchtung (nicht ändern)."))
+        self.enable_box = QCheckBox(self.tr("Set lighting for this profile"))
+        self.enable_box.setToolTip(self.tr("Off: the mouse keeps its lighting (no change)."))
 
-        bright = Card(self.tr("Helligkeit"))
+        bright = Card(self.tr("Brightness"))
         self.brightness = QSlider(Qt.Orientation.Horizontal)
         self.brightness.setRange(0, 100)
         self.brightness_value = QLabel()
@@ -84,10 +84,10 @@ class LightingTab(QWidget):
         row.addWidget(QLabel("100"))
         bright.add(row)
 
-        fx = Card(self.tr("Effekte"))
-        fx.add(description(self.tr("Der Effekt wird beim Aktivieren des Profils gesetzt und "
-                                   "beim Abstecken der Maus wieder vergessen.")))
-        self.all_same = QCheckBox(self.tr("Alle Zonen gleich"))
+        fx = Card(self.tr("Effects"))
+        fx.add(description(self.tr("The effect is set when the profile is activated and "
+                                   "forgotten when the mouse is unplugged.")))
+        self.all_same = QCheckBox(self.tr("Same for all zones"))
         fx.add(self.all_same)
         self.grid = QGridLayout()
         self.zone_labels: dict[str, QLabel] = {}
@@ -140,7 +140,7 @@ class LightingTab(QWidget):
                 if eff in effects:
                     combo.addItem(self.tr(eff_text), eff)
             colour = QPushButton()
-            colour.setToolTip(self.tr("Farbe wählen"))
+            colour.setToolTip(self.tr("Choose color"))
             colour.setFixedSize(40, 24)
             self.grid.addWidget(label, i, 0)
             self.grid.addWidget(combo, i, 1)
@@ -152,7 +152,7 @@ class LightingTab(QWidget):
 
     # -- hooks (replaced in tests) ----------------------------------------------
     def _pick_color(self, current: QColor) -> QColor | None:
-        c = QColorDialog.getColor(current, self, self.tr("Farbe wählen"))
+        c = QColorDialog.getColor(current, self, self.tr("Choose color"))
         return c if c.isValid() else None
 
     # -- loading ---------------------------------------------------------------

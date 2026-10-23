@@ -33,26 +33,26 @@ class PowerTab(QWidget):
         self.settings: Settings | None = None
         self._quiet = False
 
-        self.idle_card = idle = Card(self.tr("Energiesparen im Funkbetrieb"))
-        self.idle_box = QCheckBox(self.tr("Ruhezustand nach Inaktivität (Minuten)"))
+        self.idle_card = idle = Card(self.tr("Power saving (wireless)"))
+        self.idle_box = QCheckBox(self.tr("Go to sleep after inactivity (minutes)"))
         self.idle_slider = _slider(IDLE_MIN_S // 60, IDLE_MAX_S // 60)
         self.idle_value = QLabel()
         idle.add(self.idle_box)
         idle.add(self._row(self.idle_slider, self.idle_value, "1", "15"))
 
-        self.low_card = low = Card(self.tr("Energiesparmodus"))
-        self.low_power_box = QCheckBox(self.tr("Im Funkbetrieb Energiesparmodus, wenn der Akku "
-                                               "unter (%) liegt"))
+        self.low_card = low = Card(self.tr("Low power mode"))
+        self.low_power_box = QCheckBox(self.tr("In wireless mode, enter low power mode when the "
+                                               "battery is below (%)"))
         self.low_power_slider = _slider(LOW_POWER_MIN, LOW_POWER_MAX)
         self.low_power_value = QLabel()
         low.add(self.low_power_box)
         low.add(self._row(self.low_power_slider, self.low_power_value,
                           f"{LOW_POWER_MIN} %", f"{LOW_POWER_MAX} %"))
 
-        self.warn_card = warn = Card(self.tr("Akku-Warnung"))
-        warn.add(description(self.tr("Desktop-Benachrichtigung im Funkbetrieb, einmal je "
-                                     "Entladung (erneut erst nach dem Laden).")))
-        self.warn_box = QCheckBox(self.tr("Warnung bei Akku unter"))
+        self.warn_card = warn = Card(self.tr("Battery warning"))
+        warn.add(description(self.tr("Desktop notification in wireless mode, once per discharge "
+                                     "(again only after charging).")))
+        self.warn_box = QCheckBox(self.tr("Warn when the battery is below"))
         self.warn_spin = QSpinBox()
         self.warn_spin.setRange(5, 50)
         self.warn_spin.setSuffix(" %")
@@ -63,8 +63,8 @@ class PowerTab(QWidget):
         row.addStretch(1)
         warn.add(row)
 
-        note = description(self.tr("Diese Einstellungen gelten für alle Profile. Nicht "
-                                   "angehakt: Die Maus behält ihren eigenen Wert."))
+        note = description(self.tr("These settings apply to all profiles. Unchecked: the mouse "
+                                   "keeps its own value."))
         grid = QGridLayout(self)
         grid.setContentsMargins(16, 16, 16, 16)
         grid.setSpacing(16)
