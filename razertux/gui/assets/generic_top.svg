@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 340" width="200" height="340">
+  <!-- Generic mouse from above, front at the top. Own line drawing for the laser look
+       (stroke only, @ACC@ = line colour, key groups with exactly one shape). -->
+  <path d="M100 8 C60 8 34 30 30 80 C26 140 22 210 30 262 C38 312 66 332 100 332 C134 332 162 312 170 262 C178 210 174 140 170 80 C166 30 140 8 100 8 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M100 10 L100 122 C74 128 50 124 30 116" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M100 10 L100 122 C126 128 150 124 170 116" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="89" y="34" width="22" height="58" rx="10" stroke="@ACC@" stroke-width="1.6"/></g>
+</svg>

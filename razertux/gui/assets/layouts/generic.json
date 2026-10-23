@@ -1,0 +1,58 @@
+{
+ "template": "generic",
+ "views": [
+  {
+   "name": "top",
+   "asset": "generic_top.svg",
+   "style": "laser"
+  }
+ ],
+ "buttons": {
+  "left": {
+   "view": "top",
+   "element": "left",
+   "side": "right",
+   "anchor": [
+    0.3,
+    0.1
+   ]
+  },
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right",
+   "anchor": [
+    0.4,
+    0.22
+   ]
+  },
+  "wheel_up": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.8,
+    0.15
+   ]
+  },
+  "middle": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.8,
+    0.5
+   ],
+   "primary": true
+  },
+  "wheel_down": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.8,
+    0.85
+   ]
+  }
+ }
+}

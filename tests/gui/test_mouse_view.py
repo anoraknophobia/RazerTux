@@ -13,16 +13,23 @@ from razertux.config.store import ConfigStore
 from razertux.gui import language, mouse_scene
 from razertux.gui.dbus_client import DaemonClient
 from razertux.gui.main_window import MainWindow
-from razertux.gui.mouse_view import OTHER_BUTTONS, SIDE_BUTTONS, MouseView, element_of
+from razertux.devices.db import load_devices
+from razertux.gui.layouts import layout_for
+from razertux.gui.mouse_view import MouseView
 from razertux.gui.theme import dark_palette
 from razertux.hw.buttons import ButtonId
 
+NAGA = layout_for(load_devices()["naga_v2_pro"], None)
+SIDE_BUTTONS = NAGA.buttons_on("left")
+OTHER_BUTTONS = NAGA.buttons_on("right")
 ALL = [*SIDE_BUTTONS, *OTHER_BUTTONS]
+SIDE_SVG, TOP_SVG = (NAGA.view("side").asset, NAGA.view("top").asset)
+SIDE_IDS, TOP_IDS = NAGA.elements("side"), NAGA.elements("top")
 
 
 # -- SVG assets ---------------------------------------------------------------------
-@pytest.mark.parametrize("asset, ids", [(mouse_scene.SIDE_SVG, mouse_scene.SIDE_IDS),
-                                        (mouse_scene.TOP_SVG, mouse_scene.TOP_IDS)])
+@pytest.mark.parametrize("asset, ids", [(SIDE_SVG, SIDE_IDS),
+                                        (TOP_SVG, TOP_IDS)])
 def test_svgs_are_valid_and_have_the_key_elements(qapp, asset, ids):
     r = QSvgRenderer(QByteArray(mouse_scene.themed_svg(asset, dark_palette())))
     assert r.isValid()
@@ -34,7 +41,7 @@ def test_svgs_are_valid_and_have_the_key_elements(qapp, asset, ids):
 
 
 def test_side_keys_are_numbered_1_to_12():
-    text = (mouse_scene.ASSETS / mouse_scene.SIDE_SVG).read_text(encoding="utf-8")
+    text = (mouse_scene.ASSETS / SIDE_SVG).read_text(encoding="utf-8")
     groups = re.findall(r'<g id="side_(\d+)">(.*?)</g>', text, re.S)
     assert [int(n) for n, _ in groups] == list(range(1, 13))
     for n, body in groups:
@@ -52,11 +59,11 @@ def test_svg_colours_dark_and_system(qapp):
 
 
 def test_hot_and_keys_only_tokens(qapp):
-    hot = mouse_scene.themed_svg(mouse_scene.SIDE_SVG, dark_palette(), hot="side_3").decode()
+    hot = mouse_scene.themed_svg(SIDE_SVG, dark_palette(), hot="side_3").decode()
     assert hot.count(f'fill-opacity="{mouse_scene.HOT_OPACITY}"') == 1
-    keys = mouse_scene.themed_svg(mouse_scene.SIDE_SVG, dark_palette(), keys_only=True).decode()
+    keys = mouse_scene.themed_svg(SIDE_SVG, dark_palette(), keys_only=True).decode()
     assert '<g opacity="0">' in keys and '<g opacity="0">' not in mouse_scene.themed_svg(
-        mouse_scene.SIDE_SVG, dark_palette()).decode()
+        SIDE_SVG, dark_palette()).decode()
 
 
 # -- view geometry ------------------------------------------------------------------
@@ -88,15 +95,15 @@ def test_leader_lines_end_on_their_key_after_resize(view, qapp, size):
 
 
 def test_labels_and_pictures_do_not_overlap(view):
-    pictures = view.side.rect.united(view.top.rect)
+    pictures = view.drawings["side"].rect.united(view.drawings["top"].rect)
     for b in ALL:
         assert not view.label_rect(b).intersects(pictures), b
 
 
-def test_elements_of_buttons():
-    assert element_of(ButtonId.SIDE_7) == "side_7"
-    assert {element_of(b) for b in (ButtonId.MIDDLE, ButtonId.WHEEL_UP, ButtonId.WHEEL_LEFT)} == {"wheel"}
-    assert element_of(ButtonId.TOP_2) == "top_2" and element_of(ButtonId.LEFT) == "left"
+def test_elements_of_buttons(view):
+    assert view.element_of(ButtonId.SIDE_7) == "side_7"
+    assert {view.element_of(b) for b in (ButtonId.MIDDLE, ButtonId.WHEEL_UP, ButtonId.WHEEL_LEFT)} == {"wheel"}
+    assert view.element_of(ButtonId.TOP_2) == "top_2" and view.element_of(ButtonId.LEFT) == "left"
 
 
 # -- hover / click ------------------------------------------------------------------
@@ -117,7 +124,7 @@ def test_hover_on_label_lights_key(view):
     btn = view._buttons[ButtonId.SIDE_5]
     QApplication.sendEvent(btn, QEvent(QEvent.Type.Enter))
     assert view.hot == ButtonId.SIDE_5
-    assert view.side._loaded[1] == "side_5"  # the drawing shows the key green
+    assert view.drawings["side"]._loaded[1] == "side_5"  # the drawing shows the key green
     assert btn.property("hot") is True
     QApplication.sendEvent(btn, QEvent(QEvent.Type.Leave))
     assert view.hot is None and btn.property("hot") is False
@@ -291,7 +298,7 @@ def test_leader_lines_never_cross_and_keep_clear_of_dots(window, qapp, size):
     qapp.processEvents()
     view = window.mouse_view
     lines = {b: view.leader_line(b) for b in ALL}
-    wheel = view.top.element_rect("wheel")
+    wheel = view.drawings["top"].element_rect("wheel")
     for b, pts in lines.items():
         for other, opts in lines.items():
             if other == b:
@@ -301,11 +308,11 @@ def test_leader_lines_never_cross_and_keep_clear_of_dots(window, qapp, size):
                     assert _dist(dot, seg) >= 6, (size, b, other)
                 for mine in _segments(pts):
                     assert not _cross(mine, seg), (size, b, other)
-        if element_of(b) != "wheel":
+        if view.element_of(b) != "wheel":
             assert not any(_rect_hit(wheel, seg) for seg in _segments(pts)), (size, b)
 
 
-@pytest.mark.parametrize("asset", [mouse_scene.SIDE_SVG, mouse_scene.TOP_SVG])
+@pytest.mark.parametrize("asset", [SIDE_SVG, TOP_SVG])
 def test_svg_ids_are_unique(asset):
     ids = re.findall(r'\bid="([^"]+)"', (mouse_scene.ASSETS / asset).read_text(encoding="utf-8"))
     assert len(ids) == len(set(ids)), sorted(i for i in ids if ids.count(i) > 1)

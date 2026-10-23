@@ -9,11 +9,10 @@ from PySide6.QtCore import QByteArray, QPointF, QRectF
 from PySide6.QtGui import QPainter, QPalette
 from PySide6.QtSvg import QSvgRenderer
 
+from razertux.gui.laser import laserize
+from razertux.gui.layouts import View
+
 ASSETS = Path(__file__).parent / "assets"
-SIDE_SVG = "naga_v2_pro_side.svg"
-TOP_SVG = "naga_v2_pro_top.svg"
-SIDE_IDS = tuple(f"side_{n}" for n in range(1, 13))
-TOP_IDS = ("wheel", "top_1", "top_2", "left", "right")  # small ones first (hit test)
 HOT_OPACITY = "0.55"
 _HOT = re.compile(r"@HOT:(\w+)@")
 
@@ -59,11 +58,20 @@ def themed_svg(name: str, palette: QPalette, hot: str | None = None,
     return text.encode("utf-8")
 
 
-class Drawing:
-    """One SVG asset placed into a rectangle of a widget."""
+def laser_svg(name: str, palette: QPalette, hot: str | None = None) -> bytes:
+    """A line-art asset with the glow; the line colour is the palette highlight."""
+    text = (ASSETS / name).read_text(encoding="utf-8")
+    return laserize(text, palette.color(QPalette.ColorRole.Highlight).name(), hot).encode("utf-8")
 
-    def __init__(self, asset: str, ids: tuple[str, ...], keys_layer: bool = False):
-        self.asset, self.ids, self._keys_layer = asset, ids, keys_layer
+
+class Drawing:
+    """One SVG asset (of a layout view) placed into a rectangle of a widget."""
+
+    def __init__(self, view: View, ids: list[str]):
+        self.view, self.asset, self.ids = view, view.asset, ids
+        self._laser = view.style == "laser"
+        # filled assets mark their base layer with @BASE@ (redrawn keys sit above the leader lines)
+        self._keys_layer = not self._laser and "@BASE@" in (ASSETS / self.asset).read_text(encoding="utf-8")
         self.rect = QRectF()
         # one (renderer, keys-only renderer) per hover state; dropped on a palette change
         self._cache: dict[str | None, tuple[QSvgRenderer, QSvgRenderer | None]] = {}
@@ -72,6 +80,8 @@ class Drawing:
         self._loaded: tuple | None = None
 
     def _build(self, palette: QPalette, hot: str | None) -> tuple[QSvgRenderer, QSvgRenderer | None]:
+        if self._laser:
+            return QSvgRenderer(QByteArray(laser_svg(self.asset, palette, hot))), None
         full = QSvgRenderer(QByteArray(themed_svg(self.asset, palette, hot)))
         keys = (QSvgRenderer(QByteArray(themed_svg(self.asset, palette, hot, keys_only=True)))
                 if self._keys_layer else None)
@@ -113,8 +123,9 @@ class Drawing:
                       local.width() * sx, local.height() * sy)
 
     def element_at(self, pos: QPointF) -> str | None:
-        for element in self.ids:
-            if self.element_rect(element).contains(pos):
+        rects = {e: self.element_rect(e) for e in self.ids}
+        for element in sorted(rects, key=lambda e: rects[e].width() * rects[e].height()):  # small ones first
+            if rects[element].contains(pos):
                 return element
         return None
 

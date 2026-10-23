@@ -175,7 +175,7 @@ def test_translations_and_icon_are_packaged():
     assert data["tool"]["setuptools"]["packages"]["find"]["include"] == ["razertux*"]
     pd = data["tool"]["setuptools"]["package-data"]
     assert pd["razertux.i18n"] == ["*.json"]
-    assert pd["razertux.gui"] == ["assets/*.svg"]
+    assert pd["razertux.gui"] == ["assets/*.svg", "assets/layouts/*.json"]
     for lang in ("en", "es", "fr"):
         assert (ROOT / "razertux" / "i18n" / f"{lang}.json").is_file()
 

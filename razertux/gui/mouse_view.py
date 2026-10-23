@@ -9,51 +9,30 @@ from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPalette, QPen, QPixmap
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from razertux.config.model import Action, DefaultAction, Macro
+from razertux.devices.db import load_devices
 from razertux.gui.labels import action_label, button_name, firmware_top_label
-from razertux.gui.mouse_scene import SIDE_IDS, SIDE_SVG, TOP_IDS, TOP_SVG, Drawing, themed_svg
+from razertux.gui.layouts import Layout, layout_for
+from razertux.gui.mouse_scene import Drawing, themed_svg
 from razertux.hw.buttons import ButtonId
 
 __all__ = ["MouseView", "themed_svg"]
 
-SIDE_BUTTONS = [ButtonId(f"side_{n}") for n in range(1, 13)]
-TOP_BUTTONS = (ButtonId.TOP_1, ButtonId.TOP_2)
-OTHER_BUTTONS = [ButtonId.LEFT, ButtonId.RIGHT, ButtonId.WHEEL_UP, ButtonId.MIDDLE,
-                 ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT,
-                 ButtonId.TOP_1, ButtonId.TOP_2]
-WHEEL_BUTTONS = (ButtonId.MIDDLE, ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN,
-                 ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT)
-
-
-def element_of(b: ButtonId) -> str:
-    """SVG element id of a button (all wheel functions share the wheel)."""
-    return "wheel" if b in WHEEL_BUTTONS else b.value
-
-
-# top view: where a leader line ends inside its element (fractions of the element
-# rect). In label order from top to bottom, so the lines never cross: left click on
-# the front of the left button (above the wheel well), right click beside it, then
-# one dot each along the right edge of the wheel, then the two top buttons.
-_ANCHOR = {ButtonId.LEFT: (0.68, 0.075), ButtonId.RIGHT: (0.54, 0.15),
-           ButtonId.WHEEL_UP: (0.78, 0.14), ButtonId.MIDDLE: (0.78, 0.34),
-           ButtonId.WHEEL_DOWN: (0.78, 0.54), ButtonId.WHEEL_LEFT: (0.78, 0.72),
-           ButtonId.WHEEL_RIGHT: (0.78, 0.88), ButtonId.TOP_1: (0.8, 0.5),
-           ButtonId.TOP_2: (0.8, 0.5)}
-SIDE_X = 0.16      # side keys: end dot near the key's left edge
-TOP_ENTRY = 0.92   # top view: x (fraction of the drawing) where the lines turn horizontal
-# the button a click on a shared element opens
-_PRIMARY = {"wheel": ButtonId.MIDDLE}
+TOP_BUTTONS = (ButtonId.TOP_1, ButtonId.TOP_2)  # owned by the firmware unless remapped
+DEFAULT_MODEL = "naga_v2_pro"  # until the window picks the connected device
+ANCHOR = {"left": (0.16, 0.5), "right": (0.84, 0.5)}  # leader line end inside a key by label side
+RIGHT_ENTRY = 0.92  # right column: x (fraction of the drawing) where the lines turn horizontal
 
 LINE = QColor("#555555")
 DOT = QColor("#8a8a8a")
 GAP = 56          # space between a label column and the pictures (room for the lines)
 DOT_GAP = 8       # label text -> start dot
-TOP_SCALE = 0.8   # top view height relative to the side view
+SPACING = 28      # between two pictures
 
 
 class MouseView(QWidget):
     bindingClicked = Signal(object)  # ButtonId
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, layout: Layout | None = None, parent: QWidget | None = None):
         super().__init__(parent)
         self._buttons: dict[ButtonId, QPushButton] = {}
         self._texts: dict[ButtonId, str] = {}
@@ -61,15 +40,24 @@ class MouseView(QWidget):
         self._hot: ButtonId | None = None
         self._pressed: ButtonId | None = None
         self._dots: QPixmap | None = None
-        self.side = Drawing(SIDE_SVG, SIDE_IDS, keys_layer=True)
-        self.top = Drawing(TOP_SVG, TOP_IDS)
-        for b in SIDE_BUTTONS:
-            self._make(b, "right")
-        for b in OTHER_BUTTONS:
-            self._make(b, "left")
+        self._cols: dict[str, QRectF] = {}
+        self.device_layout: Layout
+        self.drawings: dict[str, Drawing] = {}
         self.setMouseTracking(True)
         self.setMinimumSize(760, 400)
+        self.set_layout(layout or layout_for(load_devices()[DEFAULT_MODEL], None))
+
+    def set_layout(self, layout: Layout) -> None:
+        """Show another mouse: new pictures, one label per button of the layout."""
+        for btn in self._buttons.values():
+            btn.deleteLater()
+        self._buttons, self._texts, self._tips, self._hot, self._pressed = {}, {}, {}, None, None
+        self.device_layout = layout
+        self.drawings = {v.name: Drawing(v, layout.elements(v.name)) for v in layout.views}
+        for b, spec in layout.buttons.items():
+            self._make(b, "right" if spec.side == "left" else "left")
         self._load()
+        self._relayout()
 
     def _make(self, b: ButtonId, align: str) -> None:
         btn = QPushButton(self)
@@ -79,6 +67,7 @@ class MouseView(QWidget):
         btn.setStyleSheet("QPushButton { text-align: %s; padding: 3px 4px; }" % align)
         btn.clicked.connect(lambda _=False, b=b: self.bindingClicked.emit(b))
         btn.installEventFilter(self)
+        btn.show()
         self._buttons[b] = btn
         self._texts[b] = ""
 
@@ -97,7 +86,7 @@ class MouseView(QWidget):
             btn.setEnabled(not locked)
             self._tips[b] = (self.tr("Belegbar, wenn „Obere Tasten frei belegen“ an ist")
                              if locked else "")
-            if b in SIDE_BUTTONS:
+            if self.device_layout.buttons[b].side == "left":
                 self._texts[b] = f"{button_name(b)}  →  {label}"
             else:
                 self._texts[b] = f"{button_name(b)}:  {label}"
@@ -109,12 +98,16 @@ class MouseView(QWidget):
         self._relayout()
 
     # -- geometry ---------------------------------------------------------------
+    def element_of(self, b: ButtonId) -> str:
+        """SVG element id of a button (all wheel functions share the wheel)."""
+        return self.device_layout.buttons[b].element
+
     def drawing_of(self, b: ButtonId) -> Drawing:
-        return self.side if b in SIDE_BUTTONS else self.top
+        return self.drawings[self.device_layout.buttons[b].view]
 
     def key_rect(self, b: ButtonId) -> QRectF:
         """Rectangle of the button's key on the drawing (widget coordinates)."""
-        return self.drawing_of(b).element_rect(element_of(b))
+        return self.drawing_of(b).element_rect(self.element_of(b))
 
     def label_rect(self, b: ButtonId) -> QRectF:
         return QRectF(self._buttons[b].geometry())
@@ -124,31 +117,26 @@ class MouseView(QWidget):
 
         Label -> horizontal to a common elbow column -> straight to an entry column
         just outside the keys -> horizontal into the key. End heights grow in label
-        order, so no two lines cross; side keys of one row end at different heights,
-        so a line running below a key (side view) keeps clear of that key's dot."""
+        order, so no two lines cross."""
         label = self.label_rect(b)
         y = label.center().y()
         end = self._end_point(b)
-        if b in SIDE_BUTTONS:
+        if self.device_layout.buttons[b].side == "left":
             start = QPointF(label.right() + DOT_GAP, y)
-            elbow = QPointF(self.side.rect.left() - GAP * 0.35, y)
-            entry_x = min(self.key_rect(k).left() for k in SIDE_BUTTONS) - 8
+            elbow = QPointF(self._cols["left"].left() - GAP * 0.35, y)
+            entry_x = min(self.key_rect(k).left() for k in self.device_layout.buttons_on("left")) - 8
         else:
             start = QPointF(label.left() - DOT_GAP, y)
-            elbow = QPointF(self.top.rect.right() + GAP * 0.35, y)
-            entry_x = self.top.rect.left() + self.top.rect.width() * TOP_ENTRY
+            elbow = QPointF(self._cols["right"].right() + GAP * 0.35, y)
+            rect = self.drawing_of(b).rect
+            entry_x = rect.left() + rect.width() * RIGHT_ENTRY
         return [start, elbow, QPointF(entry_x, end.y()), end]
 
     def _end_point(self, b: ButtonId) -> QPointF:
+        spec = self.device_layout.buttons[b]
         key = self.key_rect(b)
-        if b not in SIDE_BUTTONS:
-            fx, fy = _ANCHOR[b]
-            return QPointF(key.left() + key.width() * fx, key.top() + key.height() * fy)
-        row, col = divmod(int(b.value.removeprefix("side_")) - 1, 3)
-        row_keys = [self.key_rect(SIDE_BUTTONS[row * 3 + c]) for c in range(3)]
-        centre = sum(r.center().y() for r in row_keys) / 3
-        offset = max(8.0, 0.3 * key.height())
-        return QPointF(key.left() + key.width() * SIDE_X, centre + (col - 1) * offset)
+        fx, fy = spec.anchor or ANCHOR[spec.side]
+        return QPointF(key.left() + key.width() * fx, key.top() + key.height() * fy)
 
     def resizeEvent(self, e) -> None:
         super().resizeEvent(e)
@@ -166,22 +154,33 @@ class MouseView(QWidget):
             tip = self._tips.get(b, "")
             btn.setToolTip("\n".join(t for t in (text if shown != text else "", tip) if t))
             widths[b] = min(cap, fm.horizontalAdvance(shown) + 12)
-        left_w = max(widths[b] for b in SIDE_BUTTONS)
-        right_w = max(widths[b] for b in OTHER_BUTTONS)
-        area = QRectF(left_w + GAP, 8, max(10, w - left_w - right_w - 2 * GAP), max(10, h - 16))
-        side_a, top_a, spacing = self.side.aspect(), self.top.aspect(), 28
-        side_h = min(area.height(), (area.width() - spacing) / (side_a + top_a * TOP_SCALE))
-        top_h = side_h * TOP_SCALE
-        total_w = side_h * side_a + spacing + top_h * top_a
-        x0 = area.left() + (area.width() - total_w) / 2
-        cy = area.center().y()
-        self.side.place(QRectF(x0, cy - side_h / 2, side_h * side_a, side_h))
-        self.top.place(QRectF(x0 + side_h * side_a + spacing, cy - top_h / 2, top_h * top_a, top_h))
-        row_h = max(btn.sizeHint().height() for btn in self._buttons.values())
-        self._stack(SIDE_BUTTONS, self.side.rect, row_h, lambda b: QRectF(
-            self.side.rect.left() - GAP - widths[b], 0, widths[b], row_h))
-        self._stack(OTHER_BUTTONS, self.top.rect, row_h, lambda b: QRectF(
-            self.top.rect.right() + GAP, 0, widths[b], row_h))
+        columns = {side: self.device_layout.buttons_on(side) for side in ("left", "right")}
+        col_w = {side: max((widths[b] for b in bs), default=0) for side, bs in columns.items()}
+        margin = {side: col_w[side] + GAP if columns[side] else 8 for side in columns}
+        area = QRectF(margin["left"], 8, max(10, w - margin["left"] - margin["right"]), max(10, h - 16))
+        views = self.device_layout.views
+        aspects = [self.drawings[v.name].aspect() * v.scale for v in views]
+        spacing = SPACING * (len(views) - 1)
+        base_h = min(area.height(), (area.width() - spacing) / sum(aspects))
+        total_w = base_h * sum(aspects) + spacing
+        x = area.left() + (area.width() - total_w) / 2
+        for v in views:
+            d = self.drawings[v.name]
+            vh = base_h * v.scale
+            vw = vh * d.aspect()
+            d.place(QRectF(x, area.center().y() - vh / 2, vw, vh))
+            x += vw + SPACING
+        row_h = max((btn.sizeHint().height() for btn in self._buttons.values()), default=0)
+        for side, bs in columns.items():
+            if not bs:
+                continue
+            union = QRectF()
+            for name in dict.fromkeys(self.device_layout.buttons[b].view for b in bs):
+                union = union.united(self.drawings[name].rect)
+            self._cols[side] = union
+            self._stack(bs, union, row_h, lambda b, side=side, union=union: QRectF(
+                union.left() - GAP - widths[b] if side == "left" else union.right() + GAP,
+                0, widths[b], row_h))
         self.update()
 
     def _stack(self, buttons: list[ButtonId], picture: QRectF, row_h: int, place) -> None:
@@ -213,11 +212,11 @@ class MouseView(QWidget):
 
     def button_at(self, pos: QPointF) -> ButtonId | None:
         """The (enabled) button whose key is under `pos`."""
-        for drawing in (self.side, self.top):
+        for name, drawing in self.drawings.items():
             element = drawing.element_at(pos)
             if element is not None:
-                b = _PRIMARY[element] if element in _PRIMARY else ButtonId(element)
-                return b if self._buttons[b].isEnabled() else None
+                b = self.device_layout.button_for(name, element)
+                return b if b is not None and self._buttons[b].isEnabled() else None
         return None
 
     def eventFilter(self, obj: QObject, e: QEvent) -> bool:
@@ -252,9 +251,9 @@ class MouseView(QWidget):
 
     # -- painting ---------------------------------------------------------------
     def _load(self) -> None:
-        hot = element_of(self._hot) if self._hot is not None else None
-        self.side.load(self.palette(), hot)
-        self.top.load(self.palette(), hot)
+        hot = self.element_of(self._hot) if self._hot is not None else None
+        for drawing in self.drawings.values():
+            drawing.load(self.palette(), hot)
 
     def changeEvent(self, e) -> None:
         if e.type() in (e.Type.PaletteChange, e.Type.ApplicationPaletteChange):
@@ -267,8 +266,8 @@ class MouseView(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         self._paint_dots(p)
-        self.side.paint(p)
-        self.top.paint(p)
+        for drawing in self.drawings.values():
+            drawing.paint(p)
         accent = self.palette().color(QPalette.ColorRole.Highlight)
         lines = {b: self.leader_line(b) for b in self._buttons}
         order = sorted(lines, key=lambda b: b == self._hot)  # the hot line on top
@@ -278,7 +277,8 @@ class MouseView(QWidget):
                 colour.setAlpha(110)
             p.setPen(QPen(colour, 1.4 if b == self._hot else 1.0))
             p.drawPolyline(lines[b])
-        self.side.paint_keys(p)
+        for drawing in self.drawings.values():
+            drawing.paint_keys(p)
         p.setPen(Qt.PenStyle.NoPen)
         for b in order:
             p.setBrush(accent if b == self._hot else DOT)
