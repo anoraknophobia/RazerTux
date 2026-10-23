@@ -77,3 +77,109 @@ def test_generated_db_is_reproducible(tmp_path):
     out.write_text(res.stdout)
     assert out.read_text() == DB_PATH.read_text()
     assert json.loads(out.read_text())["_source"]["commit"]
+
+
+def test_multi_step_body_records_all_steps_and_raw_prelude():
+    groups = imp.parse_switch(read("openrazer_snippet.c"), "razer_attr_write_matrix_effect_static", PIDS)
+    c = groups[0x00A7]
+    assert c.fn == "razer_chroma_standard_set_led_state" and c.txn == 0x1F
+    assert c.steps == ("raw:0x0f/0x02/0x06", "razer_chroma_standard_set_led_state",
+                       "razer_chroma_standard_set_led_rgb")
+    # single builder -> one step; default group returns without builder -> nothing
+    assert groups[0x005C].steps == ("razer_chroma_standard_matrix_effect_static",)
+    assert "default" not in groups
+
+
+MINI_HEADER = """
+#define USB_DEVICE_ID_RAZER_TEST_WIRED 0x0001
+#define USB_DEVICE_ID_RAZER_TEST_WIRELESS 0x0002
+"""
+MINI_C = """
+static ssize_t razer_attr_read_dpi(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    request = razer_chroma_misc_get_dpi_xy(VARSTORE);
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_TEST_WIRED:
+        request.transaction_id.id = 0x3f;
+        break;
+    case USB_DEVICE_ID_RAZER_TEST_WIRELESS:
+        request.transaction_id.id = 0x1f;
+        break;
+    }
+    return 0;
+}
+static ssize_t razer_attr_read_poll_rate(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    request = razer_chroma_misc_get_polling_rate();
+    request.transaction_id.id = 0x1f;
+    return 0;
+}
+static ssize_t razer_attr_read_charge_level(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    request = razer_chroma_misc_get_battery_level();
+    request.transaction_id.id = 0x1f;
+    return 0;
+}
+static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id *id)
+{
+    switch(dev->usb_pid) {
+    case USB_DEVICE_ID_RAZER_TEST_WIRELESS:
+        CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_level);
+        fallthrough;
+    case USB_DEVICE_ID_RAZER_TEST_WIRED:
+        CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_dpi);
+        CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_poll_rate);
+        break;
+    }
+    return 0;
+}
+"""
+MINI_COMMON = """
+struct razer_report razer_chroma_misc_get_dpi_xy(unsigned char v) { }
+struct razer_report razer_chroma_misc_get_polling_rate(void) { }
+struct razer_report razer_chroma_misc_get_battery_level(void) { }
+"""
+MINI_PY = '''
+class RazerTestWired(__RazerDevice):
+    """
+    Class for the Razer Test (Wired)
+    """
+    USB_PID = 0x0001
+    METHODS = ["get_poll_rate"]
+    DPI_MAX = 100
+
+
+class RazerTestWireless(RazerTestWired):
+    """
+    Class for the Razer Test (Wireless)
+    """
+    USB_PID = 0x0002
+'''
+
+
+def test_per_pid_differences_are_split_from_common(tmp_path):
+    (tmp_path / "driver").mkdir()
+    (tmp_path / "daemon/openrazer_daemon/hardware").mkdir(parents=True)
+    (tmp_path / "driver/razermouse_driver.h").write_text(MINI_HEADER)
+    (tmp_path / "driver/razermouse_driver.c").write_text(MINI_C)
+    (tmp_path / "driver/razerchromacommon.c").write_text(MINI_COMMON)
+    (tmp_path / "daemon/openrazer_daemon/hardware/mouse.py").write_text(MINI_PY)
+    import io
+    db = imp.build_db(tmp_path, stderr=io.StringIO())
+    d = db["devices"][0]
+    assert d["features"] == ["dpi", "poll_rate"]
+    assert d["pid_features"] == {"0x0002": ["battery"]}
+    assert "get_poll_rate" in d["protocol"] and "get_dpi" not in d["protocol"]
+    assert d["pid_protocol"]["0x0001"]["get_dpi"]["txn"] == 0x3F
+    assert d["pid_protocol"]["0x0002"]["get_dpi"]["txn"] == 0x1F
+    assert d["pid_protocol"]["0x0002"]["get_battery"]["txn"] == 0x1F
+    assert "get_battery" not in d["pid_protocol"]["0x0001"]
+
+    from razertux.devices.db import _from_json
+    info = _from_json(d)
+    assert "battery" not in info.features
+    assert "battery" not in info.for_pid(0x0001).features
+    assert "battery" in info.for_pid(0x0002).features
+    assert info.for_pid(0x0001).protocol["get_dpi"].txn == 0x3F
+    assert info.for_pid(0x0002).protocol["get_dpi"].txn == 0x1F
+    assert "get_battery" not in info.for_pid(0x0001).protocol

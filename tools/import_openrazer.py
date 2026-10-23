@@ -140,9 +140,27 @@ TXN_RE = re.compile(r"transaction_id\.id\s*=\s*(0x[0-9A-Fa-f]+|\d+)")
 HELPER_RE = re.compile(r"\b(razer_attr_(?:read|write)_\w+)\s*\(")
 
 
+RAW_RE = re.compile(r"\bget_razer_report\s*\(\s*(0x[0-9A-Fa-f]+)\s*,\s*(0x[0-9A-Fa-f]+)\s*,\s*(0x[0-9A-Fa-f]+)\s*\)")
+
+
 def _first_builder(text, bre):
     m = bre.search(text)
     return m.group(1) if m else None
+
+
+def _steps(text, bre) -> tuple[str, ...]:
+    """Every builder call plus raw ``get_razer_report(a, b, c)`` packets, in source order.
+
+    Raw packets become ``raw:0xAA/0xBB/0xCC`` (lower case hex). Consecutive identical steps
+    (the same builder in an if/else on the argument count) are collapsed.
+    """
+    found = [(m.start(), m.group(1)) for m in bre.finditer(text)]
+    found += [(m.start(), "raw:" + "/".join(g.lower() for g in m.groups())) for m in RAW_RE.finditer(text)]
+    steps: list[str] = []
+    for _pos, step in sorted(found):
+        if not steps or steps[-1] != step:
+            steps.append(step)
+    return tuple(steps)
 
 
 def _first_txn(text):
@@ -176,18 +194,23 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
     spec: dict = {}  # key -> dict(fn, txn, blocked)
     for _s, sw, _e in switches:
         for labels, text in split_groups(sw):
-            fn, txn = _first_builder(text, bre), _first_txn(text)
+            fn, txn, steps = _first_builder(text, bre), _first_txn(text), _steps(text, bre)
             blocked = fn is None and re.search(r"\breturn\b", text) is not None
             for lab in labels:
                 key = "default" if lab == "default" else pids.get(lab)
                 if key is None:
                     continue
-                cur = spec.setdefault(key, {"fn": None, "txn": None, "blocked": False})
+                cur = spec.setdefault(key, {"fn": None, "txn": None, "blocked": False, "steps": ()})
+                if fn and not cur["fn"]:
+                    cur["steps"] = steps
+                elif not fn and not cur["fn"] and not cur["steps"]:
+                    cur["steps"] = steps  # raw prelude only; builder comes from default/fallback
                 cur["fn"] = cur["fn"] or fn
                 cur["txn"] = cur["txn"] if cur["txn"] is not None else txn
                 cur["blocked"] = cur["blocked"] or blocked
 
     fallback_fn = _first_builder(outside_text, bre)
+    fallback_steps = _steps(outside_text, bre)
     fallback_txn = _first_txn(outside_text)
     if fallback_fn is None and not any(v["fn"] for v in spec.values()):
         for helper in dict.fromkeys(HELPER_RE.findall(body)):
@@ -197,7 +220,7 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
                     return sub
         return {}
 
-    default = spec.get("default", {"fn": None, "txn": None, "blocked": False})
+    default = spec.get("default", {"fn": None, "txn": None, "blocked": False, "steps": ()})
     out: dict = {}
 
     def resolve(key, entry):
@@ -206,10 +229,14 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
         fn = entry["fn"] or default["fn"] or fallback_fn
         if not fn:
             return None
+        if entry["fn"]:
+            steps = entry["steps"]
+        else:  # no own builder: own raw prelude (if any) + inherited steps
+            steps = entry["steps"] + (default["steps"] if default["fn"] else fallback_steps)
         txn = entry["txn"]
         if txn is None:
             txn = default["txn"] if default["txn"] is not None else fallback_txn
-        return Command(fn, DEFAULT_TXN if txn is None else txn)
+        return Command(fn, DEFAULT_TXN if txn is None else txn, steps)
 
     for key, entry in spec.items():
         if key == "default":
@@ -399,42 +426,60 @@ def build_db(clone: Path, stderr=sys.stderr) -> dict:
         pids = sorted(ci.pids, key=lambda p: (order[ci.pids[p]], p))
         files: set[str] = set()
         for p in pids:
-            files |= probe.get(p, set())
-        features = sorted({FILE_FEATURES[f] for f in files if f in FILE_FEATURES})
+            files |= probe.get(p, set())  # union only to discover zones/effects
+        pid_files = {p: probe.get(p, set()) for p in pids}
+        pid_feats = {p: {FILE_FEATURES[f] for f in pid_files[p] if f in FILE_FEATURES} for p in pids}
+        common_feats = set.intersection(*pid_feats.values())
         zones: dict[str, list[str]] = {}
         for zone in sorted(set(effects) | set(brightness)):
+            pre = zone + "_" if zone != "matrix" else ""
             has_b = (f"{zone}_led_brightness" if zone != "matrix" else "matrix_brightness") in files
-            zeff = sorted(e for e in effects.get(zone, ()) if f"{zone + '_' if zone != 'matrix' else ''}matrix_effect_{e}" in files)
+            zeff = sorted(e for e in effects.get(zone, ()) if f"{pre}matrix_effect_{e}" in files)
             if has_b or zeff:
                 zones[zone] = zeff
 
-        wanted: list[tuple[str, str]] = []  # (protocol key, driver function)
+        # (protocol key, driver function, sysfs file the PID must have)
+        wanted: list[tuple[str, str, str]] = []
         for attr, (rk, wk) in ATTR_KEYS.items():
-            if attr in files:
-                if rk:
-                    wanted.append((rk, f"razer_attr_read_{attr}"))
-                if wk:
-                    wanted.append((wk, f"razer_attr_write_{attr}"))
+            if rk:
+                wanted.append((rk, f"razer_attr_read_{attr}", attr))
+            if wk:
+                wanted.append((wk, f"razer_attr_write_{attr}", attr))
         for zone, zeff in zones.items():
             battr = brightness.get(zone)
             if battr:
-                wanted.append((f"get_brightness:{zone}", f"razer_attr_read_{battr}"))
-                wanted.append((f"set_brightness:{zone}", f"razer_attr_write_{battr}"))
+                wanted.append((f"get_brightness:{zone}", f"razer_attr_read_{battr}", battr))
+                wanted.append((f"set_brightness:{zone}", f"razer_attr_write_{battr}", battr))
             for e in zeff:
                 pre = "" if zone == "matrix" else zone + "_"
-                wanted.append((f"set_effect:{zone}:{e}", f"razer_attr_write_{pre}matrix_effect_{e}"))
+                wanted.append((f"set_effect:{zone}:{e}", f"razer_attr_write_{pre}matrix_effect_{e}", f"{pre}matrix_effect_{e}"))
 
-        protocol: dict[str, dict] = {}
-        for key, func in wanted:
-            found = [(p, cmd_for(func, p)) for p in pids]
-            found = [(p, c) for p, c in found if c]
-            if not found:
-                continue
-            first = found[0][1]
-            if any(c != first for _p, c in found):
-                conflicts[key] += 1
-            protocol[key] = {"fn": first.fn, "txn": first.txn}
-            fn_counts[first.fn] += 1
+        per_pid: dict[int, dict[str, Command]] = {p: {} for p in pids}
+        for key, func, fname in wanted:
+            for p in pids:
+                if fname in pid_files[p]:
+                    c = cmd_for(func, p)
+                    if c:
+                        per_pid[p][key] = c
+        common_proto = {k: c for k, c in per_pid[pids[0]].items()
+                        if all(per_pid[p].get(k) == c for p in pids)}
+        for c in common_proto.values():
+            fn_counts[c.fn] += 1
+
+        def enc(c: Command) -> dict:
+            return {"fn": c.fn, "txn": c.txn, "steps": list(c.steps)}
+
+        pid_protocol, pid_features = {}, {}
+        for p in pids:
+            extra = {k: enc(c) for k, c in sorted(per_pid[p].items()) if k not in common_proto}
+            if extra:
+                pid_protocol[f"0x{p:04X}"] = extra
+                for k, c in per_pid[p].items():
+                    if k not in common_proto:
+                        fn_counts[c.fn] += 1
+                        conflicts[k] += 1
+            if pid_feats[p] - common_feats:
+                pid_features[f"0x{p:04X}"] = sorted(pid_feats[p] - common_feats)
 
         devices.append({
             "model": slug,
@@ -442,9 +487,11 @@ def build_db(clone: Path, stderr=sys.stderr) -> dict:
             "pids": {f"0x{p:04X}": ci.pids[p] for p in pids},
             "dpi_max": ci.dpi_max,
             "poll_rates": list(ci.poll_rates),
-            "features": features,
+            "features": sorted(common_feats),
+            "pid_features": pid_features,
             "zones": zones,
-            "protocol": dict(sorted(protocol.items())),
+            "protocol": {k: enc(c) for k, c in sorted(common_proto.items())},
+            "pid_protocol": pid_protocol,
             "interface": 0,
             "verified": slug == "naga_v2_pro",
         })
@@ -453,7 +500,7 @@ def build_db(clone: Path, stderr=sys.stderr) -> dict:
     for fn, n in sorted(fn_counts.items()):
         print(f"  {fn} ({n} Geraete)", file=stderr)
     if conflicts:
-        print("per-PID command differences inside one model (first PID wins): "
+        print("per-PID command entries (not common to all PIDs of a model): "
               + ", ".join(f"{k} x{n}" for k, n in sorted(conflicts.items())), file=stderr)
     print(f"{len(devices)} models, {sum(len(d['pids']) for d in devices)} PIDs", file=stderr)
 

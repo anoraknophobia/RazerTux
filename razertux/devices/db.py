@@ -3,14 +3,21 @@ from __future__ import annotations
 
 import functools
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from importlib import resources
 
 
 @dataclass(frozen=True)
 class Command:
-    fn: str  # OpenRazer builder function name
+    fn: str  # OpenRazer builder function name (first named builder of the body)
     txn: int  # transaction id
+    # every builder call of the body in source order; raw packets as "raw:0xAA/0xBB/0xCC".
+    # More than one step (or a raw step) means a multi-packet sequence.
+    steps: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.steps:
+            object.__setattr__(self, "steps", (self.fn,))
 
 
 @dataclass(frozen=True)
@@ -25,9 +32,28 @@ class DeviceInfo:
     protocol: dict[str, Command]
     interface: int = 0
     verified: bool = False
+    # protocol/features above hold only what is identical for ALL PIDs; per-PID additions/differences:
+    pid_protocol: dict[int, dict[str, Command]] = field(default_factory=dict)
+    pid_features: dict[int, frozenset[str]] = field(default_factory=dict)
+
+    def for_pid(self, pid: int) -> DeviceInfo:
+        """Flattened view for one PID: common entries plus that PID's own, pid_* emptied."""
+        if pid not in self.pids:
+            raise KeyError(pid)
+        return replace(
+            self,
+            protocol={**self.protocol, **self.pid_protocol.get(pid, {})},
+            features=self.features | self.pid_features.get(pid, frozenset()),
+            pid_protocol={},
+            pid_features={},
+        )
 
     def __hash__(self) -> int:  # dict fields: hash on identity-defining model slug
         return hash(self.model)
+
+
+def _commands(d: dict) -> dict[str, Command]:
+    return {k: Command(c["fn"], c["txn"], tuple(c.get("steps", ()))) for k, c in d.items()}
 
 
 def _from_json(d: dict) -> DeviceInfo:
@@ -39,9 +65,11 @@ def _from_json(d: dict) -> DeviceInfo:
         poll_rates=tuple(d["poll_rates"]),
         features=frozenset(d["features"]),
         zones={z: tuple(e) for z, e in d["zones"].items()},
-        protocol={k: Command(c["fn"], c["txn"]) for k, c in d["protocol"].items()},
+        protocol=_commands(d["protocol"]),
         interface=d.get("interface", 0),
         verified=d.get("verified", False),
+        pid_protocol={int(p, 16): _commands(c) for p, c in d.get("pid_protocol", {}).items()},
+        pid_features={int(p, 16): frozenset(f) for p, f in d.get("pid_features", {}).items()},
     )
 
 

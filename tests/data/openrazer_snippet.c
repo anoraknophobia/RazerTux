@@ -58,3 +58,31 @@ static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id
     }
     return 0;
 }
+
+static ssize_t razer_attr_write_matrix_effect_static(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_NAGA_V2_PRO_WIRED:
+    case USB_DEVICE_ID_RAZER_NAGA_V2_PRO_WIRELESS:
+        request = get_razer_report(0x0F, 0x02, 0x06);
+        request.arguments[2] = 0x08;
+        request.transaction_id.id = 0x1f;
+        err = razer_send_payload(device, &request, &response);
+
+        request = razer_chroma_standard_set_led_state(VARSTORE, led_id, true);
+        request.transaction_id.id = 0x1f;
+        err = razer_send_payload(device, &request, &response);
+
+        request = razer_chroma_standard_set_led_rgb(VARSTORE, led_id, (struct razer_rgb*)&buf[0]);
+        request.transaction_id.id = 0x1f;
+        break;
+
+    case USB_DEVICE_ID_RAZER_DEATHADDER_ELITE:
+        request = razer_chroma_standard_matrix_effect_static((struct razer_rgb*)&buf[0]);
+        break;
+
+    default:
+        return -EINVAL;
+    }
+    return count;
+}
