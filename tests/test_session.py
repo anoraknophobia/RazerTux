@@ -657,3 +657,15 @@ async def test_node_added_while_paused_is_not_grabbed(tmp_path):
     await s.resume()
     assert dev.grabbed
     await s.close()
+
+
+async def test_pause_resume_race_ends_consistent(tmp_path):
+    s, store, _ = make_session(tmp_path, model=NAGA, transport=naga_transport())
+    dev = QueueDev("/dev/input/event42", product=NAGA_PID)
+    s.add_input(NAGA_PID, "mouse", dev)
+    await s.settle()
+    await asyncio.gather(s.pause(), s.resume(), s.pause(), s.resume())
+    assert dev.grabbed and s.router.grabbed
+    await asyncio.gather(s.resume(), s.pause())
+    assert not dev.grabbed and not s.router.grabbed
+    await s.close()

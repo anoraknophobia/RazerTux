@@ -293,8 +293,7 @@ async def test_pause_only_affects_that_model(tmp_path):
 
 async def test_caller_vanishing_resumes(tmp_path):
     d, svc, *_ = make(tmp_path)
-    svc._senders.append(":1.42")
-    await call(svc, "PauseDevice", NAGA)
+    await svc.pause_device(NAGA, ":1.42")
     await svc.name_owner_changed(":1.99", ":1.99", "")  # somebody else: still paused
     assert not grabbed(d)
     await svc.name_owner_changed(":1.42", ":1.42", "")
@@ -303,8 +302,7 @@ async def test_caller_vanishing_resumes(tmp_path):
 
 async def test_caller_vanishing_after_explicit_resume_is_harmless(tmp_path):
     d, svc, *_ = make(tmp_path)
-    svc._senders.append(":1.42")
-    await call(svc, "PauseDevice", NAGA)
+    await svc.pause_device(NAGA, ":1.42")
     await call(svc, "ResumeDevice", NAGA)
     await svc.name_owner_changed(":1.42", ":1.42", "")
     assert grabbed(d)
@@ -349,3 +347,28 @@ async def test_profile_switch_while_paused_stays_released(tmp_path):
     assert not grabbed(d)
     await call(svc, "ResumeDevice", NAGA)
     assert grabbed(d)
+
+
+async def test_unknown_or_missing_sender_never_resumes_on_other_exits(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await call(svc, "PauseDevice", NAGA)  # no sender known
+    await svc.name_owner_changed(":1.7", ":1.7", "")
+    assert not grabbed(d)
+    await call(svc, "ResumeDevice", NAGA)
+
+
+async def test_failed_resume_keeps_pause_state(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await svc.pause_device(NAGA, ":1.1")
+    s = d.sessions[NAGA]
+    real = s.resume
+
+    async def boom():
+        raise OSError("x")
+    s.resume = boom
+    with pytest.raises(OSError):
+        await svc.resume_device(NAGA)
+    assert NAGA in svc._pauses
+    s.resume = real
+    await svc.resume_device(NAGA)
+    assert grabbed(d) and NAGA not in svc._pauses

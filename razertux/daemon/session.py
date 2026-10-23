@@ -229,6 +229,7 @@ class DeviceSession:
         self.router = InputRouter(self.mapper, out, grab=needs_grab(None, self.device_settings, info))
         self._refresh_map()
         self._learning = False
+        self._grab_lock = asyncio.Lock()  # serialises grab changes (pause/resume/learning)
         self._paused = False  # device recorder: grabs released, mapping stopped
 
         self._paths: set[str] = set()  # every input node of this model we were given
@@ -374,11 +375,14 @@ class DeviceSession:
         return self._learning or needs_grab(profile, self.device_settings, self.info)
 
     async def _update_grab(self) -> None:
-        want = self._wants_grab()
-        if want != self.router.grabbed:
-            logger.info("%s: input devices %s", self.info.name,
-                        "grabbed" if want else "released")
-            await self.router.set_grab(want)
+        async with self._grab_lock:
+            while True:  # state may change while set_grab awaits: settle on the latest
+                want = self._wants_grab()
+                if want == self.router.grabbed:
+                    return
+                logger.info("%s: input devices %s", self.info.name,
+                            "grabbed" if want else "released")
+                await self.router.set_grab(want)
 
     # -- pause (device recorder) ---------------------------------------------------------
 

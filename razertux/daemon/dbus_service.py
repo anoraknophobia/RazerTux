@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-from dbus_next import DBusError, Message, MessageType, Variant
+from dbus_next import DBusError, Message, MessageFlag, MessageType, Variant
 from dbus_next.service import ServiceInterface
 from dbus_next.service import method as _dbus_method
 from dbus_next.service import signal as _dbus_signal
@@ -31,6 +31,7 @@ INTERFACE = "io.github.razertux.Daemon1"
 VERSION = "1"
 _ERR = "io.github.razertux.Error."
 PAUSE_TIMEOUT = 300.0  # seconds a recorder may keep a device paused
+RETRY_DELAY = 5.0  # seconds before a failed auto-resume is tried again
 
 
 def openrazer_loaded() -> bool:
@@ -67,8 +68,8 @@ class Daemon1Service(ServiceInterface):
         self.pause_timeout = PAUSE_TIMEOUT
         # model -> (callers' unique bus names, auto-resume timer)
         self._pauses: dict[str, tuple[set[str], asyncio.TimerHandle]] = {}
-        # senders of the PauseDevice calls not yet dispatched (see attach)
-        self._senders: list[str | None] = []
+        self._tasks: set[asyncio.Task] = set()
+        self._bus: Any = None
         apply_language(store.load_settings())  # language of config errors and notifications
 
     # -- logic ---------------------------------------------------------------
@@ -115,21 +116,38 @@ class Daemon1Service(ServiceInterface):
             if session.active_profile_id != old[model]:
                 self.ProfileChanged(model, session.active_profile_id)
 
+    def _spawn(self, coro: Any) -> asyncio.Task:
+        """Run coro as a kept task; failures are logged."""
+        def done(task: asyncio.Task) -> None:
+            self._tasks.discard(task)
+            if not task.cancelled() and task.exception() is not None:
+                logger.error("Background task failed", exc_info=task.exception())
+
+        task = asyncio.get_running_loop().create_task(coro)
+        self._tasks.add(task)
+        task.add_done_callback(done)
+        return task
+
     async def attach(self, bus: Any) -> None:
         """Watch the bus so a recorder that dies cannot leave a device unmapped.
 
-        dbus-next hands a ServiceInterface method no sender, so a message handler
-        notes who called PauseDevice (handlers run before dispatch, in call order,
-        and dispatch of a sync or async method starts in that order too) and the
-        method takes it from `_senders`. NameOwnerChanged then resumes the models
-        that caller paused."""
-        def on_message(msg: Message) -> None:
-            if (msg.message_type == MessageType.METHOD_CALL and msg.interface == INTERFACE
-                    and msg.member == "PauseDevice" and msg.signature == "s"):
-                self._senders.append(msg.sender)
-            elif (msg.message_type == MessageType.SIGNAL and msg.member == "NameOwnerChanged"
-                    and msg.sender == "org.freedesktop.DBus" and len(msg.body) == 3):
-                asyncio.get_running_loop().create_task(self.name_owner_changed(*msg.body))
+        dbus-next hands a ServiceInterface method no sender. PauseDevice and
+        ResumeDevice calls to our path are therefore answered here, in a message
+        handler (which sees msg.sender and runs before dispatch); the decorated
+        methods below stay for introspection and direct use. NameOwnerChanged
+        resumes the models a vanished caller paused."""
+        self._bus = bus
+
+        def on_message(msg: Message) -> bool:
+            if (msg.message_type == MessageType.METHOD_CALL and msg.path == OBJECT_PATH
+                    and msg.interface == INTERFACE and msg.signature == "s"
+                    and msg.member in ("PauseDevice", "ResumeDevice")):
+                self._spawn(self._serve(msg))
+                return True
+            if (msg.message_type == MessageType.SIGNAL and msg.member == "NameOwnerChanged"
+                    and msg.sender == "org.freedesktop.DBus" and msg.signature == "sss"):
+                self._spawn(self.name_owner_changed(*msg.body))
+            return False
 
         bus.add_message_handler(on_message)
         await bus.call(Message(
@@ -138,42 +156,68 @@ class Daemon1Service(ServiceInterface):
             body=["type='signal',sender='org.freedesktop.DBus',"
                   "interface='org.freedesktop.DBus',member='NameOwnerChanged'"]))
 
+    async def _serve(self, msg: Message) -> None:
+        model = msg.body[0]
+        try:
+            if msg.member == "PauseDevice":
+                await self.pause_device(model, msg.sender)
+            else:
+                await self.resume_device(model)
+            reply = Message.new_method_return(msg)
+        except DBusError as e:
+            reply = Message.new_error(msg, e.type, e.text)
+        except Exception as e:
+            logger.exception("%s failed", msg.member)
+            reply = Message.new_error(msg, _ERR + "Failed", str(e))
+        if not msg.flags & MessageFlag.NO_REPLY_EXPECTED:
+            self._bus.send(reply)
+
     async def name_owner_changed(self, name: str, old_owner: str, new_owner: str) -> None:
         if new_owner or not name:
             return
         for model, (senders, _timer) in list(self._pauses.items()):
-            senders.discard(name)
-            if not senders and name == old_owner:
-                await self.resume_device(model)
+            if name in senders:
+                senders.discard(name)
+                if not senders:
+                    try:
+                        await self.resume_device(model)
+                    except Exception:
+                        logger.exception("%s: resume after caller left failed - "
+                                         "the timeout retries", model)
 
     async def pause_device(self, model: str, sender: str | None = None) -> None:
-        """Release the model's grabs and stop mapping until resume_device, the caller
-        leaves the bus, or pause_timeout seconds pass (the mouse must never stay
-        unmapped). Idempotent; a second pause keeps the first deadline."""
+        """Release the model's grabs and stop mapping until resume_device, every caller
+        has left the bus, or pause_timeout seconds pass (the mouse must never stay
+        unmapped). Idempotent; a second pause keeps the first deadline. A pause without
+        a known sender (direct use) is only ended by resume or the timeout."""
         session = self.session(model)
         entry = self._pauses.get(model)
         if entry is None:
-            loop = asyncio.get_running_loop()
-            timer = loop.call_later(self.pause_timeout, lambda: loop.create_task(
-                self._timed_out(model)))
-            entry = self._pauses[model] = (set(), timer)
+            entry = self._pauses[model] = (set(), self._arm(model, self.pause_timeout))
         if sender:
             entry[0].add(sender)
         await session.pause()
+
+    def _arm(self, model: str, delay: float) -> asyncio.TimerHandle:
+        return asyncio.get_running_loop().call_later(
+            delay, lambda: self._spawn(self._timed_out(model)))
 
     async def _timed_out(self, model: str) -> None:
         logger.warning("%s: pause timed out - mapping resumes", model)
         try:
             await self.resume_device(model)
         except Exception:
-            logger.exception("%s: resume after timeout failed", model)
+            logger.exception("%s: resume after timeout failed - retrying", model)
+            entry = self._pauses.get(model)
+            if entry is not None:
+                self._pauses[model] = (entry[0], self._arm(model, RETRY_DELAY))
 
     async def resume_device(self, model: str) -> None:
         session = self.session(model)
+        await session.resume()  # on failure the pause state (and its timer) stays
         entry = self._pauses.pop(model, None)
         if entry is not None:
             entry[1].cancel()
-        await session.resume()
 
     def shutdown(self) -> None:
         """Daemon stops: forget pauses (the sessions' close releases everything)."""
@@ -280,8 +324,7 @@ class Daemon1Service(ServiceInterface):
 
     @method()
     async def PauseDevice(self, model: 's'):
-        sender = self._senders.pop(0) if self._senders else None
-        await self.pause_device(model, sender)
+        await self.pause_device(model)  # real calls are served by attach()'s handler
 
     @method()
     async def ResumeDevice(self, model: 's'):
