@@ -34,9 +34,9 @@ ZONES = [
     ("thumb", QT_TRANSLATE_NOOP("LightingTab", "Daumenfeld")),
     ("scroll", QT_TRANSLATE_NOOP("LightingTab", "Mausrad")),
     ("matrix", QT_TRANSLATE_NOOP("LightingTab", "Leuchtfeld")),
-    ("backlight", QT_TRANSLATE_NOOP("LightingTab", "Hintergrundbeleuchtung")),
-    ("left", QT_TRANSLATE_NOOP("LightingTab", "Leiste links")),
-    ("right", QT_TRANSLATE_NOOP("LightingTab", "Leiste rechts")),
+    ("backlight", QT_TRANSLATE_NOOP("LightingTab", "Hintergrund")),
+    ("left", QT_TRANSLATE_NOOP("LightingTab", "Links")),
+    ("right", QT_TRANSLATE_NOOP("LightingTab", "Rechts")),
 ]
 DEVICE_ZONES = ("logo", "thumb")  # the Naga V2 Pro's own zone names
 DEFAULT_ZONE = LightingZone("static", (68, 214, 44), 191)

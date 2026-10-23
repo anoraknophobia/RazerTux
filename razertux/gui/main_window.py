@@ -241,6 +241,7 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.profile_combo.setCurrentIndex(max(self.profile_combo.findData(profile.id), 0))
         self.performance_tab.load(profile)
         self.lighting_tab.load(profile)
+        self.scroll_tab.load_profile(profile)
         self.buttons_tab.set_remap(profile.remap_top_buttons)
         self._refresh()
 

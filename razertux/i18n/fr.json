@@ -98,11 +98,11 @@
     "Spektrum": "Cycle spectral",
     "Statisch": "Statique",
     "Welle": "Vague",
-    "Hintergrundbeleuchtung": "Rétroéclairage",
-    "Leiste links": "Bande gauche",
-    "Leiste rechts": "Bande droite",
     "Leuchtfeld": "Zone lumineuse",
-    "Mausrad": "Molette"
+    "Mausrad": "Molette",
+    "Hintergrund": "Rétroéclairage",
+    "Links": "Gauche",
+    "Rechts": "Droite"
   },
   "MacroTab": {
     "Abbrechen": "Annuler",
@@ -228,7 +228,17 @@
     "Umschalten mit der oberen Taste vorne (wenn „Obere Tasten frei belegen“ aus ist). Widerstand und Rasten der Stufen lassen sich derzeit nur in Razer Synapse unter Windows ändern.": "Changement avec le bouton supérieur avant (si « Affecter librement les boutons supérieurs » est désactivé). La résistance et les crans des niveaux ne se modifient pour l’instant que dans Razer Synapse sous Windows.",
     "Widerstand": "Résistance",
     "Widerstand (Synapse)": "Résistance (Synapse)",
-    "unbekannt": "inconnu"
+    "unbekannt": "inconnu",
+    "Gerastert": "Cranté",
+    "Frei drehend": "Rotation libre",
+    "Scroll-Optionen": "Options de défilement",
+    "Modus": "Mode",
+    "Beschleunigung": "Accélération",
+    "Smart Reel": "Smart Reel",
+    "An": "Activé",
+    "Aus": "Désactivé",
+    "Nicht ändern": "Ne pas modifier",
+    "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.": "S'applique au profil. « Ne pas modifier » laisse le réglage de la souris tel quel."
   },
   "StageRow": {
     "Aktive Stufe": "Niveau actif",
@@ -373,7 +383,9 @@
     "Linksklick nicht erreichbar": "Clic gauche inaccessible",
     "Makro fehlt: {macro}": "Macro manquante : {macro}",
     "Maximal {count} DPI-Stufen erlaubt": "{count} niveaux de sensibilité au maximum",
-    "Mehr als eine Hypershift-Taste": "Plus d’une touche Hypershift"
+    "Mehr als eine Hypershift-Taste": "Plus d’une touche Hypershift",
+    "Mausrad-Modus ungültig": "Mode de la molette invalide",
+    "Mausrad-Option ungültig": "Option de la molette invalide"
   },
   "DeviceBar": {
     "%1 (nicht verbunden)": "%1 (non connectée)",

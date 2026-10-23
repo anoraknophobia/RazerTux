@@ -103,3 +103,15 @@ def test_zones_follow_the_device(tab):
     assert "wave" not in [combo.itemData(i) for i in range(combo.count())]  # not in the database
     tab.set_device(load_devices()["naga_v2_pro"])
     assert set(tab.effect_combos) == {"all", "logo", "thumb"}
+
+
+def test_zone_names_are_translated_and_unknown_ones_raw(tab):
+    from razertux.devices.db import DeviceInfo, load_devices
+    from dataclasses import replace
+    info = load_devices()["basilisk_v3"]
+    zones = {"logo": ("static",), "scroll": ("static",), "thumb": ("static",), "left": ("static",),
+             "right": ("static",), "backlight": ("static",), "chroma_x": ("static",)}
+    tab.set_device(replace(info, zones=zones))
+    names = {k: tab.zone_labels[k].text() for k in zones}
+    assert names == {"logo": "Logo", "scroll": "Mausrad", "thumb": "Daumenfeld", "left": "Links",
+                     "right": "Rechts", "backlight": "Hintergrund", "chroma_x": "chroma_x"}

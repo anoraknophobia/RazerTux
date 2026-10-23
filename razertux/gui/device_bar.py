@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from razertux.config.model import SCROLL_FEATURES
 from razertux.devices.db import DeviceInfo
 from razertux.gui.dbus_client import DaemonClient, DaemonError
 from razertux.gui.header import short_name
@@ -17,12 +18,13 @@ NAGA_MODEL = "naga_v2_pro"
 BANNER_COLOUR = "#8a5a00"
 
 
+
 def tab_keys(info: DeviceInfo) -> list[str]:
     """Tabs of the main window for a mouse, in order: only functions it has."""
     keys = ["buttons"]
     if ("dpi" in info.features and info.dpi_max > 0) or "poll_rate" in info.features:
         keys.append("performance")
-    if info.model == NAGA_MODEL:  # the Naga's wheel stages (scroll options: task 13)
+    if info.model == NAGA_MODEL or info.features & SCROLL_FEATURES:  # wheel stages / scroll options
         keys.append("scroll")
     if info.zones:
         keys.append("lighting")

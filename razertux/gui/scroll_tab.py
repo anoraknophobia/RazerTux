@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
-    QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QAbstractItemView, QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+    QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
-from razertux.config.model import SCROLL_STAGES, Settings
+from razertux.config.model import NAGA_MODEL, SCROLL_FEATURES, SCROLL_STAGES, Profile, Settings
+from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, description
 
 # Synapse presets: name, tension, steps (read off Synapse on Windows)
@@ -135,8 +136,21 @@ class ScrollTab(QWidget):
                                             for r in range(len(SYNAPSE_PRESETS))) + 4)
         ref.add(self.reference)
 
-        grid = QGridLayout(self)
-        grid.setContentsMargins(16, 16, 16, 16)
+        self.profile: Profile | None = None
+        self.options_card = Card(self.tr("Scroll-Optionen"))
+        self.options_card.add(description(self.tr(
+            "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.")))
+        self.mode_row, self.mode_buttons = self._option_row(
+            self.tr("Modus"), "mode", ((0, self.tr("Gerastert")), (1, self.tr("Frei drehend"))))
+        self.accel_row, self.accel_buttons = self._option_row(
+            self.tr("Beschleunigung"), "acceleration", ((True, self.tr("An")), (False, self.tr("Aus"))))
+        self.reel_row, self.reel_buttons = self._option_row(
+            self.tr("Smart Reel"), "smart_reel", ((True, self.tr("An")), (False, self.tr("Aus"))))
+        self.options_card.hide()
+
+        self.naga_cards = QWidget()
+        grid = QGridLayout(self.naga_cards)
+        grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(16)
         grid.addWidget(stages, 0, 0, 2, 1)
         grid.addWidget(active, 0, 1, Qt.AlignmentFlag.AlignTop)
@@ -144,7 +158,59 @@ class ScrollTab(QWidget):
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         grid.setRowStretch(1, 1)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(16, 16, 16, 16)
+        outer.setSpacing(16)
+        outer.addWidget(self.options_card, 0, Qt.AlignmentFlag.AlignTop)
+        outer.addWidget(self.naga_cards, 1)
         self._show_active()
+
+    # -- scroll options (mice with scroll_mode / scroll_acceleration / scroll_smart_reel) --
+    def _option_row(self, caption: str, key: str, choices) -> tuple[QWidget, dict]:
+        row = QWidget()
+        lay = QHBoxLayout(row)
+        lay.setContentsMargins(0, 0, 0, 0)
+        label = QLabel(caption)
+        label.setMinimumWidth(120)
+        lay.addWidget(label)
+        group = QButtonGroup(row)
+        buttons: dict = {}
+        for value, text in ((None, self.tr("Nicht ändern")), *choices):
+            b = QPushButton(text)
+            b.setCheckable(True)
+            b.setMinimumWidth(72)
+            group.addButton(b)
+            lay.addWidget(b)
+            b.clicked.connect(lambda _=False, k=key, v=value: self._set_option(k, v))
+            buttons[value] = b
+        lay.addStretch(1)
+        buttons[None].setChecked(True)
+        self.options_card.add(row)
+        return row, buttons
+
+    def set_device(self, info: DeviceInfo) -> None:
+        """Naga: stages and reference; other mice: the scroll options they have."""
+        self.naga_cards.setVisible(info.model == NAGA_MODEL)
+        for feature, row in (("scroll_mode", self.mode_row), ("scroll_acceleration", self.accel_row),
+                             ("scroll_smart_reel", self.reel_row)):
+            row.setVisible(feature in info.features)
+        self.options_card.setVisible(bool(info.features & SCROLL_FEATURES))
+
+    def load_profile(self, profile: Profile) -> None:
+        self.profile = profile
+        for key, buttons in (("mode", self.mode_buttons), ("acceleration", self.accel_buttons),
+                             ("smart_reel", self.reel_buttons)):
+            value = profile.scroll.get(key)
+            buttons[value if value in buttons else None].setChecked(True)
+
+    def _set_option(self, key: str, value) -> None:
+        if self.profile is None:
+            return
+        if value is None:
+            self.profile.scroll.pop(key, None)
+        else:
+            self.profile.scroll[key] = value
+        self.changed.emit()
 
     def load(self, settings: Settings) -> None:
         self.settings = settings

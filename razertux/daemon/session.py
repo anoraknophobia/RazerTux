@@ -145,6 +145,11 @@ def apply_generic_settings(dev: RazerMouse, profile: Profile) -> set[str]:
                          dev.info.model)
         if dev.supports(f"set_brightness:{zone}"):
             _guarded(f"Helligkeit {zone}", dev.set_brightness, zone, cfg.brightness)
+    for key, setter, convert in (("mode", "scroll_mode", int), ("acceleration", "scroll_acceleration", bool),
+                                 ("smart_reel", "scroll_smart_reel", bool)):
+        if key in profile.scroll and dev.supports(f"set_{setter}"):
+            written.add(setter)  # persistent (VARSTORE): the R17 write-back covers it
+            _guarded(f"Mausrad {key}", getattr(dev, f"set_{setter}"), convert(profile.scroll[key]))
     return written
 
 

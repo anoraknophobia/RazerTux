@@ -98,11 +98,11 @@
     "Spektrum": "Spectrum Cycling",
     "Statisch": "Static",
     "Welle": "Wave",
-    "Hintergrundbeleuchtung": "Backlight",
-    "Leiste links": "Left strip",
-    "Leiste rechts": "Right strip",
     "Leuchtfeld": "Lighting area",
-    "Mausrad": "Scroll wheel"
+    "Mausrad": "Scroll wheel",
+    "Hintergrund": "Backlight",
+    "Links": "Left",
+    "Rechts": "Right"
   },
   "MacroTab": {
     "Abbrechen": "Cancel",
@@ -228,7 +228,17 @@
     "Umschalten mit der oberen Taste vorne (wenn „Obere Tasten frei belegen“ aus ist). Widerstand und Rasten der Stufen lassen sich derzeit nur in Razer Synapse unter Windows ändern.": "Switch with the front top button (when “Assign top buttons freely” is off). Tension and steps of the stages can currently only be changed in Razer Synapse on Windows.",
     "Widerstand": "Tension",
     "Widerstand (Synapse)": "Tension (Synapse)",
-    "unbekannt": "unknown"
+    "unbekannt": "unknown",
+    "Gerastert": "Notched",
+    "Frei drehend": "Free-spinning",
+    "Scroll-Optionen": "Scroll options",
+    "Modus": "Mode",
+    "Beschleunigung": "Acceleration",
+    "Smart Reel": "Smart Reel",
+    "An": "On",
+    "Aus": "Off",
+    "Nicht ändern": "Don't change",
+    "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.": "Applies to the profile. “Don't change” leaves the mouse's setting as it is."
   },
   "StageRow": {
     "Aktive Stufe": "Active stage",
@@ -373,7 +383,9 @@
     "Linksklick nicht erreichbar": "Left click unreachable",
     "Makro fehlt: {macro}": "Macro missing: {macro}",
     "Maximal {count} DPI-Stufen erlaubt": "At most {count} sensitivity stages allowed",
-    "Mehr als eine Hypershift-Taste": "More than one Hypershift key"
+    "Mehr als eine Hypershift-Taste": "More than one Hypershift key",
+    "Mausrad-Modus ungültig": "Invalid scroll wheel mode",
+    "Mausrad-Option ungültig": "Invalid scroll wheel option"
   },
   "DeviceBar": {
     "%1 (nicht verbunden)": "%1 (not connected)",

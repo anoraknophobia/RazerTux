@@ -451,3 +451,53 @@ async def test_reload_picks_up_a_plate_change(tmp_path):
     assert identify(s.router._map,
                     "if02", E.EV_KEY, E.KEY_7, 1) == ButtonId.SIDE_7
     await s.close()
+
+
+# -- scroll options (Task 13) -----------------------------------------------------------
+
+BV3, BV3_PID = "basilisk_v3", 0x0099
+
+
+def scroll_transport():
+    t = FakeTransport.full()
+    for k in ((0x02, 0x14), (0x02, 0x16), (0x02, 0x17)):
+        t.responses[k] = lambda a: a
+    t.responses[(0x02, 0x94)] = bytes([1, 1])
+    t.responses[(0x02, 0x96)] = bytes([1, 0])
+    t.responses[(0x02, 0x97)] = bytes([1, 1])
+    return t
+
+
+async def _scroll_session(tmp_path, scroll, transport=None):
+    pid = next(iter(info(BV3).pids))
+    t = transport or scroll_transport()
+    s, store, _ = make_session(tmp_path, model=BV3, transport=t)
+    store.for_model(BV3).save_profile(Profile(id="default", name="default", scroll=scroll))
+    store.save_settings(Settings(active_profiles={BV3: "default"}))
+    s.add_input(pid, "mouse", QueueDev("/dev/input/event40", product=pid))
+    await s.settle()
+    return s, t
+
+
+async def test_scroll_options_are_sent_only_when_set(tmp_path):
+    s, t = await _scroll_session(tmp_path, {"mode": 1, "smart_reel": True})
+    w = writes(t)
+    assert (0x02, 0x14) in w and (0x02, 0x17) in w and (0x02, 0x16) not in w
+    assert {"scroll_mode", "scroll_smart_reel"} <= s._written
+    assert "scroll_acceleration" not in s._written
+    await s.close()
+
+
+async def test_empty_scroll_dict_writes_nothing(tmp_path):
+    s, t = await _scroll_session(tmp_path, {})
+    assert not {(0x02, 0x14), (0x02, 0x16), (0x02, 0x17)} & set(writes(t))
+    await s.close()
+
+
+async def test_scroll_options_not_sent_when_read_only(tmp_path):
+    t = scroll_transport()
+    t.responses[(0x04, 0x85)] = bytes([0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0])  # probe fails
+    s, t = await _scroll_session(tmp_path, {"mode": 1, "acceleration": True}, t)
+    assert s.status()["writable"] is False
+    assert not {(0x02, 0x14), (0x02, 0x16)} & set(writes(t))
+    await s.close()

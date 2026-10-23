@@ -84,3 +84,9 @@ def test_tabs_only_for_existing_functions():
     assert "lighting" not in tab_keys(db["death_adder_v3"])  # no zones
     assert "power" in tab_keys(db["basilisk_v3_pro"])         # battery
     assert "performance" in tab_keys(db["abyssus"])           # poll rate only, no DPI
+
+
+def test_scroll_tab_for_any_mouse_with_scroll_options():
+    from razertux.devices.db import load_devices
+    assert "scroll" in tab_keys(load_devices()["basilisk_v3"])
+    assert "scroll" not in tab_keys(load_devices()["death_adder_v2"])

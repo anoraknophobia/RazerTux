@@ -68,3 +68,45 @@ def test_hint_and_reference(tab):
     assert [t.item(0, c).text() for c in range(3)] == ["Ultra-fine", "65", "96"]
     assert [t.item(4, c).text() for c in range(3)] == ["Smooth Scroll", "0", "32"]
     assert t.editTriggers() == t.EditTrigger.NoEditTriggers
+
+
+def _info(model):
+    from razertux.devices.db import load_devices
+    return load_devices()[model]
+
+
+def test_basilisk_shows_scroll_options_but_no_naga_cards(tab):
+    tab.set_device(_info("basilisk_v3"))
+    assert not tab.options_card.isHidden() and tab.naga_cards.isHidden()
+    assert set(tab.mode_buttons) == {None, 0, 1}
+
+
+def test_naga_keeps_its_cards_without_options(tab):
+    tab.set_device(_info("naga_v2_pro"))
+    assert tab.options_card.isHidden() and not tab.naga_cards.isHidden()
+
+
+def test_options_follow_the_device_features(tab):
+    from dataclasses import replace
+    info = _info("basilisk_v3")
+    tab.set_device(replace(info, features=info.features - {"scroll_smart_reel", "scroll_acceleration"}))
+    assert not tab.mode_row.isHidden()
+    assert tab.accel_row.isHidden() and tab.reel_row.isHidden()
+
+
+def test_profile_options_roundtrip(tab):
+    from razertux.config.model import Profile
+    tab.set_device(_info("basilisk_v3"))
+    p = Profile(id="p", name="P")
+    tab.load_profile(p)
+    assert tab.mode_buttons[None].isChecked() and tab.changes == []
+    tab.mode_buttons[1].click()
+    tab.accel_buttons[False].click()
+    tab.reel_buttons[True].click()
+    assert p.scroll == {"mode": 1, "acceleration": False, "smart_reel": True}
+    assert len(tab.changes) == 3
+    tab.reel_buttons[None].click()
+    assert p.scroll == {"mode": 1, "acceleration": False}
+    tab.load_profile(Profile(id="q", name="Q", scroll={"mode": 0, "acceleration": True}))
+    assert tab.mode_buttons[0].isChecked() and tab.accel_buttons[True].isChecked()
+    assert tab.reel_buttons[None].isChecked()

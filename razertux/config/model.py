@@ -169,9 +169,12 @@ class Profile:
     poll_rate: int | None = None
     lighting: dict[Zone, LightingZone] = field(default_factory=dict)
     remap_top_buttons: bool = False
+    # scroll wheel options of mice that have them: "mode" (0 tactile, 1 free spinning),
+    # "acceleration", "smart_reel" (bool); a missing key = leave the mouse as is
+    scroll: dict[str, int | bool] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d = {
             "id": self.id, "name": self.name,
             "standard": {b.value: action_to_dict(a) for b, a in self.standard.items()},
             "hypershift": {b.value: action_to_dict(a) for b, a in self.hypershift.items()},
@@ -181,6 +184,9 @@ class Profile:
             "lighting": {z: lz.to_dict() for z, lz in self.lighting.items()},
             "remap_top_buttons": self.remap_top_buttons,
         }
+        if self.scroll:  # absent = leave the mouse as is (and old files stay unchanged)
+            d["scroll"] = dict(self.scroll)
+        return d
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Profile:
@@ -193,12 +199,14 @@ class Profile:
             poll_rate=d["poll_rate"],
             lighting={z: LightingZone.from_dict(lz) for z, lz in d["lighting"].items()},
             remap_top_buttons=bool(d.get("remap_top_buttons", False)),
+            scroll=dict(d.get("scroll") or {}),
         )
 
 
 THEMES = ("synapse", "system")
 IDLE_MIN_S, IDLE_MAX_S = 60, 900
 LOW_POWER_MIN, LOW_POWER_MAX = 5, 25
+SCROLL_FEATURES = frozenset({"scroll_mode", "scroll_acceleration", "scroll_smart_reel"})
 SCROLL_STAGES = 6  # firmware slots 1-6 (05 3a notifications)
 # R25 (user-verified: slot 5 = free-spinning Smooth Scroll): slots follow Synapse's list order
 _SYNAPSE_STAGE_ORDER = ("Ultra-fine", "Standard", "Distinct", "Adaptive", "Smooth Scroll",
@@ -371,6 +379,12 @@ def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[s
             errors.append(tr("validate", "Aktive DPI-Stufe ungültig"))
     if profile.poll_rate is not None and profile.poll_rate not in POLL_RATES:
         errors.append(tr("validate", "Abtastrate muss 125, 500 oder 1000 Hz sein"))
+    mode = profile.scroll.get("mode")
+    if "mode" in profile.scroll and (isinstance(mode, bool) or mode not in (0, 1)):
+        errors.append(tr("validate", "Mausrad-Modus ungültig"))
+    for key in ("acceleration", "smart_reel"):
+        if key in profile.scroll and not isinstance(profile.scroll[key], bool):
+            errors.append(tr("validate", "Mausrad-Option ungültig"))
     for zone, lz in profile.lighting.items():
         if not 0 <= lz.brightness <= 255:
             errors.append(tr("validate", "Helligkeit ({zone}) muss zwischen 0 und 255 liegen", zone=zone))

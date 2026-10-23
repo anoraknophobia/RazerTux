@@ -98,11 +98,11 @@
     "Spektrum": "Ciclo de espectro",
     "Statisch": "Estático",
     "Welle": "Onda",
-    "Hintergrundbeleuchtung": "Retroiluminación",
-    "Leiste links": "Franja izquierda",
-    "Leiste rechts": "Franja derecha",
     "Leuchtfeld": "Zona iluminada",
-    "Mausrad": "Rueda"
+    "Mausrad": "Rueda",
+    "Hintergrund": "Fondo",
+    "Links": "Izquierda",
+    "Rechts": "Derecha"
   },
   "MacroTab": {
     "Abbrechen": "Cancelar",
@@ -228,7 +228,17 @@
     "Umschalten mit der oberen Taste vorne (wenn „Obere Tasten frei belegen“ aus ist). Widerstand und Rasten der Stufen lassen sich derzeit nur in Razer Synapse unter Windows ändern.": "Se cambia con el botón superior delantero (si «Asignar libremente los botones superiores» está desactivado). La tensión y los pasos de los niveles por ahora solo se pueden cambiar en Razer Synapse en Windows.",
     "Widerstand": "Tensión",
     "Widerstand (Synapse)": "Tensión (Synapse)",
-    "unbekannt": "desconocido"
+    "unbekannt": "desconocido",
+    "Gerastert": "Con pasos",
+    "Frei drehend": "Giro libre",
+    "Scroll-Optionen": "Opciones de scroll",
+    "Modus": "Modo",
+    "Beschleunigung": "Aceleración",
+    "Smart Reel": "Smart Reel",
+    "An": "Activado",
+    "Aus": "Desactivado",
+    "Nicht ändern": "No cambiar",
+    "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.": "Se aplica al perfil. «No cambiar» deja el ajuste del ratón como está."
   },
   "StageRow": {
     "Aktive Stufe": "Nivel activo",
@@ -373,7 +383,9 @@
     "Linksklick nicht erreichbar": "Clic izquierdo inaccesible",
     "Makro fehlt: {macro}": "Falta la macro: {macro}",
     "Maximal {count} DPI-Stufen erlaubt": "Se permiten como máximo {count} niveles de sensibilidad",
-    "Mehr als eine Hypershift-Taste": "Más de una tecla Hypershift"
+    "Mehr als eine Hypershift-Taste": "Más de una tecla Hypershift",
+    "Mausrad-Modus ungültig": "Modo de la rueda no válido",
+    "Mausrad-Option ungültig": "Opción de la rueda no válida"
   },
   "DeviceBar": {
     "%1 (nicht verbunden)": "%1 (no conectado)",

@@ -343,3 +343,16 @@ def test_settings_last_model_roundtrip():
     s.last_model = "death_adder_v2"
     assert Settings.from_dict(s.to_dict()).last_model == "death_adder_v2"
     assert Settings.from_dict({"active_profile": "p"}).last_model == ""
+
+
+def test_profile_scroll_roundtrip_and_old_files():
+    from razertux.config.model import Profile, validate
+    p = Profile(id="p", name="P", scroll={"mode": 1, "acceleration": False, "smart_reel": True})
+    q = Profile.from_dict(p.to_dict())
+    assert q.scroll == {"mode": 1, "acceleration": False, "smart_reel": True}
+    d = p.to_dict()
+    del d["scroll"]
+    assert Profile.from_dict(d).scroll == {}  # older files: leave the mouse as is
+    assert "scroll" not in Profile(id="p", name="P").to_dict()
+    assert validate(p) == []
+    assert validate(Profile(id="p", name="P", scroll={"mode": 2})) != []

@@ -63,7 +63,7 @@ class DeviceActions:
         self._remap_enabled = self.profiles.load_device_settings().remap_enabled
         self.header.set_device_name(self.info.name)
         self.buttons_tab.set_device(self.info, self.profiles)
-        for tab in (self.performance_tab, self.lighting_tab, self.power_tab):
+        for tab in (self.performance_tab, self.lighting_tab, self.power_tab, self.scroll_tab):
             tab.set_device(self.info)
         self._show_tabs()
         self._refresh_devices()
