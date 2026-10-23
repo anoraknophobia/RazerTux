@@ -1,0 +1,108 @@
+{
+  "id": "test",
+  "name": "Test",
+  "standard": {
+    "side_1": {
+      "type": "key",
+      "code": 2
+    },
+    "side_2": {
+      "type": "key",
+      "code": 3
+    },
+    "side_3": {
+      "type": "key",
+      "code": 4
+    },
+    "side_4": {
+      "type": "key",
+      "code": 5
+    },
+    "side_5": {
+      "type": "key",
+      "code": 6
+    },
+    "side_6": {
+      "type": "key",
+      "code": 7
+    },
+    "side_7": {
+      "type": "key",
+      "code": 8
+    },
+    "side_8": {
+      "type": "key",
+      "code": 9
+    },
+    "side_9": {
+      "type": "key",
+      "code": 10
+    },
+    "side_10": {
+      "type": "key",
+      "code": 11
+    },
+    "side_11": {
+      "type": "key",
+      "code": 12
+    },
+    "side_12": {
+      "type": "key",
+      "code": 13
+    },
+    "left": {
+      "type": "default"
+    },
+    "right": {
+      "type": "default"
+    },
+    "middle": {
+      "type": "default"
+    },
+    "wheel_up": {
+      "type": "default"
+    },
+    "wheel_down": {
+      "type": "default"
+    },
+    "wheel_left": {
+      "type": "default"
+    },
+    "wheel_right": {
+      "type": "default"
+    },
+    "top_1": {
+      "type": "key",
+      "code": 48
+    },
+    "top_2": {
+      "type": "dpi_stage",
+      "direction": "down"
+    }
+  },
+  "hypershift": {},
+  "dpi_stages": [],
+  "active_stage": 0,
+  "poll_rate": null,
+  "lighting": {
+    "logo": {
+      "effect": "spectrum",
+      "color": [
+        68,
+        214,
+        44
+      ],
+      "brightness": 191
+    },
+    "thumb": {
+      "effect": "spectrum",
+      "color": [
+        68,
+        214,
+        44
+      ],
+      "brightness": 191
+    }
+  },
+  "remap_top_buttons": false
+}

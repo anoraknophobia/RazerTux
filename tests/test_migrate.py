@@ -178,3 +178,81 @@ def test_cli_restore_finds_the_migrated_backup(home, monkeypatch):
     cli.main(["restore"])
     assert loaded == [home / ".config" / "razertux" / "mouse-backup.json"]
     assert (home / ".config" / "razertux" / "mouse-backup.json").is_file()
+
+
+# --- schema 2 -------------------------------------------------------------
+
+import shutil
+
+from razertux.config import ConfigStore
+
+V1 = Path(__file__).parent / "data" / "config_v1"
+
+
+def _tree_snapshot(root):
+    return {str(p.relative_to(root)): (p.read_bytes() if p.is_file() else None)
+            for p in sorted(root.rglob("*"))}
+
+
+@pytest.fixture
+def v1(tmp_path):
+    root = tmp_path / "cfg"
+    shutil.copytree(V1, root)
+    return root
+
+
+def test_schema2_migrates_real_user_config(v1):
+    originals = {f.name: f.read_bytes() for f in (V1 / "profiles").glob("*.json")}
+    before = {n: (v1 / n).read_bytes() for n in ("macros.json", "state.json", "mouse-backup.json")}
+    old_settings = (v1 / "settings.json").read_bytes()
+
+    assert migrate.migrate_schema_2(v1) is True
+
+    ms = ConfigStore(v1).for_model("naga_v2_pro")
+    for name, raw in originals.items():
+        pid = name[:-5]
+        assert (v1 / "profiles" / "naga_v2_pro" / name).read_bytes() == raw
+        assert ms.load_profile(pid).to_dict() == json.loads(raw)
+    assert {p.id for p in ms.list_profiles()} == {"test", "test2-73cb63"}
+    settings = ConfigStore(v1).load_settings()
+    assert settings.active_profile == "test2-73cb63"
+    assert json.loads((v1 / "settings.json").read_text())["active_profiles"] == \
+        {"naga_v2_pro": "test2-73cb63"}
+    assert (v1 / "backups" / "naga_v2_pro.json").read_bytes() == before["mouse-backup.json"]
+    for n in ("macros.json", "state.json"):
+        assert (v1 / n).read_bytes() == before[n]
+    assert ConfigStore(v1).load_macros() is not None
+    assert (v1 / "pre-schema2" / "settings.json").read_bytes() == old_settings
+    for name, raw in originals.items():
+        assert (v1 / "pre-schema2" / "profiles" / name).read_bytes() == raw
+    assert settings.dpi_limit == 10000 and settings.scroll_stage_names[1] == "Ultra-fine"
+
+    snap = _tree_snapshot(v1)
+    assert migrate.migrate_schema_2(v1) is False
+    assert _tree_snapshot(v1) == snap
+
+
+def test_schema2_never_overwrites_existing_targets(v1):
+    (v1 / "backups").mkdir()
+    (v1 / "backups" / "naga_v2_pro.json").write_text("{}")
+    (v1 / "profiles" / "naga_v2_pro").mkdir()
+    (v1 / "profiles" / "naga_v2_pro" / "test.json").write_text("{\"keep\": 1}")
+    migrate.migrate_schema_2(v1)
+    assert (v1 / "backups" / "naga_v2_pro.json").read_text() == "{}"
+    assert (v1 / "profiles" / "naga_v2_pro" / "test.json").read_text() == "{\"keep\": 1}"
+
+
+def test_schema2_fresh_or_corrupt_root_is_left_alone(tmp_path):
+    assert migrate.migrate_schema_2(tmp_path / "none") is False
+    assert not (tmp_path / "none").exists()
+    (tmp_path / "settings.json").write_text("{broken")
+    assert migrate.migrate_schema_2(tmp_path) is False
+    assert (tmp_path / "settings.json").read_text() == "{broken"
+
+
+def test_schema2_runs_at_startup(home, monkeypatch):
+    root = home / ".config" / "razertux"
+    shutil.copytree(V1, root)
+    monkeypatch.setattr(gui_app, "migrate_schema_2", migrate.migrate_schema_2)
+    monkeypatch.setattr(daemon_main, "migrate_schema_2", migrate.migrate_schema_2)
+    assert hasattr(gui_app, "migrate_schema_2") and hasattr(daemon_main, "migrate_schema_2")

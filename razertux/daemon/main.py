@@ -30,7 +30,9 @@ from razertux.razer.transport import (
 
 from dbus_next import DBusError
 
-from razertux.config.migrate import default_config_dir, migrate_legacy_config
+from razertux.config.migrate import (
+    default_config_dir, migrate_legacy_config, migrate_schema_2,
+)
 from razertux.i18n import tr
 
 from .battery import BatteryMonitor, WarnState, notify_desktop
@@ -620,7 +622,9 @@ def main(argv: list[str] | None = None) -> int:
                         format="%(levelname)s %(name)s: %(message)s")
     if args.config_dir is None:
         migrate_legacy_config()  # once: ~/.config/naga-config -> ~/.config/razertux
-    return asyncio.run(run(args.config_dir or default_config_dir()))
+    config_dir = args.config_dir or default_config_dir()
+    migrate_schema_2(config_dir)  # profiles per model, after the legacy copy
+    return asyncio.run(run(config_dir))
 
 
 if __name__ == "__main__":

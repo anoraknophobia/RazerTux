@@ -90,7 +90,7 @@ async def test_activate_profile_sets_mapper_saves_and_signals(tmp_path):
     await call(svc, "ActivateProfile", "game")
     assert [p.id for p in mapper.profiles] == ["game"]
     assert [p.id for p in applied] == ["game"]
-    assert json.loads((tmp_path / "settings.json").read_text())["active_profile"] == "game"
+    assert json.loads((tmp_path / "settings.json").read_text())["active_profiles"]["naga_v2_pro"] == "game"
     assert ("ProfileChanged", ["game"]) in bus.signals
     assert await call(svc, "GetActiveProfile") == "game"
 
@@ -102,7 +102,7 @@ async def test_activate_unknown_profile_raises_dbus_error(tmp_path):
     assert ei.value.type == "io.github.razertux.Error.UnknownProfile"
     assert mapper.profiles == []
     assert bus.signals == []
-    assert json.loads((tmp_path / "settings.json").read_text())["active_profile"] == "default"
+    assert json.loads((tmp_path / "settings.json").read_text())["active_profiles"]["naga_v2_pro"] == "default"
 
 
 async def test_list_profiles(tmp_path):

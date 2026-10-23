@@ -1,0 +1,238 @@
+{
+  "test-7cb2c5": {
+    "id": "test-7cb2c5",
+    "name": "test",
+    "steps": [
+      {
+        "type": "key",
+        "code": 54,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 155
+      },
+      {
+        "type": "key",
+        "code": 35,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 77
+      },
+      {
+        "type": "key",
+        "code": 35,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 39
+      },
+      {
+        "type": "key",
+        "code": 54,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 129
+      },
+      {
+        "type": "key",
+        "code": 18,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 69
+      },
+      {
+        "type": "key",
+        "code": 18,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 32
+      },
+      {
+        "type": "key",
+        "code": 38,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 51
+      },
+      {
+        "type": "key",
+        "code": 38,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 87
+      },
+      {
+        "type": "key",
+        "code": 38,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 60
+      },
+      {
+        "type": "key",
+        "code": 38,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 117
+      },
+      {
+        "type": "key",
+        "code": 24,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 52
+      },
+      {
+        "type": "key",
+        "code": 24,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 104
+      },
+      {
+        "type": "key",
+        "code": 57,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 114
+      },
+      {
+        "type": "key",
+        "code": 57,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 32
+      },
+      {
+        "type": "key",
+        "code": 54,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 153
+      },
+      {
+        "type": "key",
+        "code": 17,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 67
+      },
+      {
+        "type": "key",
+        "code": 54,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 1
+      },
+      {
+        "type": "key",
+        "code": 17,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 108
+      },
+      {
+        "type": "key",
+        "code": 24,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 60
+      },
+      {
+        "type": "key",
+        "code": 24,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 34
+      },
+      {
+        "type": "key",
+        "code": 19,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 60
+      },
+      {
+        "type": "key",
+        "code": 19,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 34
+      },
+      {
+        "type": "key",
+        "code": 38,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 70
+      },
+      {
+        "type": "key",
+        "code": 38,
+        "down": false
+      },
+      {
+        "type": "delay",
+        "ms": 49
+      },
+      {
+        "type": "key",
+        "code": 32,
+        "down": true
+      },
+      {
+        "type": "delay",
+        "ms": 69
+      },
+      {
+        "type": "key",
+        "code": 32,
+        "down": false
+      }
+    ]
+  }
+}

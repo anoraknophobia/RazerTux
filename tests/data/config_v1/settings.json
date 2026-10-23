@@ -1,0 +1,16 @@
+{
+  "active_profile": "test2-73cb63",
+  "low_battery_notify": 15,
+  "theme": "synapse",
+  "idle_time": null,
+  "low_battery_threshold": null,
+  "scroll_stage_names": {
+    "1": "Ultra-fine",
+    "2": "Standard",
+    "3": "Distinct",
+    "4": "Adaptive",
+    "5": "Smooth Scroll",
+    "6": "Custom"
+  },
+  "language": "system"
+}

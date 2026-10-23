@@ -148,7 +148,7 @@ def test_config_errors_banner_and_dismiss(env):
 def test_store_errors_are_shown(env):
     w, store, _ = env
     w.show()
-    (store.root / "profiles" / "p2.json").write_text("{kaputt")
+    (store.root / "profiles" / "naga_v2_pro" / "p2.json").write_text("{kaputt")
     w.select_profile("p2", force=True)  # corrupt active profile falls back to default
     assert w.errors_banner.isVisible() and "p2.json" in w.errors_banner.label.text()
 

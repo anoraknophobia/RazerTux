@@ -8,7 +8,9 @@ from pathlib import Path
 from razertux import i18n
 from razertux.config.store import ConfigStore
 from razertux import APP_NAME
-from razertux.config.migrate import default_config_dir, migrate_legacy_config
+from razertux.config.migrate import (
+    default_config_dir, migrate_legacy_config, migrate_schema_2,
+)
 
 
 def _help_tr(text: str) -> str:
@@ -55,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     app.setApplicationName("razertux")
     app.setDesktopFileName("razertux")  # Wayland: window icon and task bar entry
     app.setQuitOnLastWindowClosed(False)
+    migrate_schema_2(args.config_dir or default_config_dir())  # profiles per model
     store = ConfigStore(args.config_dir or default_config_dir())
     install_language(app, store)  # before any text is created
     app.setApplicationDisplayName(APP_NAME)

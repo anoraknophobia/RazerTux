@@ -55,9 +55,9 @@ def test_profile_file_is_pretty_utf8(tmp_path):
     p = default_profile()
     p.name = "Größe"
     store.save_profile(p)
-    text = (tmp_path / "profiles" / "default.json").read_text(encoding="utf-8")
+    text = (tmp_path / "profiles" / "naga_v2_pro" / "default.json").read_text(encoding="utf-8")
     assert "Größe" in text and "\n  " in text
-    assert not list((tmp_path / "profiles").glob("*.tmp"))
+    assert not list((tmp_path / "profiles" / "naga_v2_pro").glob("*.tmp"))
 
 
 def test_left_click_lockout_rejected():
@@ -110,12 +110,12 @@ def test_valid_values_accepted():
 
 
 def test_corrupt_profile_falls_back(tmp_path):
-    (tmp_path / "profiles").mkdir()
-    (tmp_path / "profiles/x.json").write_text("{kaputt")
+    (tmp_path / "profiles" / "naga_v2_pro").mkdir(parents=True)
+    (tmp_path / "profiles/naga_v2_pro/x.json").write_text("{kaputt")
     s = ConfigStore(tmp_path)
     assert [p.id for p in s.list_profiles()] == ["default"]
     assert s.errors and "x.json" in s.errors[0]
-    assert not (tmp_path / "profiles/default.json").exists()
+    assert not (tmp_path / "profiles/naga_v2_pro/default.json").exists()
 
 
 def test_unknown_action_type_is_corrupt(tmp_path):
@@ -125,7 +125,7 @@ def test_unknown_action_type_is_corrupt(tmp_path):
     d = p.to_dict()
     d["id"] = "evil"
     d["standard"]["side_1"] = {"type": "zauber"}
-    (tmp_path / "profiles/evil.json").write_text(json.dumps(d))
+    (tmp_path / "profiles/naga_v2_pro/evil.json").write_text(json.dumps(d))
     s2 = ConfigStore(tmp_path)
     assert [x.id for x in s2.list_profiles()] == ["default"]
     assert any("evil.json" in e for e in s2.errors)
@@ -195,8 +195,8 @@ def test_hypershift_key_in_hypershift_layer_rejected():
 
 
 def test_load_profile_corrupt_returns_default_and_records(tmp_path):
-    (tmp_path / "profiles").mkdir()
-    (tmp_path / "profiles/kaputt.json").write_text("{x")
+    (tmp_path / "profiles" / "naga_v2_pro").mkdir(parents=True)
+    (tmp_path / "profiles/naga_v2_pro/kaputt.json").write_text("{x")
     s = ConfigStore(tmp_path)
     assert s.load_profile("kaputt").id == "default"
     assert any("kaputt.json" in e for e in s.errors)
@@ -211,8 +211,8 @@ def test_load_profile_missing_returns_default_and_records(tmp_path):
 
 
 def test_export_unreadable_profile_raises_valueerror(tmp_path):
-    (tmp_path / "profiles").mkdir()
-    (tmp_path / "profiles/kaputt.json").write_text("{x")
+    (tmp_path / "profiles" / "naga_v2_pro").mkdir(parents=True)
+    (tmp_path / "profiles/naga_v2_pro/kaputt.json").write_text("{x")
     s = ConfigStore(tmp_path)
     with pytest.raises(ValueError, match="kaputt.json"):
         s.export_profile("kaputt", tmp_path / "o.json")
@@ -252,13 +252,13 @@ def test_old_profile_with_scroll_profile_loads_and_is_not_written(tmp_path):
     d.pop("remap_top_buttons")
     d["scroll_profile"] = 3  # written by older versions
     store = ConfigStore(tmp_path)
-    (tmp_path / "profiles").mkdir()
-    (tmp_path / "profiles" / "default.json").write_text(json.dumps(d))
+    (tmp_path / "profiles" / "naga_v2_pro").mkdir(parents=True)
+    (tmp_path / "profiles" / "naga_v2_pro" / "default.json").write_text(json.dumps(d))
     p = store.load_profile("default")
     assert store.errors == [] and p.remap_top_buttons is False
     assert not hasattr(p, "scroll_profile")
     store.save_profile(p)
-    on_disk = json.loads((tmp_path / "profiles" / "default.json").read_text())
+    on_disk = json.loads((tmp_path / "profiles" / "naga_v2_pro" / "default.json").read_text())
     assert "scroll_profile" not in on_disk and on_disk["remap_top_buttons"] is False
 
 
@@ -284,3 +284,54 @@ def test_old_default_stage_names_are_migrated(tmp_path):
     for names in ({"6": "Ultra-fine", "1": "Fein"}, {"6": "Fein"}, {}):
         got = Settings.from_dict({"active_profile": "a", "scroll_stage_names": names})
         assert got.scroll_stage_names == {int(k): v for k, v in names.items()}
+
+
+# --- schema 2: per model ----------------------------------------------------
+
+def test_for_model_isolates_profiles_and_legacy_delegates(tmp_path):
+    from razertux.config import ConfigStore, default_profile
+    s = ConfigStore(tmp_path)
+    p = default_profile()
+    p.id, p.name = "a", "A"
+    s.save_profile(p)
+    assert (tmp_path / "profiles" / "naga_v2_pro" / "a.json").exists()
+    assert [x.id for x in s.for_model("naga_v2_pro").list_profiles()] == ["a"]
+    other = s.for_model("viper")
+    assert [x.id for x in other.list_profiles()] == ["default"]
+    other.save_profile(other.default_profile())
+    assert (tmp_path / "profiles" / "viper" / "default.json").exists()
+
+
+def test_settings_active_profile_maps_to_naga():
+    from razertux.config import Settings
+    s = Settings("x")
+    assert s.active_profiles == {"naga_v2_pro": "x"}
+    s.active_profile = "y"
+    d = s.to_dict()
+    assert d["schema"] == 2 and d["active_profiles"] == {"naga_v2_pro": "y"} and "active_profile" not in d
+    assert Settings.from_dict(d) == s
+    assert Settings.from_dict({"active_profile": "z"}).active_profile == "z"
+
+
+def test_device_settings_roundtrip_and_defaults(tmp_path):
+    from razertux.config import ConfigStore, DeviceSettings
+    from razertux.hw.button_maps import InputSignal
+    from razertux.hw.buttons import ButtonId
+    s = ConfigStore(tmp_path)
+    naga = s.for_model("naga_v2_pro")
+    assert naga.load_device_settings() == DeviceSettings(plate=12, remap_enabled=True, learned={})
+    assert s.for_model("viper").load_device_settings().remap_enabled is False
+    ds = DeviceSettings(plate=6, remap_enabled=False,
+                        learned={ButtonId.LEARN_1: InputSignal("evdev", 1, 275)})
+    naga.save_device_settings(ds)
+    assert (tmp_path / "devices" / "naga_v2_pro.json").exists()
+    assert naga.load_device_settings() == ds
+    assert json.loads((tmp_path / "devices" / "naga_v2_pro.json").read_text())["learned"] == \
+        {"learn_1": {"source": "evdev", "type": 1, "code": 275}}
+
+
+def test_default_profile_for_other_mouse_is_all_default_action():
+    from razertux.config import DefaultAction, default_profile_for
+    from razertux.devices.db import load_devices
+    p = default_profile_for(load_devices()["viper"])
+    assert p.standard and all(isinstance(a, DefaultAction) for a in p.standard.values())

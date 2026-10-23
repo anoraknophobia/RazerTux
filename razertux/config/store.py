@@ -11,10 +11,15 @@ from typing import Any
 
 from razertux.i18n import tr
 
-from .model import Macro, Profile, Settings, default_profile
+from razertux.devices.db import load_devices
+
+from .model import (
+    NAGA_MODEL, DeviceSettings, Macro, Profile, Settings, default_profile, default_profile_for,
+)
 
 
 _SAFE_ID = re.compile(r"[a-z0-9-]+")
+_SAFE_MODEL = re.compile(r"[a-z0-9_]+")
 _READ_ERRORS = (OSError, ValueError, KeyError, TypeError, AttributeError)
 
 
@@ -46,21 +51,15 @@ class ConfigStore:
         self.root = Path(root)
         self.errors: list[str] = []
 
-    @property
-    def _profiles_dir(self) -> Path:
-        return self.root / "profiles"
-
-    def _profile_path(self, profile_id: str) -> Path:
-        if not _SAFE_ID.fullmatch(profile_id):
-            raise ValueError(tr("store", "Ungültige Profil-ID: {profile}", profile=repr(profile_id)))
-        return self._profiles_dir / f"{profile_id}.json"
-
     def _read(self, path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
 
     def _error(self, path: Path, exc: Exception) -> None:
         self.errors.append(tr("store", "{file} ist beschädigt und wurde ignoriert: {error}",
                               file=path.name, error=exc))
+
+    def for_model(self, model: str) -> ModelStore:
+        return ModelStore(self, model)
 
     # settings
     def load_settings(self) -> Settings:
@@ -75,47 +74,27 @@ class ConfigStore:
     def save_settings(self, s: Settings) -> None:
         _write_json(self.root / "settings.json", s.to_dict())
 
-    # profiles
+    # profiles of the Naga V2 Pro (thin delegates until daemon and GUI are per-model)
     def default_profile(self) -> Profile:
-        return default_profile()
-
-    def _load_path(self, path: Path) -> Profile:
-        return Profile.from_dict(self._read(path))
+        return self.for_model(NAGA_MODEL).default_profile()
 
     def list_profiles(self) -> list[Profile]:
-        profiles: list[Profile] = []
-        if self._profiles_dir.is_dir():
-            for path in sorted(self._profiles_dir.glob("*.json")):
-                try:
-                    profiles.append(self._load_path(path))
-                except _READ_ERRORS as e:
-                    self._error(path, e)
-        return profiles or [default_profile()]
+        return self.for_model(NAGA_MODEL).list_profiles()
 
     def load_profile(self, profile_id: str) -> Profile:
-        """Load a profile; on a missing/corrupt file record an error and
-        return the default profile."""
-        try:
-            path = self._profile_path(profile_id)
-        except ValueError as e:
-            self.errors.append(tr("store", "Profil {profile} nicht lesbar: {error}",
-                                  profile=repr(profile_id), error=e))
-            return default_profile()
-        if not path.exists():
-            if profile_id != "default":
-                self.errors.append(tr("store", "{file} fehlt, Standardprofil wird verwendet", file=path.name))
-            return default_profile()
-        try:
-            return self._load_path(path)
-        except _READ_ERRORS as e:
-            self._error(path, e)
-            return default_profile()
+        return self.for_model(NAGA_MODEL).load_profile(profile_id)
 
     def save_profile(self, p: Profile) -> None:
-        _write_json(self._profile_path(p.id), p.to_dict())
+        self.for_model(NAGA_MODEL).save_profile(p)
 
     def delete_profile(self, profile_id: str) -> None:
-        self._profile_path(profile_id).unlink(missing_ok=True)
+        self.for_model(NAGA_MODEL).delete_profile(profile_id)
+
+    def export_profile(self, profile_id: str, path: Path) -> None:
+        self.for_model(NAGA_MODEL).export_profile(profile_id, path)
+
+    def import_profile(self, path: Path) -> Profile:
+        return self.for_model(NAGA_MODEL).import_profile(path)
 
     # macros
     def load_macros(self) -> dict[str, Macro]:
@@ -131,7 +110,83 @@ class ConfigStore:
     def save_macros(self, macros: dict[str, Macro]) -> None:
         _write_json(self.root / "macros.json", {k: m.to_dict() for k, m in macros.items()})
 
-    # import / export
+
+class ModelStore:
+    """Profiles (profiles/<model>/<id>.json) and device settings
+    (devices/<model>.json) of one device model."""
+
+    def __init__(self, store: ConfigStore, model: str):
+        if not _SAFE_MODEL.fullmatch(model):
+            raise ValueError(f"invalid device model: {model!r}")
+        self._store = store
+        self.model = model
+
+    @property
+    def errors(self) -> list[str]:
+        return self._store.errors
+
+    @property
+    def _profiles_dir(self) -> Path:
+        return self._store.root / "profiles" / self.model
+
+    @property
+    def _device_path(self) -> Path:
+        return self._store.root / "devices" / f"{self.model}.json"
+
+    def _profile_path(self, profile_id: str) -> Path:
+        if not _SAFE_ID.fullmatch(profile_id):
+            raise ValueError(tr("store", "Ungültige Profil-ID: {profile}", profile=repr(profile_id)))
+        return self._profiles_dir / f"{profile_id}.json"
+
+    def _read(self, path: Path) -> Any:
+        return self._store._read(path)
+
+    def _error(self, path: Path, exc: Exception) -> None:
+        self._store._error(path, exc)
+
+    def default_profile(self) -> Profile:
+        info = load_devices().get(self.model)
+        return default_profile_for(info) if info is not None else \
+            Profile(id="default", name="Standard", standard=default_profile().standard)
+
+    def _load_path(self, path: Path) -> Profile:
+        return Profile.from_dict(self._read(path))
+
+    def list_profiles(self) -> list[Profile]:
+        profiles: list[Profile] = []
+        if self._profiles_dir.is_dir():
+            for path in sorted(self._profiles_dir.glob("*.json")):
+                try:
+                    profiles.append(self._load_path(path))
+                except _READ_ERRORS as e:
+                    self._error(path, e)
+        return profiles or [self.default_profile()]
+
+    def load_profile(self, profile_id: str) -> Profile:
+        """Load a profile; on a missing/corrupt file record an error and
+        return the default profile."""
+        try:
+            path = self._profile_path(profile_id)
+        except ValueError as e:
+            self.errors.append(tr("store", "Profil {profile} nicht lesbar: {error}",
+                                  profile=repr(profile_id), error=e))
+            return self.default_profile()
+        if not path.exists():
+            if profile_id != "default":
+                self.errors.append(tr("store", "{file} fehlt, Standardprofil wird verwendet", file=path.name))
+            return self.default_profile()
+        try:
+            return self._load_path(path)
+        except _READ_ERRORS as e:
+            self._error(path, e)
+            return self.default_profile()
+
+    def save_profile(self, p: Profile) -> None:
+        _write_json(self._profile_path(p.id), p.to_dict())
+
+    def delete_profile(self, profile_id: str) -> None:
+        self._profile_path(profile_id).unlink(missing_ok=True)
+
     def export_profile(self, profile_id: str, path: Path) -> None:
         src = self._profile_path(profile_id)
         if src.exists():
@@ -141,7 +196,7 @@ class ConfigStore:
                 raise ValueError(tr("store", "{file} ist beschädigt und kann nicht exportiert werden: {error}",
                                     file=src.name, error=e)) from e
         elif profile_id == "default":
-            profile = default_profile()
+            profile = self.default_profile()
         else:
             raise ValueError(tr("store", "{file} fehlt und kann nicht exportiert werden", file=src.name))
         _write_json(Path(path), profile.to_dict())
@@ -153,3 +208,20 @@ class ConfigStore:
             p.id = new_profile_id(p.name)
         self.save_profile(p)
         return p
+
+    # device settings
+    def _remap_default(self) -> bool:
+        info = load_devices().get(self.model)
+        return bool(info and info.verified)
+
+    def load_device_settings(self) -> DeviceSettings:
+        path = self._device_path
+        if path.exists():
+            try:
+                return DeviceSettings.from_dict(self._read(path), remap_default=self._remap_default())
+            except _READ_ERRORS as e:
+                self._error(path, e)
+        return DeviceSettings(remap_enabled=self._remap_default())
+
+    def save_device_settings(self, ds: DeviceSettings) -> None:
+        _write_json(self._device_path, ds.to_dict())

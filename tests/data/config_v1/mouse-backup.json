@@ -1,0 +1,28 @@
+{
+  "firmware": "v1.2",
+  "serial": "PM0000X00000000",
+  "dpi": [
+    1800,
+    1800
+  ],
+  "dpi_stages": {
+    "active": 1,
+    "stages": [
+      [
+        2500,
+        2500
+      ]
+    ]
+  },
+  "poll_rate": 500,
+  "brightness": {
+    "logo": 191,
+    "scroll": null,
+    "thumb": 191
+  },
+  "battery": 72,
+  "charging": true,
+  "idle_time": 300,
+  "low_battery_threshold": 5,
+  "scroll_profile": 0
+}

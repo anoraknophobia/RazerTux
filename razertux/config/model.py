@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from evdev import ecodes as E
 
+from razertux.devices.db import DeviceInfo
+from razertux.hw.button_maps import InputSignal
 from razertux.hw.buttons import ButtonId
 from razertux.i18n import tr
 
@@ -209,23 +211,56 @@ def default_stage_names() -> dict[int, str]:
     return dict(enumerate(_SYNAPSE_STAGE_ORDER, start=1))
 
 
-@dataclass
+NAGA_MODEL = "naga_v2_pro"
+SCHEMA = 2
+
+
+@dataclass(init=False)
 class Settings:
-    """Global settings. `low_battery_notify` is the desktop warning level in percent
+    """Global settings. `active_profiles` maps device model -> active profile id;
+    `active_profile` is the Naga V2 Pro's entry (until the GUI is per-model).
+    `low_battery_notify` is the desktop warning level in percent
     (0 = off). `scroll_stage_names` are user names for the firmware's scroll-wheel
     stages (slot 1-6). `idle_time` (seconds) and `low_battery_threshold` (percent, the mouse's
     own low power mode) are written to the mouse; None = leave the mouse as is."""
-    active_profile: str
-    low_battery_notify: int = 15
-    theme: str = "synapse"
-    idle_time: int | None = None
-    low_battery_threshold: int | None = None
-    scroll_stage_names: dict[int, str] = field(default_factory=default_stage_names)
-    language: str = "system"  # "system" | "de" | "en" | "es" | "fr" (GUI restart needed)
-    dpi_limit: int = DEFAULT_DPI_LIMIT  # GUI slider maximum, one of DPI_LIMIT_CHOICES
+    active_profiles: dict[str, str]
+    low_battery_notify: int
+    theme: str
+    idle_time: int | None
+    low_battery_threshold: int | None
+    scroll_stage_names: dict[int, str]
+    language: str  # "system" | "de" | "en" | "es" | "fr" (GUI restart needed)
+    dpi_limit: int  # GUI slider maximum, one of DPI_LIMIT_CHOICES
+
+    def __init__(self, active_profile: str | None = None, low_battery_notify: int = 15,
+                 theme: str = "synapse", idle_time: int | None = None,
+                 low_battery_threshold: int | None = None,
+                 scroll_stage_names: dict[int, str] | None = None,
+                 language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
+                 active_profiles: dict[str, str] | None = None):
+        self.active_profiles = dict(active_profiles or {})
+        if active_profile is not None:
+            self.active_profiles[NAGA_MODEL] = active_profile
+        self.low_battery_notify = low_battery_notify
+        self.theme = theme
+        self.idle_time = idle_time
+        self.low_battery_threshold = low_battery_threshold
+        self.scroll_stage_names = default_stage_names() if scroll_stage_names is None \
+            else scroll_stage_names
+        self.language = language
+        self.dpi_limit = dpi_limit
+
+    @property
+    def active_profile(self) -> str:
+        return self.active_profiles.get(NAGA_MODEL, "default")
+
+    @active_profile.setter
+    def active_profile(self, value: str) -> None:
+        self.active_profiles[NAGA_MODEL] = value
 
     def to_dict(self) -> dict[str, Any]:
-        return {"active_profile": self.active_profile,
+        return {"schema": SCHEMA,
+                "active_profiles": dict(self.active_profiles),
                 "low_battery_notify": self.low_battery_notify,
                 "theme": self.theme,
                 "idle_time": self.idle_time,
@@ -242,11 +277,39 @@ class Settings:
             else {int(k): str(v) for k, v in names.items()}
         if stage_names == _OLD_DEFAULT_STAGE_NAMES:  # migrate the old default
             stage_names = default_stage_names()
-        return cls(d["active_profile"], d.get("low_battery_notify", 15),
+        if "active_profiles" in d:
+            active = {str(k): str(v) for k, v in d["active_profiles"].items()}
+        else:  # schema 1
+            active = {NAGA_MODEL: d["active_profile"]}
+        return cls(None, d.get("low_battery_notify", 15),
                    d.get("theme", "synapse"), d.get("idle_time"),
                    d.get("low_battery_threshold"), stage_names,
                    str(d.get("language", "system")),
-                   _dpi_limit(d.get("dpi_limit")))
+                   _dpi_limit(d.get("dpi_limit")), active_profiles=active)
+
+
+@dataclass
+class DeviceSettings:
+    """Per-device settings (devices/<model>.json). `plate` is the Naga V2 Pro's
+    side-plate button count; `remap_enabled` switches button remapping on;
+    `learned` maps learn buttons to the input signal the user taught."""
+    plate: Literal[12, 6, 2] = 12
+    remap_enabled: bool = True
+    learned: dict[ButtonId, InputSignal] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"plate": self.plate, "remap_enabled": self.remap_enabled,
+                "learned": {b.value: {"source": s.source, "type": s.ev_type, "code": s.code}
+                            for b, s in self.learned.items()}}
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any], *, remap_default: bool = True) -> DeviceSettings:
+        plate = d.get("plate", 12)
+        if plate not in (12, 6, 2):
+            plate = 12
+        return cls(plate, bool(d.get("remap_enabled", remap_default)),
+                   {ButtonId(k): InputSignal(str(v["source"]), int(v["type"]), int(v["code"]))
+                    for k, v in d.get("learned", {}).items()})
 
 
 def _dpi_limit(value: Any) -> int:
@@ -258,6 +321,14 @@ def default_profile() -> Profile:
     standard[ButtonId.TOP_1] = DpiStageAction("up")
     standard[ButtonId.TOP_2] = DpiStageAction("cycle")
     return Profile(id="default", name="Standard", standard=standard)
+
+
+def default_profile_for(info: DeviceInfo) -> Profile:
+    """Naga V2 Pro as before; other mice keep every button at its factory behaviour."""
+    if info.model == NAGA_MODEL:
+        return default_profile()
+    return Profile(id="default", name="Standard",
+                   standard={b: DefaultAction() for b in ButtonId})
 
 
 def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[str]:

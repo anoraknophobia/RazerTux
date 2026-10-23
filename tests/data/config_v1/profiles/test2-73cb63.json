@@ -1,0 +1,84 @@
+{
+  "id": "test2-73cb63",
+  "name": "Test2",
+  "standard": {
+    "side_1": {
+      "type": "key",
+      "code": 16
+    },
+    "side_2": {
+      "type": "key",
+      "code": 17
+    },
+    "side_3": {
+      "type": "default"
+    },
+    "side_4": {
+      "type": "default"
+    },
+    "side_5": {
+      "type": "default"
+    },
+    "side_6": {
+      "type": "default"
+    },
+    "side_7": {
+      "type": "default"
+    },
+    "side_8": {
+      "type": "default"
+    },
+    "side_9": {
+      "type": "default"
+    },
+    "side_10": {
+      "type": "default"
+    },
+    "side_11": {
+      "type": "default"
+    },
+    "side_12": {
+      "type": "default"
+    },
+    "left": {
+      "type": "default"
+    },
+    "right": {
+      "type": "default"
+    },
+    "middle": {
+      "type": "default"
+    },
+    "wheel_up": {
+      "type": "default"
+    },
+    "wheel_down": {
+      "type": "default"
+    },
+    "wheel_left": {
+      "type": "default"
+    },
+    "wheel_right": {
+      "type": "default"
+    },
+    "top_1": {
+      "type": "dpi_stage",
+      "direction": "up"
+    },
+    "top_2": {
+      "type": "dpi_stage",
+      "direction": "cycle"
+    }
+  },
+  "hypershift": {},
+  "dpi_stages": [
+    [
+      2100,
+      2100
+    ]
+  ],
+  "active_stage": 1,
+  "poll_rate": null,
+  "lighting": {},
+  "remap_top_buttons": false
+}
