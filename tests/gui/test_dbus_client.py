@@ -148,7 +148,7 @@ def test_old_daemon_without_daemon1_shows_version_hint(qapp):
     c, seen = make(Old())
     assert c.status() == {} and c.devices() == [] and c.list_profiles() == []
     assert not c.is_available and c.version_mismatch
-    assert c.unavailable_text() == "Dienst-Version passt nicht – bitte RazerTux neu starten"
+    assert c.unavailable_text() == "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
     assert seen == [False]
 
 

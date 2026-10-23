@@ -8,13 +8,23 @@ _razertux_switch_hint() {
   echo ':: Eine vorhandene ~/.config/naga-config wird beim ersten Start nach ~/.config/razertux kopiert.'
 }
 
+_razertux_restart_hint() {
+  echo ':: RazerTux: den laufenden Dienst als normaler Benutzer (nicht root) neu starten:'
+  echo ':: RazerTux: restart the running service as your normal user (not root):'
+  echo '   systemctl --user restart razertuxd.service'
+  echo ':: Den Tray (razertux-tray) ebenfalls neu starten – oder einfach ab- und wieder anmelden.'
+  echo ':: Restart the tray (razertux-tray) as well – or simply log out and back in.'
+}
+
 post_install() {
   _razertux_switch_hint
 }
 
 post_upgrade() {
-  # $1 = new version, $2 = old version: only the step from the naga-config era needs it
+  # $1 = new version, $2 = old version
   if [ "$(vercmp "$2" 0.2.0)" -lt 0 ]; then
-    _razertux_switch_hint
+    _razertux_switch_hint  # naga-config era: switch services (enable --now starts the new one)
+  elif [ "$(vercmp "$2" 0.3.0)" -lt 0 ]; then
+    _razertux_restart_hint  # 0.2.x daemon/tray keep running the old code (new D-Bus API)
   fi
 }

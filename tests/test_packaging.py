@@ -154,7 +154,16 @@ def test_install_script_only_prints_the_switch_commands():
                               capture_output=True, text=True, check=True).stdout
     assert run("post_install 0.2.0-1").count(SWITCH_CMD) == 1
     assert run("post_upgrade 0.2.0-1 0.1.0-1").count(SWITCH_CMD) == 1  # from the naga-config era
-    assert run("post_upgrade 0.2.1-1 0.2.0-1") == ""                    # later upgrades stay quiet
+    assert "restart razertuxd" not in run("post_install 0.3.0-1")
+    # I2: from < 0.3.0 the running daemon and tray are old -> restart hint
+    for old in ("0.2.0-1", "0.2.9-1"):
+        out = run(f"post_upgrade 0.3.0-1 {old}")
+        assert "systemctl --user restart razertuxd.service" in out
+        assert "Tray" in out and "anmelden" in out and "log out" in out
+        assert SWITCH_CMD not in out
+    both = run("post_upgrade 0.3.0-1 0.1.0-1")  # naga-config era: switch hint, then enable
+    assert both.count(SWITCH_CMD) == 1 and "restart razertuxd.service" not in both
+    assert run("post_upgrade 0.3.1-1 0.3.0-1") == ""                    # later upgrades stay quiet
 
 
 def test_pkgbuild_is_valid_bash():

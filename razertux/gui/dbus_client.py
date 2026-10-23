@@ -22,7 +22,7 @@ OBJECT_PATH = "/io/github/razertux"
 INTERFACE = "io.github.razertux.Daemon1"
 CALL_TIMEOUT = 5.0
 # the service on the bus has no Daemon1 interface: it is an older RazerTux
-VERSION_MISMATCH = QT_TRANSLATE_NOOP("DaemonClient", "Dienst-Version passt nicht – bitte RazerTux neu starten")
+VERSION_MISMATCH = QT_TRANSLATE_NOOP("DaemonClient", "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden")
 NOT_RUNNING = QT_TRANSLATE_NOOP("DaemonClient", "Dienst läuft nicht")
 _OLD_DAEMON_ERRORS = ("org.freedesktop.DBus.Error.UnknownMethod",
                       "org.freedesktop.DBus.Error.UnknownInterface",

@@ -51,7 +51,7 @@
   },
   "DaemonClient": {
     "Dienst läuft nicht": "Le service n’est pas en cours d’exécution",
-    "Dienst-Version passt nicht – bitte RazerTux neu starten": "La version du service ne correspond pas – veuillez redémarrer RazerTux"
+    "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden": "La version du service ne correspond pas – veuillez redémarrer le service RazerTux (systemctl --user restart razertuxd) ou vous reconnecter"
   },
   "HeaderBar": {
     "Profil": "Profil",

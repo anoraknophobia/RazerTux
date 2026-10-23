@@ -236,7 +236,7 @@ def test_menu_shows_version_hint_for_old_daemon(qapp):
     c.status()
     tr = TrayIcon(c)
     tr.rebuild_menu()
-    assert tr.menu_texts()[0] == "Dienst-Version passt nicht – bitte RazerTux neu starten"
+    assert tr.menu_texts()[0] == "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
     assert tr.menu_texts()[-1] == "Beenden"
 
 

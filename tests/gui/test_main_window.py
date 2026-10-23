@@ -115,8 +115,8 @@ def test_banner_shows_version_hint_for_old_daemon(env):
     transport.call = old
     assert w.client.status() == {}  # does not raise
     assert w.banner.isVisible()
-    assert w.banner.label.text() == "Dienst-Version passt nicht – bitte RazerTux neu starten"
-    assert "razertuxd" not in w.banner.label.text()
+    assert w.banner.label.text() == "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
+    assert "systemctl --user restart razertuxd" in w.banner.label.text()  # I2: real remedy
 
 
 def test_import_corrupt_file_shows_german_message(env, tmp_path):

@@ -16,7 +16,7 @@ from .razer.naga_v2_pro import NagaV2Pro
 from .razer.transport import HidrawTransport, find_control_hidraw
 
 
-VERSION_MISMATCH = "Dienst-Version passt nicht – bitte RazerTux neu starten"
+VERSION_MISMATCH = "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
 
 
 def default_backup_path(model: str = NAGA_MODEL) -> Path:

@@ -286,4 +286,6 @@ def test_cli_restore_old_daemon_prints_version_hint(daemon_devices, monkeypatch,
         raise cli.RestoreError(cli.VERSION_MISMATCH)
     monkeypatch.setattr(cli, "_dbus_restore", old)
     assert cli.main(["restore"]) == 1
-    assert "Dienst-Version passt nicht" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "Dienst-Version passt nicht" in err
+    assert "systemctl --user restart razertuxd" in err  # I2: names the real remedy
