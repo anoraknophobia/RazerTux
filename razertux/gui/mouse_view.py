@@ -21,6 +21,7 @@ TOP_BUTTONS = (ButtonId.TOP_1, ButtonId.TOP_2)  # owned by the firmware unless r
 DEFAULT_MODEL = "naga_v2_pro"  # until the window picks the connected device
 ANCHOR = {"left": (0.16, 0.5), "right": (0.84, 0.5)}  # leader line end inside a key by label side
 RIGHT_ENTRY = 0.92  # right column: x (fraction of the drawing) where the lines turn horizontal
+# (left column: just outside the keys; both columns stay clear of every key of their side)
 
 LINE = QColor("#555555")
 DOT = QColor("#8a8a8a")
@@ -129,7 +130,8 @@ class MouseView(QWidget):
             start = QPointF(label.left() - DOT_GAP, y)
             elbow = QPointF(self._cols["right"].right() + GAP * 0.35, y)
             rect = self.drawing_of(b).rect
-            entry_x = rect.left() + rect.width() * RIGHT_ENTRY
+            entry_x = max(rect.left() + rect.width() * RIGHT_ENTRY,
+                          max(self.key_rect(k).right() for k in self.device_layout.buttons_on("right")) + 8)
         return [start, elbow, QPointF(entry_x, end.y()), end]
 
     def _end_point(self, b: ButtonId) -> QPointF:

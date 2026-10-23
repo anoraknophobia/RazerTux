@@ -46,3 +46,10 @@ def test_result_is_a_valid_svg_without_filters(qapp, hot):
     out = laserize(doc(body), "#3daee9", hot)
     assert QSvgRenderer(QByteArray(out.encode())).isValid()
     assert "filter" not in out and "<image" not in out
+
+
+def test_style_attribute_and_defs_are_handled():
+    body = ('<defs><clipPath id="c"><rect width="5" height="5"/></clipPath></defs>'
+            '<rect x="1" y="1" width="8" height="8" stroke="@ACC@" style="stroke-width:9;fill:red"/>')
+    out = laserize(doc(body), "#44d62c", None)
+    assert out.count("<rect") == 6 and "style" not in out  # 5 strokes + the untouched clip rect

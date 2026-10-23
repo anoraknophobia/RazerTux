@@ -17,7 +17,8 @@ GLOW = ((7.0, "0.06"), (4.0, "0.12"), (2.2, "0.28"), (1.0, "1"))  # width factor
 CORE = "#d8ffd0"
 CORE_FACTOR, CORE_OPACITY = 0.4, "0.5"
 HOT_FILL_OPACITY = "0.35"
-_DROP = ("fill", "fill-opacity", "stroke", "stroke-width", "stroke-opacity")
+_DROP = ("fill", "fill-opacity", "stroke", "stroke-width", "stroke-opacity", "style")
+_SKIP = frozenset({"defs", "clipPath", "mask"})  # not drawn: shapes in here stay as they are
 
 
 def _tag(el: ET.Element) -> str:
@@ -50,6 +51,9 @@ def _expand(shape: ET.Element, accent: str, hot: bool) -> list[ET.Element]:
 def _walk(parent: ET.Element, accent: str, hot: str | None, in_hot: bool) -> None:
     children = []
     for child in list(parent):
+        if _tag(child) in _SKIP:
+            children.append(child)
+            continue
         if _tag(child) in SHAPES:
             children += _expand(child, accent, in_hot)
             continue

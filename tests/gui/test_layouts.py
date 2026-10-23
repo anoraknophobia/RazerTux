@@ -2,7 +2,7 @@
 import json
 
 import pytest
-from PySide6.QtCore import QByteArray
+from PySide6.QtCore import QByteArray, QLineF
 from PySide6.QtGui import QPalette
 from PySide6.QtSvg import QSvgRenderer
 
@@ -93,4 +93,56 @@ def test_generic_layout_shows_in_the_laser_look(qapp):
         assert not key.isEmpty() and key.contains(view.leader_line(b)[-1]), b
     view.set_hot(ButtonId.LEFT)
     assert view.drawings["top"]._loaded[1] == "left"
+    view.close()
+
+
+def _hits(rect, seg):
+    if rect.contains(seg.p1()) or rect.contains(seg.p2()):
+        return True
+    edges = [(rect.topLeft(), rect.topRight()), (rect.topRight(), rect.bottomRight()),
+             (rect.bottomRight(), rect.bottomLeft()), (rect.bottomLeft(), rect.topLeft())]
+    return any(seg.intersects(QLineF(a, b))[0] == QLineF.IntersectionType.BoundedIntersection
+               for a, b in edges)
+
+
+@pytest.mark.parametrize("size", [(1000, 560), (1300, 700)])
+@pytest.mark.parametrize("path", FILES, ids=lambda p: p.stem)
+def test_leader_lines_do_not_cross_other_keys(qapp, path, size):
+    view = MouseView(parse(json.loads(path.read_text(encoding="utf-8"))))
+    view.set_bindings({}, {})
+    view.resize(*size)
+    view.show()
+    qapp.processEvents()
+    for b in view.device_layout.buttons:
+        own = view.key_rect(b)
+        assert own.contains(view.leader_line(b)[-1]), b
+        pts = view.leader_line(b)
+        for other in view.device_layout.buttons:
+            rect = view.key_rect(other)
+            # a key sharing the target's element, or overlapping it (a button's box around
+            # the wheel), is no obstacle
+            # filled views redraw their keys above the lines (lines run behind them by design)
+            hidden = view.device_layout.view(view.device_layout.buttons[other].view).style == "filled"
+            if hidden or view.element_of(other) == view.element_of(b) or rect.intersects(own):
+                continue
+            for a, c in zip(pts, pts[1:]):
+                assert not _hits(rect, QLineF(a, c)), (path.stem, b, other)
+    view.close()
+
+
+def test_left_labels_on_a_top_view_enter_outside_the_keys_and_mirror_the_right(qapp):
+    view = MouseView(layout_for(load_devices()["abyssus"], None))
+    view.set_bindings({}, {})
+    view.resize(1000, 560)
+    view.show()
+    qapp.processEvents()
+    lay = view.device_layout
+    rect = view.drawings["top"].rect
+    for b in lay.buttons_on("left"):
+        start, elbow, entry, end = view.leader_line(b)
+        assert start.x() < elbow.x() < rect.left() < entry.x() < end.x()
+        assert all(entry.x() < view.key_rect(k).left() for k in lay.buttons_on("left"))
+    for b in lay.buttons_on("right"):
+        start, elbow, entry, end = view.leader_line(b)
+        assert start.x() > elbow.x() > rect.right() > entry.x() > end.x()
     view.close()
