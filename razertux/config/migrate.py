@@ -64,7 +64,12 @@ def migrate_schema_2(root: Path) -> bool:
     "schema": 2 and "active_profiles". The old files are copied to pre-schema2/
     and never deleted; existing targets are never overwritten. settings.json is
     rewritten last, so an interrupted run is simply repeated. Returns True if
-    it migrated."""
+    it migrated.
+
+    If pre-schema2/ already exists, the migration ran before and a still-running
+    0.2.x process has written a schema-1 settings.json again: only settings.json is
+    converted back (its active_profile becomes the Naga's entry); profiles and
+    backups are not copied again over the per-model files."""
     root = Path(root)
     settings_path = root / "settings.json"
     try:
@@ -79,14 +84,16 @@ def migrate_schema_2(root: Path) -> bool:
     backup = root / "mouse-backup.json"
     if not settings and not old_profiles and not backup.is_file():
         return False  # fresh install: nothing to migrate
+    saved = root / "pre-schema2"
+    rerun = saved.is_dir()
     try:
-        saved = root / "pre-schema2"
-        _copy_new(settings_path, saved / "settings.json")
-        _copy_new(backup, saved / "mouse-backup.json")
-        for p in old_profiles:
-            _copy_new(p, saved / "profiles" / p.name)
-            _copy_new(p, root / "profiles" / NAGA_MODEL / p.name)
-        _copy_new(backup, root / "backups" / f"{NAGA_MODEL}.json")
+        if not rerun:
+            _copy_new(settings_path, saved / "settings.json")
+            _copy_new(backup, saved / "mouse-backup.json")
+            for p in old_profiles:
+                _copy_new(p, saved / "profiles" / p.name)
+                _copy_new(p, root / "profiles" / NAGA_MODEL / p.name)
+            _copy_new(backup, root / "backups" / f"{NAGA_MODEL}.json")
         active = settings.pop("active_profile", None)
         new = {"schema": 2}
         active_profiles = settings.get("active_profiles")
@@ -95,6 +102,8 @@ def migrate_schema_2(root: Path) -> bool:
         if isinstance(active, str):
             active_profiles.setdefault(NAGA_MODEL, active)
         new["active_profiles"] = active_profiles
+        # I1: a still-running 0.2.x process reads this key strictly
+        new["active_profile"] = active_profiles.get(NAGA_MODEL, "default")
         settings.pop("active_profiles", None)
         new.update(settings)
         tmp = settings_path.with_name(settings_path.name + ".tmp")
@@ -103,5 +112,9 @@ def migrate_schema_2(root: Path) -> bool:
     except OSError as e:
         logger.warning("Schema-2-Migration von %s fehlgeschlagen: %s", root, e)
         return False
-    logger.info("Konfiguration %s auf Schema 2 migriert (Originale in pre-schema2/)", root)
+    if rerun:
+        logger.info("%s wurde von einer alten RazerTux-Version neu geschrieben, wieder auf "
+                    "Schema 2 gebracht (Profile unverändert)", settings_path)
+    else:
+        logger.info("Konfiguration %s auf Schema 2 migriert (Originale in pre-schema2/)", root)
     return True

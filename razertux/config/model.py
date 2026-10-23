@@ -274,6 +274,9 @@ class Settings:
     def to_dict(self) -> dict[str, Any]:
         return {"schema": SCHEMA,
                 "active_profiles": dict(self.active_profiles),
+                # I1: a 0.2.x process still running after the update reads this key
+                # strictly (unknown keys are ignored there)
+                "active_profile": self.active_profile,
                 "low_battery_notify": self.low_battery_notify,
                 "theme": self.theme,
                 "idle_time": self.idle_time,

@@ -308,7 +308,8 @@ def test_settings_active_profile_maps_to_naga():
     assert s.active_profiles == {"naga_v2_pro": "x"}
     s.active_profile = "y"
     d = s.to_dict()
-    assert d["schema"] == 2 and d["active_profiles"] == {"naga_v2_pro": "y"} and "active_profile" not in d
+    assert d["schema"] == 2 and d["active_profiles"] == {"naga_v2_pro": "y"}
+    assert d["active_profile"] == "y"  # I1: still readable by a running 0.2.x process
     assert Settings.from_dict(d) == s
     assert Settings.from_dict({"active_profile": "z"}).active_profile == "z"
 

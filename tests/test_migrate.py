@@ -256,3 +256,76 @@ def test_schema2_runs_at_startup(home, monkeypatch):
     monkeypatch.setattr(gui_app, "migrate_schema_2", migrate.migrate_schema_2)
     monkeypatch.setattr(daemon_main, "migrate_schema_2", migrate.migrate_schema_2)
     assert hasattr(gui_app, "migrate_schema_2") and hasattr(daemon_main, "migrate_schema_2")
+
+
+# --- I1: a still-running 0.2.x process next to schema 2 ---------------------
+
+def _old_0_2_reader(d):
+    """Settings.from_dict of 0.2.x: active_profile strictly, the rest via d.get."""
+    return {"active_profile": d["active_profile"], "theme": d.get("theme", "synapse"),
+            "language": d.get("language", "system"), "idle_time": d.get("idle_time"),
+            "low_battery_threshold": d.get("low_battery_threshold"),
+            "scroll_stage_names": d.get("scroll_stage_names"),
+            "low_battery_notify": d.get("low_battery_notify", 15),
+            "dpi_limit": d.get("dpi_limit")}
+
+
+def _old_0_2_writer(fields):
+    """Settings.to_dict of 0.2.x: schema 1, unknown keys dropped."""
+    return dict(fields)
+
+
+def test_old_reader_parses_migrated_settings(v1):
+    old = json.loads((v1 / "settings.json").read_text())
+    migrate.migrate_schema_2(v1)
+    parsed = _old_0_2_reader(json.loads((v1 / "settings.json").read_text()))
+    assert parsed["active_profile"] == "test2-73cb63"
+    for k in ("theme", "language", "idle_time", "low_battery_threshold",
+              "scroll_stage_names", "low_battery_notify"):
+        assert parsed[k] == old[k]
+
+
+def test_old_reader_parses_settings_saved_by_new_code(v1):
+    migrate.migrate_schema_2(v1)
+    store = ConfigStore(v1)
+    s = store.load_settings()
+    s.theme, s.language, s.idle_time, s.dpi_limit = "system", "fr", 300, 16000
+    s.active_profiles["death_adder_v2"] = "other"
+    store.save_settings(s)
+    parsed = _old_0_2_reader(json.loads((v1 / "settings.json").read_text()))
+    assert parsed["active_profile"] == "test2-73cb63"
+    assert (parsed["theme"], parsed["language"], parsed["idle_time"], parsed["dpi_limit"]) == \
+        ("system", "fr", 300, 16000)
+
+
+def test_schema1_rewritten_by_old_process_after_migration(v1):
+    migrate.migrate_schema_2(v1)
+    nd = v1 / "profiles" / "naga_v2_pro"
+    # the user deleted a profile and edited another one in 0.3.0
+    (nd / "test.json").unlink()
+    edited = (nd / "test2-73cb63.json").read_text().replace('"test2"', '"renamed"')
+    (nd / "test2-73cb63.json").write_text(edited)
+    s = ConfigStore(v1).load_settings()
+    s.active_profiles["death_adder_v2"] = "da"
+    ConfigStore(v1).save_settings(s)
+    pre = _tree_snapshot(v1 / "pre-schema2")
+    backup = (v1 / "backups" / "naga_v2_pro.json").read_bytes()
+    # an old 0.2.x GUI saves its settings again (schema 1, other active profile)
+    fields = _old_0_2_reader(json.loads((v1 / "settings.json").read_text()))
+    fields["active_profile"] = "test"
+    fields["theme"] = "system"
+    (v1 / "settings.json").write_text(json.dumps(_old_0_2_writer(fields)))
+    # the new reader copes even before any migration runs again
+    assert ConfigStore(v1).load_settings().active_profile == "test"
+
+    migrate.migrate_schema_2(v1)  # next start
+
+    assert not (nd / "test.json").exists()  # no profile-copy over per-model profiles
+    assert (nd / "test2-73cb63.json").read_text() == edited
+    assert _tree_snapshot(v1 / "pre-schema2") == pre
+    assert (v1 / "backups" / "naga_v2_pro.json").read_bytes() == backup
+    d = json.loads((v1 / "settings.json").read_text())
+    assert d["schema"] == 2 and d["active_profiles"]["naga_v2_pro"] == "test"
+    assert d["active_profile"] == "test"
+    s = ConfigStore(v1).load_settings()
+    assert s.active_profile == "test" and s.theme == "system"
