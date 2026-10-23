@@ -982,8 +982,8 @@ async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
     d, t = await connected(tmp_path, full_profile())  # stepping over profile stages
     assert d._stages == [(800, 800), (1600, 1600), (3200, 3200)]
     stages = bytes([1, 1, 2]) + b"".join(
-        bytes([i, v >> 8, v & 0xFF, v >> 8, v & 0xFF, 0, 0]) for i, v in enumerate((400, 500)))
-    t.responses[(0x04, 0x86)] = stages  # what the mouse reports after the restore
+        bytes([i, v >> 8, v & 0xFF, v >> 8, v & 0xFF, 0, 0]) for i, v in enumerate((400, 500), start=1))
+    t.responses[(0x04, 0x83)] = stages  # what the mouse reports after the restore
     d._restore_backup({})
     assert d._stages == [(400, 400), (500, 500)] and d._stage_idx == 0
     d._on_dpi_stage("up")
@@ -1033,7 +1033,7 @@ async def test_shutdown_writes_back_dpi_stages_and_poll_rate(tmp_path, caplog):
     with caplog.at_level(logging.INFO):
         await d.shutdown()
     assert since(t, n) == [(0x00, 0x05, bytes([0x02])),                    # 500 Hz
-                           (0x04, 0x06, bytes([1, 1, 1, 0, 0x09])),        # VARSTORE, 2500
+                           (0x04, 0x06, bytes([1, 1, 1, 1, 0x09])),        # VARSTORE, 2500 (id 1)
                            (0x04, 0x05, bytes([1, 0x07, 0x08, 0x07, 0x08]))]  # VARSTORE 1800
     assert modes(t)[-1] == NORMAL_MODE
     assert "zurückgeschrieben" in caplog.text

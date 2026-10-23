@@ -2,7 +2,7 @@
 # RazerTux – not an official Razer product; not affiliated with Razer Inc.
 # Baut aus dem lokalen Git-Checkout (ein Verzeichnis ueber packaging/), kein Netzwerk noetig.
 pkgname=razertux
-pkgver=0.2.1
+pkgver=0.2.2
 pkgrel=1
 pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro)'
 arch=('any')

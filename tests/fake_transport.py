@@ -42,7 +42,7 @@ class FakeTransport:
                 (0x00, 0x81): bytes([1, 2]),
                 (0x00, 0x82): b"PM2345678901234567890\x00",
                 (0x04, 0x85): bytes([0x00, 0x03, 0x20, 0x03, 0x20, 0, 0]),
-                (0x04, 0x86): bytes([1, 2, 3])
+                (0x04, 0x83): bytes([1, 2, 3])
                 + stage(1, 800) + stage(2, 1600) + stage(3, 3200),
                 (0x00, 0x85): bytes([0x01]),
                 (0x0F, 0x84): lambda a: bytes([a[0], a[1], 0x80]),

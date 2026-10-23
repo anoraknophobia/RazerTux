@@ -75,14 +75,20 @@ class NagaV2Pro:
         return (a[1] << 8) | a[2], (a[3] << 8) | a[4]
 
     def dpi_stages(self) -> tuple[int, list[tuple[int, int]]]:
-        a = self._get(0x04, 0x86, bytes([VARSTORE]), 0x26)
-        active, count = a[1], a[2]
-        stages = []
+        """Onboard stage table (class 0x04 id 0x83, the one the back top button
+        cycles; 0x86 from OpenRazer only shows one stage on this firmware).
+        Entries carry 1-based ids; returns (1-based position of the active id, stages).
+        An active id missing from the table is reported as position 1."""
+        a = self._get(0x04, 0x83, bytes([VARSTORE]), 0x26)
+        active_id, count = a[1], a[2]
+        ids, stages = [], []
         for i in range(count):
-            o = 4 + 7 * i
-            if o + 4 > len(a):
+            o = 3 + 7 * i
+            if o + 5 > len(a):
                 break
-            stages.append(((a[o] << 8) | a[o + 1], (a[o + 2] << 8) | a[o + 3]))
+            ids.append(a[o])
+            stages.append(((a[o + 1] << 8) | a[o + 2], (a[o + 3] << 8) | a[o + 4]))
+        active = ids.index(active_id) + 1 if active_id in ids else 1
         return active, stages
 
     def poll_rate(self) -> int:
@@ -122,7 +128,8 @@ class NagaV2Pro:
     def set_dpi_stages(self, active: int, stages: list[tuple[int, int]], *,
                        store: int = NOSTORE) -> None:
         """razer_chroma_misc_set_dpi_stages: class 0x04 id 0x06 size 0x26.
-        active is 1-based; 1-5 stages, 100-30000 in steps of 50."""
+        active and stage ids are 1-based (as Synapse writes them; 0-based ids made the
+        back top button land on an invalid stage); 1-5 stages, 100-30000 in steps of 50."""
         if not 1 <= len(stages) <= 5:
             raise ValueError(f"1-5 DPI-Stufen erlaubt, nicht {len(stages)}")
         if not 1 <= active <= len(stages):
@@ -134,7 +141,7 @@ class NagaV2Pro:
                     raise ValueError(f"DPI {v} ist kein Vielfaches von 50")
         args = bytearray([store, active, len(stages)])
         for i, (x, y) in enumerate(stages):
-            args += bytes([i, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])
+            args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])  # 1-based ids
         self._get(0x04, 0x06, bytes(args), 0x26)
 
     def repair_active_stage(self) -> tuple[int, int] | None:
