@@ -1434,3 +1434,26 @@ async def test_valid_dpi_notification_writes_nothing(tmp_path):
     await reader.report(bytes.fromhex("0502753075300000") + bytes(8))  # 30000 = max
     assert t.requests == [] and d.hw_status()["dpi"] == 30000
     await d.shutdown()
+
+
+class BlockingDev(FakeDev):
+    async def async_read_loop(self):
+        await asyncio.Event().wait()
+        yield  # pragma: no cover
+
+
+async def test_router_close_survives_a_node_added_meanwhile():
+    """Cheap fix: close() iterates over a snapshot; a node added while it awaits
+    is still stopped, ungrabbed and closed."""
+    r = InputRouter(FakeMapper(), RecordingOutput())
+    a, b = BlockingDev("/dev/input/event18"), BlockingDev("/dev/input/event19")
+    r.add("mouse", a)
+    await asyncio.sleep(0)
+
+    async def add_late():
+        await asyncio.sleep(0)
+        r.add("if02", b)
+    late = asyncio.create_task(add_late())
+    await r.close()
+    await late
+    assert a.closed and b.closed and a.ungrabbed and b.ungrabbed and r.paths == set()

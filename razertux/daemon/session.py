@@ -236,6 +236,7 @@ class DeviceSession:
         # unplugging one falls back to the other)
         self._mice: dict[str, int] = {}
         self._pid: int | None = None
+        self._connect_gen = 0  # newest _connect run (older overlapping runs give up)
         self._transport: Any = None
         self._mouse: RazerMouse | None = None
         self.probe_result: ProbeResult | None = None
@@ -636,6 +637,7 @@ class DeviceSession:
         self._mice.pop(path, None)
         if path == self._mouse_path:
             self._mouse_path = None
+            self._connect_gen += 1  # a connect still waiting for this node gives up
             await self._disconnect(reset_mode=False)  # unplug resets the mode itself
             if self._mice:  # e.g. charge cable pulled, dongle still connected
                 self._mouse_path, pid = list(self._mice.items())[-1]
@@ -672,14 +674,29 @@ class DeviceSession:
                            "schreibgeschützt", self.info.name, "; ".join(result.problems))
 
     async def _connect(self, pid: int) -> None:
+        # I3: two nodes of one model (cable + dongle) can start overlapping connects;
+        # only the newest may open anything. Everything after the last await below
+        # runs without yielding, so a superseded run never opens a transport.
+        self._connect_gen += 1
+        gen = self._connect_gen
+
+        def superseded() -> bool:
+            return gen != self._connect_gen
+
         await self._disconnect(reset_mode=False)
+        if superseded():
+            return
         await self.reload()  # fresh configuration, nothing touches the mouse yet
+        if superseded():
+            return
         path = None
         for _ in range(10):  # hidraw nodes may appear after the input nodes
             path = self._find_control((pid,))  # the node we were told about
             if path:
                 break
             await asyncio.sleep(self._retry_delay)
+            if superseded():
+                return
         if not path:
             logger.warning("Steuerkanal (hidraw) von %s nicht gefunden", self.info.name)
             return

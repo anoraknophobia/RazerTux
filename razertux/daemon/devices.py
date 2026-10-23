@@ -294,12 +294,14 @@ class InputRouter:
         await self._release()
 
     async def close(self) -> None:
-        for _dev, task in self._devs.values():
+        # snapshots: add() may run while we await (a node arriving during shutdown)
+        for _dev, task in list(self._devs.values()):
             await _cancel(task)
         if self._bg:
             await asyncio.gather(*list(self._bg), return_exceptions=True)
         await self._release()  # key-ups still reach uinput before we let go
-        for path, (dev, _task) in self._devs.items():
+        for path, (dev, task) in list(self._devs.items()):
+            task.cancel()  # no-op for the ones stopped above; added meanwhile otherwise
             if path in self._grabbed:
                 with contextlib.suppress(OSError):
                     dev.ungrab()

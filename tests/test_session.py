@@ -501,3 +501,112 @@ async def test_scroll_options_not_sent_when_read_only(tmp_path):
     assert s.status()["writable"] is False
     assert not {(0x02, 0x14), (0x02, 0x16)} & set(writes(t))
     await s.close()
+
+
+# -- I3: overlapping connects (cable + dongle re-enumerating) ------------------------
+
+async def test_overlapping_connects_leave_exactly_one_transport_reader_monitor(tmp_path,
+                                                                                monkeypatch):
+    from test_daemon_devices import FakeReader
+
+    from razertux.daemon import session as session_mod
+
+    class ClosingTransport:
+        def __init__(self, path):
+            self.inner, self.closed = naga_transport(), False
+
+        def __getattr__(self, name):
+            return getattr(self.inner, name)
+
+        def close(self):
+            self.closed = True
+
+    monitors = []
+
+    class FakeMonitor:
+        def __init__(self, *a, **kw):
+            self.running = False
+            monitors.append(self)
+
+        def poll(self):
+            pass
+
+        def start(self):
+            self.running = True
+
+        async def stop(self):
+            self.running = False
+
+    monkeypatch.setattr(session_mod, "BatteryMonitor", FakeMonitor)
+    transports, readers, ready = [], [], [False]
+
+    def factory(path):
+        transports.append(ClosingTransport(path))
+        return transports[-1]
+
+    def reader(path, cb):
+        readers.append(FakeReader(path, cb))
+        return readers[-1]
+
+    store = ConfigStore(tmp_path)
+    s = DeviceSession(info(NAGA), store.for_model(NAGA), RecOut(), transport_factory=factory,
+                      find_control=lambda pids: "/dev/hidraw2" if ready[0] else None,
+                      find_vendor=lambda pids: "/dev/hidraw3", hidraw_reader=reader,
+                      retry_delay=0.01)
+    assert s.add_input(0xA7, "mouse", FakeDev("/dev/input/event18", product=0xA7))
+    await asyncio.sleep(0.015)  # first connect is waiting for hidraw
+    assert s.add_input(0xA8, "mouse", FakeDev("/dev/input/event19", product=0xA8))
+    await asyncio.sleep(0.03)   # both are waiting now
+    ready[0] = True
+    await s.settle()
+
+    assert [t.closed for t in transports].count(False) == 1
+    assert s._transport is not None and not s._transport.closed
+    assert [r.closed for r in readers if r.started].count(False) == 1
+    assert [m.running for m in monitors].count(True) == 1
+    assert s.status()["connected"] and s._pid == 0xA8  # the newest node wins
+    await s.close()
+
+
+async def test_node_removed_while_connect_waits_opens_nothing(tmp_path):
+    ready, opened = [False], []
+    store = ConfigStore(tmp_path)
+    s = DeviceSession(info(DA), store.for_model(DA), RecOut(),
+                      transport_factory=lambda p: opened.append(p) or da_transport(),
+                      find_control=lambda pids: "/dev/hidraw9" if ready[0] else None,
+                      find_vendor=lambda pids: None, retry_delay=0.01)
+    assert s.add_input(DA_PID, "mouse", FakeDev("/dev/input/event30", product=DA_PID))
+    await asyncio.sleep(0.015)
+    s.remove_input("/dev/input/event30")
+    await asyncio.sleep(0)
+    ready[0] = True
+    await s.settle()
+    assert opened == [] and not s.status()["connected"]
+    await s.close()
+
+
+async def test_shutdown_closes_every_session_even_if_one_fails(tmp_path, caplog):
+    d, hw = two_mouse_daemon(tmp_path)
+    await d.start()
+    assert d.on_added("mouse", FakeDev("/dev/input/event18", product=NAGA_PID))
+    assert d.on_added("mouse", FakeDev("/dev/input/event30", name="Razer Razer DeathAdder V2",
+                                       product=DA_PID))
+    await d.settle()
+    first, second = list(d.sessions.values())
+    closed, out_closed = [], []
+
+    async def boom():
+        raise RuntimeError("kaputt")
+    first.close = boom
+    orig = second.close
+
+    async def ok():
+        closed.append(second.model)
+        await orig()
+    second.close = ok
+    orig_out = d.out.close
+    d.out.close = lambda: (out_closed.append(True), orig_out())
+    with caplog.at_level(logging.ERROR):
+        await d.shutdown()
+    assert closed == [second.model] and out_closed == [True]
+    assert "kaputt" in caplog.text

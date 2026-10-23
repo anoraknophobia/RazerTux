@@ -101,7 +101,10 @@ class Daemon:
     async def shutdown(self) -> None:
         await self.settle()
         for session in list(self.sessions.values()):
-            await session.close()
+            try:  # one failing session must not keep the others (and uinput) open
+                await session.close()
+            except Exception:
+                logger.exception("Sitzung %s nicht sauber beendet", session.model)
         self.out.close()
 
     # -- internals -------------------------------------------------------------
