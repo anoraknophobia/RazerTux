@@ -2,6 +2,8 @@
 worker thread, one request after the other), the daemon pause and the collected report parts."""
 from __future__ import annotations
 
+import functools
+import logging
 import queue
 import threading
 import time
@@ -17,6 +19,26 @@ from razertux.recorder.recording import AUTO_STOP
 from razertux.recorder.report import Report, system_section
 
 LISTEN_SECONDS = int(AUTO_STOP)
+logger = logging.getLogger(__name__)
+
+
+def guarded(fn: Callable) -> Callable:
+    """Slot wrapper: an exception is logged and never leaves the daemon paused. The object's
+    ``_on_slot_error(text)`` handles it if present, else its session is resumed."""
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except Exception as e:  # noqa: BLE001 - a slot must not take the daemon pause with it
+            logger.exception("device recorder: %s failed", fn.__qualname__)
+            handler = getattr(self, "_on_slot_error", None)
+            try:
+                if handler is not None:
+                    handler(str(e) or type(e).__name__)
+            finally:
+                self.session.resume()
+            return None
+    return wrapper
 
 
 def default_backend(password: bool) -> Backend:
@@ -75,6 +97,7 @@ class SerialWorker(QObject):
 
 class RecorderSession(QObject):
     signalled = Signal(list)  # one listen signal [source, type, code(, sign)]
+    wizardPressed = Signal()  # a mouse press on one of the wizard's own buttons
 
     def __init__(self, client: DaemonClient | None, make_backend: Callable[[bool], Backend] = default_backend,
                  clock: Callable[[], float] = time.monotonic, parent: QObject | None = None):
@@ -86,6 +109,7 @@ class RecorderSession(QObject):
         self.backend: Backend | None = None
         self.password = False
         self._paused = ""
+        self.last_press = -1e9  # time.monotonic() of the last press on a wizard button
         self.dev: FoundDevice | None = None
         self.select(None)
 
@@ -188,6 +212,10 @@ class RecorderSession(QObject):
         if be is not None:
             be.request_stop()
 
+    def note_press(self) -> None:
+        self.last_press = time.monotonic()
+        self.wizardPressed.emit()
+
     # -- daemon pause ----------------------------------------------------------------------
     def pause(self) -> None:
         """Release the daemon's grabs on the device (only for models the daemon handles)."""
@@ -217,7 +245,7 @@ class RecorderSession(QObject):
     def report(self) -> Report:
         device = report_device(self.dev)
         if self.db_kind is None and self.kind is not None:
-            device["kind"] = self.kind  # the user's answer (Ruling R-4)
+            device["user_kind"] = self.kind  # the user's answer (Ruling R-4); "kind" stays as discovered
         return Report(device=device, system=system_section(), interfaces=report_interfaces(self.dev),
                       buttons=dict(self.buttons), reads=dict(self.reads), light=self.light,
                       notes=self.notes)

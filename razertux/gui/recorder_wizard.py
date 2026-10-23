@@ -3,7 +3,9 @@ Razer device, record its buttons, read a few values, optional light test, review
 the report as a prefilled GitHub issue or save it as a file."""
 from __future__ import annotations
 
+import argparse
 import json
+import logging
 import sys
 import time
 from collections.abc import Callable
@@ -12,8 +14,10 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
-    QApplication, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget,
+    QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget,
 )
+
+import shiboken6
 
 from razertux import APP_NAME
 from razertux.gui.dbus_client import DaemonClient
@@ -22,11 +26,12 @@ from razertux.gui.recorder_pages import (
     ChoosePage, DevicePage, KindPage, LightPage, PermissionPage, ReadsPage, ReviewPage, SendPage,
     TemplatePage,
 )
-from razertux.gui.recorder_session import RecorderSession, default_backend
+from razertux.gui.recorder_session import RecorderSession, default_backend, guarded
 from razertux.recorder.backend import BackendError, HelperBackend
 from razertux.recorder.discover import list_razer_devices
 from razertux.recorder.report import issue_url, sanitize
 
+logger = logging.getLogger(__name__)
 __all__ = ["RecorderWizard", "open_recorder", "main", "BackendError"]
 
 ORDER = ("choose", "permission", "device", "kind", "template", "buttons", "reads", "light", "review", "send")
@@ -70,6 +75,11 @@ class RecorderWizard(QWidget):
         self.pages["permission"].connected.connect(lambda: self.go(self._step(+1)))
         for page in self.pages.values():
             page.changed.connect(self._update_nav)
+        for button in self.findChildren(QAbstractButton):  # see ButtonsPage CLICK_GUARD
+            button.pressed.connect(self.session.note_press)
+        app = QApplication.instance()
+        if app is not None:  # tray Quit / app quit without closing this window
+            app.aboutToQuit.connect(self.shutdown)
         self.go("choose")
         self.resize(1100, 800)
 
@@ -140,6 +150,7 @@ class RecorderWizard(QWidget):
             i += direction
         return ORDER[min(max(i, 0), len(ORDER) - 1)]
 
+    @guarded
     def next(self) -> None:
         if self.page_name == "choose":
             dev = self.pages["choose"].selected()
@@ -150,6 +161,7 @@ class RecorderWizard(QWidget):
         if self.pages[self.page_name].can_next():
             self.go(self._step(+1))
 
+    @guarded
     def go(self, name: str) -> None:
         if self._closed:
             return
@@ -187,8 +199,14 @@ class RecorderWizard(QWidget):
     def open_url(self, url: str) -> bool:
         return QDesktopServices.openUrl(QUrl(url))
 
+    def _snapshot(self) -> dict:
+        """The sanitized report shown on the review page (built again only if never reviewed)."""
+        snap = self.pages["review"].snapshot
+        return snap if snap is not None else sanitize(self.session.report())
+
+    @guarded
     def submit(self) -> None:
-        url, complete = issue_url(self.session.report())
+        url, complete = issue_url(self._snapshot())
         page = self.pages["send"]
         if not self.open_url(url):
             page.status.setText(self.tr("The browser could not be opened. Please save the report as "
@@ -202,9 +220,10 @@ class RecorderWizard(QWidget):
                 "link. Please press “Save as file” and attach the file to the issue (drag it into "
                 "the text field)."))
 
+    @guarded
     def save(self) -> None:
         path = Path.home() / self.session.file_name()
-        text = json.dumps(sanitize(self.session.report()), indent=2, sort_keys=True, ensure_ascii=False)
+        text = json.dumps(self._snapshot(), indent=2, sort_keys=True, ensure_ascii=False)
         page = self.pages["send"]
         try:
             path.write_text(text + "\n", encoding="utf-8")
@@ -224,6 +243,8 @@ class RecorderWizard(QWidget):
             return
         try:
             self.pages[self.page_name].leave()
+        except Exception:  # noqa: BLE001 - closing must still resume the daemon and end the helper
+            logger.exception("device recorder: leaving the page failed")
         finally:
             self._closed = True
             self.session.close()
@@ -235,8 +256,9 @@ _open: RecorderWizard | None = None
 def open_recorder(parent: QWidget | None, client: DaemonClient | None) -> RecorderWizard:
     """Show the wizard (one at a time)."""
     global _open
-    if _open is None or not _open.isVisible():
+    if _open is None or not shiboken6.isValid(_open) or not _open.isVisible():
         _open = RecorderWizard(client, parent)
+        _open.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     _open.show()
     _open.raise_()
     _open.activateWindow()
@@ -261,11 +283,20 @@ def _exec(app: QApplication) -> int:
     return app.exec()
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(prog="razertux-record", description=(
+        "Record a Razer device (buttons, read-only values, optional light test) and submit "
+        "the report so RazerTux can support it."))
+    return p.parse_args(argv)
+
+
 def main(argv: list[str] | None = None) -> int:
     """razertux-record: only the recorder wizard."""
+    parse_args(sys.argv[1:] if argv is None else argv)
     app = QApplication.instance() or QApplication([sys.argv[0]])
     _prepare_app(app)
     wizard = RecorderWizard(DaemonClient())
+    wizard.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     wizard.show()
     return _exec(app)
 

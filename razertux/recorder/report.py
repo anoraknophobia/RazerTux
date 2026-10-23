@@ -20,6 +20,8 @@ READ_NAMES = {"firmware", "serial_present", "dpi", "dpi_stages", "poll_rate", "b
               "scroll_smart_reel"}
 _EVDEV_NODES = {"mouse", "keyboard", "consumer", "system", "other", "misc"}
 _DEVICE_KEYS = {"vid", "pid", "usb_manufacturer", "usb_product", "bcdDevice", "kind", "db_model", "connection"}
+# the user's answer to "What kind of device is this?" for devices the database does not know (R-4)
+USER_KINDS = frozenset({"mouse", "keyboard", "keypad", "headset", "other"})
 _SYSTEM_KEYS = {"razertux", "kernel", "distro"}
 _BUTTON_KEYS = {"template", "results", "signals", "standard_keys_seen", "duplicates", "timed_out", "stopped_at"}
 _TOP = ("schema", "version", "device", "system", "interfaces", "buttons", "reads", "light", "notes")
@@ -206,6 +208,8 @@ def sanitize(data):
             v = _scalar(dev[k], 64)
             if v is not _DROP:
                 device[k] = v
+    if isinstance(dev.get("user_kind"), str) and dev["user_kind"] in USER_KINDS:
+        device["user_kind"] = dev["user_kind"]
     sysd = {}
     for k in _SYSTEM_KEYS:
         v = _scalar(_d(data.get("system")).get(k, _DROP), 64) if k in _d(data.get("system")) else _DROP
@@ -272,7 +276,9 @@ def summary_text(report: Report) -> str:
     lines = [
         f"Device: {dev.get('usb_product', '?')} ({dev.get('usb_manufacturer', '?')})",
         f"USB ID: {_hex4(dev.get('vid'))}:{_hex4(dev.get('pid'))}  bcdDevice {dev.get('bcdDevice', '?')}",
-        f"Kind: {dev.get('kind', '?')}  Connection: {dev.get('connection', '?')}",
+        f"Kind: {dev.get('kind', '?')}"
+        + (f" (user says: {dev['user_kind']})" if dev.get("user_kind") else "")
+        + f"  Connection: {dev.get('connection', '?')}",
         f"Database model: {dev.get('db_model') or 'not in database'}",
         f"RazerTux {sysd.get('razertux', '?')}, kernel {sysd.get('kernel', '?')}, {sysd.get('distro', '?')}",
         f"Interfaces: {len(d['interfaces'])}",

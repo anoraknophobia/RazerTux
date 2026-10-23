@@ -3,14 +3,17 @@ mice, then free recording; live "Recording…" indicator; auto-stop after 120 s)
 from __future__ import annotations
 
 import math
+import time
 
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QPointF, QRectF, Qt, QTimer, Signal
+from evdev import ecodes as E
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QListWidget, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from razertux.gui.labels import button_name
 from razertux.gui.layouts import Layout, by_name, layout_for
 from razertux.gui.mouse_scene import Drawing
+from razertux.gui.recorder_session import guarded
 from razertux.hw.buttons import ButtonId
 from razertux.recorder.recording import (
     AUTO_STOP, TEMPLATE_CHOICES, GuidedSteps, Recording, Step, load_template,
@@ -20,6 +23,11 @@ FIRST = (ButtonId.LEFT, ButtonId.RIGHT, ButtonId.MIDDLE, ButtonId.WHEEL_UP, Butt
          ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT)  # asked first, whatever the label order
 SETTLE_MS = 700  # after the first signal of a step: further signals still belong to it
 TICK_MS = 250
+# a press on one of the wizard's own buttons with the recorded mouse arrives as BTN_LEFT: those
+# within CLICK_GUARD seconds after the press are dropped; BTN_LEFT is held HOLD_MS back so a
+# press Qt reports a little later than the evdev signal drops it too
+CLICK_GUARD = 0.3
+HOLD_MS = 150
 _HINTS = {
     ButtonId.WHEEL_UP: QT_TRANSLATE_NOOP("ButtonsPage", "Scroll the wheel up"),
     ButtonId.WHEEL_DOWN: QT_TRANSLATE_NOOP("ButtonsPage", "Scroll the wheel down"),
@@ -110,6 +118,7 @@ class ButtonsPage(QWidget):
         self.template, self.steps, self._gen, self._t0 = "free", None, 0, 0.0
         self._results: dict[str, dict] = {}
         self._end_all, self._ending, self._settle_index = False, "", -1
+        self._held: list[tuple[float, list]] = []  # BTN_LEFT signals waiting HOLD_MS
         self.title = self.tr("Buttons")
         self.picture = LaserPicture()
         self.intro = QLabel()
@@ -147,6 +156,10 @@ class ButtonsPage(QWidget):
         self.settle.setInterval(settle_ms)
         self.settle.timeout.connect(self._settled)
         session.signalled.connect(self._on_signal)
+        session.wizardPressed.connect(self._held.clear)
+        self.hold = QTimer(self)
+        self.hold.setSingleShot(True)
+        self.hold.timeout.connect(self._release_held)
         row = QHBoxLayout()
         for b in (self.start_btn, self.absent_btn, self.nosignal_btn, self.stop_btn, self.finish_btn):
             row.addWidget(b)
@@ -183,6 +196,8 @@ class ButtonsPage(QWidget):
             self.settle.stop()
             self.phase = "idle"
             self._show()
+        self.hold.stop()
+        self._held.clear()
         self.session.resume()
 
     # -- recording ---------------------------------------------------------------------
@@ -193,6 +208,7 @@ class ButtonsPage(QWidget):
         cur = self.recording.current
         return self.recording.steps.index(cur) if cur is not None else len(self.recording.steps)
 
+    @guarded
     def start(self) -> None:
         self._results, self._end_all = {}, False
         self.message.setText("")
@@ -211,9 +227,32 @@ class ButtonsPage(QWidget):
         self.timer.start()
         self._show()
 
+    @guarded
     def _on_signal(self, sig: list) -> None:
         if self.phase not in ("guided", "free") or self.recording is None or len(sig) < 3:
             return
+        if int(sig[1]) == E.EV_KEY and int(sig[2]) == E.BTN_LEFT:
+            now = time.monotonic()
+            if now - self.session.last_press < CLICK_GUARD:
+                return  # the click on a wizard button
+            self._held.append((now, sig))
+            if not self.hold.isActive():
+                self.hold.start(HOLD_MS)
+            return
+        self._take(sig)
+
+    @guarded
+    def _release_held(self) -> None:
+        now = time.monotonic()
+        due = [sig for t, sig in self._held if now - t >= HOLD_MS / 1000 - 0.005]
+        self._held[:] = [(t, sig) for t, sig in self._held if now - t < HOLD_MS / 1000 - 0.005]
+        for sig in due:
+            if self.phase in ("guided", "free"):
+                self._take(sig)
+        if self._held:
+            self.hold.start(max(1, int(HOLD_MS - (now - self._held[0][0]) * 1000)))
+
+    def _take(self, sig: list) -> None:
         sign = sig[3] if len(sig) > 3 else None
         if not self.recording.record(str(sig[0]), int(sig[1]), int(sig[2]), sign):
             return
@@ -222,11 +261,13 @@ class ButtonsPage(QWidget):
             self.settle.start()
         self._show()
 
+    @guarded
     def _settled(self) -> None:
         if self.phase == "guided" and self.step_index == self._settle_index:
             self.recording.next()
             self._after_step()
 
+    @guarded
     def _manual(self, what: str) -> None:
         if self.phase != "guided":
             return
@@ -240,6 +281,7 @@ class ButtonsPage(QWidget):
         else:
             self._show()
 
+    @guarded
     def tick(self) -> None:
         if self.phase not in ("guided", "free"):
             return
@@ -248,6 +290,7 @@ class ButtonsPage(QWidget):
         else:
             self._show()
 
+    @guarded
     def stop(self, end_all: bool) -> None:
         """End the running phase; the next one (free after guided) starts when the listen ended."""
         if self.phase not in ("guided", "free"):
@@ -260,6 +303,7 @@ class ButtonsPage(QWidget):
         self._show()
         self.session.stop_listen()
 
+    @guarded
     def _listen_done(self, gen: int, answer) -> None:
         if gen != self._gen:
             return
@@ -272,15 +316,29 @@ class ButtonsPage(QWidget):
         else:
             self._finalize()
 
+    @guarded
     def _listen_failed(self, gen: int, err: str) -> None:
         if gen != self._gen:
             return
+        self._on_slot_error(err)
+        self.session.resume()  # never leave the daemon paused after an error
+
+    def _on_slot_error(self, err: str) -> None:
+        """Listen failed or a slot raised: stop everything, keep what was recorded."""
+        self._gen += 1
+        self.session.stop_listen()
         self.timer.stop()
         self.settle.stop()
-        if self.recording is not None and self.phase in ("guided", "stopping"):
-            self._results.setdefault("guided", self.recording.finish(0))
-        self.session.resume()  # never leave the daemon paused after an error
-        self._finalize()
+        self.hold.stop()
+        self._held.clear()
+        try:
+            if self.recording is not None and self.phase in ("guided", "stopping"):
+                self._results.setdefault("guided", self.recording.finish(0))
+            self._finalize()
+        except Exception:  # noqa: BLE001 - the recording itself is broken: report nothing
+            self.session.buttons = {"template": self.template}
+            self.phase = "done"
+            self._show()
         self.message.setText(self.tr("Recording failed: %1").replace("%1", err))
 
     def _finalize(self) -> None:
@@ -318,12 +376,14 @@ class ButtonsPage(QWidget):
             self.intro.setText(self.tr(
                 "First the buttons of the picture one by one: press the lit-up button once. The "
                 "wizard moves on by itself. Then press every other button the device has. Only "
-                "which signals arrive is stored – no order, no timing, no typed text."))
+                "which signals arrive is stored – no order, no timing, no typed text.")
+            + " " + self.tr("Clicks on this window's own buttons are ignored."))
         else:
             self.intro.setText(self.tr(
                 "Press every special button of the device once: macro keys, media keys, profile "
                 "and mode buttons, wheels. Ordinary typing keys (letters, digits, Enter …) are "
-                "never stored, only counted. Only which signals arrive is stored – no order, no timing."))
+                "never stored, only counted. Only which signals arrive is stored – no order, no timing.")
+            + " " + self.tr("Clicks on this window's own buttons are ignored."))
         self.picture.setVisible(self.picture.drawings != {} and ph in ("idle", "guided"))
         step = self.recording.current if guided and self.recording is not None else None
         self.picture.set_hot(step.button if step else None)

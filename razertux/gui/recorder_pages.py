@@ -14,9 +14,9 @@ from PySide6.QtWidgets import (
 
 from razertux.gui.layouts import by_name
 from razertux.gui.recorder_buttons import LaserPicture
-from razertux.gui.recorder_session import device_status
+from razertux.gui.recorder_session import device_status, guarded
 from razertux.recorder.recording import CHOICES, TEMPLATE_CHOICES
-from razertux.recorder.report import Report, sanitize, summary_text
+from razertux.recorder.report import sanitize, summary_text
 
 _STATUS = {"known": QT_TRANSLATE_NOOP("ChoosePage", "Known"),
            "experimental": QT_TRANSLATE_NOOP("ChoosePage", "Experimental"),
@@ -164,12 +164,14 @@ class PermissionPage(Page):
         self.nopassword_btn.setEnabled(True)
         self.reason.setText("" if ok else why)
 
+    @guarded
     def _go(self, password: bool) -> None:
         self.password_btn.setEnabled(False)
         self.nopassword_btn.setEnabled(False)
         self.reason.setText(self.tr("Waiting for the password …") if password else self.tr("Opening the device …"))
         self.session.connect_backend(password, self._done, self._failed)
 
+    @guarded
     def _done(self, notice: str) -> None:
         self.reason.setText(notice)
         self.connected.emit()
@@ -317,6 +319,7 @@ class ReadsPage(Page):
                               lambda err, row=row, name=name: self._got(row, name, {"status": "failed"}))
         self._show()
 
+    @guarded
     def _got(self, row: int, name: str, ans: dict) -> None:
         entry = {k: ans[k] for k in ("value", "raw", "status") if k in ans}
         self.session.reads[name] = entry
@@ -381,12 +384,14 @@ class LightPage(Page):
             self.session.light = {}
         self._show()
 
+    @guarded
     def test(self, row: _ZoneRow) -> None:
         row.lit = True
         for rb in row.answers.values():
             rb.setEnabled(True)
         self.session.call(lambda be: be.light(row.zone, "green"))
 
+    @guarded
     def answer(self, row: _ZoneRow, key: str) -> None:
         if isinstance(self.session.light, dict):
             self.session.light[row.zone] = key
@@ -435,10 +440,16 @@ class ReviewPage(Page):
         self.notes.setPlaceholderText(self.tr("e.g. Razer Basilisk V3 X HyperSpeed, the DPI button gave no signal"))
         self.notes.textChanged.connect(self._notes_changed)
         self.lay.addWidget(self.notes)
+        self.snapshot: dict | None = None  # the sanitized report shown here; Submit and Save send it
 
+    @guarded
     def _notes_changed(self) -> None:
         self.session.notes = self.notes.toPlainText()
-        self.refresh()
+        if self.snapshot is None:
+            self.refresh()
+            return
+        self.snapshot["notes"] = sanitize({"notes": self.session.notes})["notes"]
+        self._show_json()
 
     def enter(self) -> None:
         if self.notes.toPlainText() != self.session.notes:
@@ -446,9 +457,12 @@ class ReviewPage(Page):
         self.refresh()
 
     def refresh(self) -> None:
-        report: Report = self.session.report()
-        self.summary_view.setPlainText(summary_text(report))
-        self.json_view.setPlainText(json.dumps(sanitize(report), indent=2, sort_keys=True, ensure_ascii=False))
+        self.snapshot = sanitize(self.session.report())
+        self.summary_view.setPlainText(summary_text(self.snapshot))
+        self._show_json()
+
+    def _show_json(self) -> None:
+        self.json_view.setPlainText(json.dumps(self.snapshot, indent=2, sort_keys=True, ensure_ascii=False))
 
 
 class SendPage(Page):

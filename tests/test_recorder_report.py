@@ -206,3 +206,15 @@ def test_system_section(tmp_path):
                  "distro": "Arch Linux 2026.10"}
     assert system_section(str(tmp_path / "missing"), release=lambda: "6.1")["distro"] == "unknown"
     assert sanitize({"system": s})["system"] == s
+
+
+def test_user_kind_whitelisted_and_in_summary():
+    r = make()
+    r.device["kind"] = "unknown"
+    r.device["user_kind"] = "keyboard"
+    d = sanitize(r)
+    assert d["device"]["kind"] == "unknown" and d["device"]["user_kind"] == "keyboard"
+    assert "user says: keyboard" in summary_text(r)
+    for bad in ("toaster", "unknown", 3, "keyboard and more"):
+        r.device["user_kind"] = bad
+        assert "user_kind" not in sanitize(r)["device"]

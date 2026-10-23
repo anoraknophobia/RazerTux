@@ -530,7 +530,8 @@
     "not on this device": "absent",
     "no signal": "aucun signal",
     "First the buttons of the picture one by one: press the lit-up button once. The wizard moves on by itself. Then press every other button the device has. Only which signals arrive is stored – no order, no timing, no typed text.": "D’abord les boutons de l’image un par un : appuyez une fois sur le bouton en surbrillance. L’assistant passe tout seul au suivant. Ensuite, appuyez sur chaque autre bouton de l’appareil. Seuls les signaux reçus sont enregistrés – pas d’ordre, pas de durée, pas de texte tapé.",
-    "Press every special button of the device once: macro keys, media keys, profile and mode buttons, wheels. Ordinary typing keys (letters, digits, Enter …) are never stored, only counted. Only which signals arrive is stored – no order, no timing.": "Appuyez une fois sur chaque touche spéciale de l’appareil : touches macro, multimédia, de profil et de mode, molettes. Les touches de frappe ordinaires (lettres, chiffres, Entrée…) ne sont jamais enregistrées, seulement comptées. Seuls les signaux reçus sont enregistrés – pas d’ordre, pas de durée."
+    "Press every special button of the device once: macro keys, media keys, profile and mode buttons, wheels. Ordinary typing keys (letters, digits, Enter …) are never stored, only counted. Only which signals arrive is stored – no order, no timing.": "Appuyez une fois sur chaque touche spéciale de l’appareil : touches macro, multimédia, de profil et de mode, molettes. Les touches de frappe ordinaires (lettres, chiffres, Entrée…) ne sont jamais enregistrées, seulement comptées. Seuls les signaux reçus sont enregistrés – pas d’ordre, pas de durée.",
+    "Clicks on this window's own buttons are ignored.": "Les clics sur les boutons de cette fenêtre sont ignorés."
   },
   "ReadsPage": {
     "Values": "Valeurs",
