@@ -1,0 +1,152 @@
+import json
+
+import pytest
+from evdev import ecodes as E
+
+from razertux.hw.buttons import ButtonId
+from razertux.recorder.recording import (CHOICES, GuidedSteps, Recording, SignalSet, TEMPLATE_CHOICES,
+                                         classify_standard_key, load_template)
+from razertux.recorder.report import sanitize
+
+MOUSE = "if0:mouse"
+KBD = "if2:keyboard"
+
+
+class Clock:
+    def __init__(self):
+        self.t = 100.0
+
+    def __call__(self):
+        return self.t
+
+
+def key(src, code):
+    return (src, E.EV_KEY, code)
+
+
+def test_choices_and_templates_load():
+    assert CHOICES == ("ergo", "ambi", "compact", "vertical", "mmo", "generic")
+    assert set(TEMPLATE_CHOICES) == set(CHOICES)
+    for c in CHOICES:
+        pairs = load_template(c)
+        assert pairs and all(isinstance(b, ButtonId) and isinstance(e, str) for b, e in pairs)
+    assert [b for b, _ in load_template("mmo")][:2] == [ButtonId.SIDE_1, ButtonId.SIDE_2]
+    assert load_template("ergo")[0] == (ButtonId.RIGHT, "right")
+    with pytest.raises(ValueError):
+        load_template("../etc/passwd")
+
+
+def test_guided_steps_one_per_button_in_order():
+    steps = GuidedSteps([(ButtonId.LEFT, "left"), (ButtonId.MIDDLE, "wheel"), (ButtonId.WHEEL_UP, "wheel")])
+    assert [s.button for s in steps] == [ButtonId.LEFT, ButtonId.MIDDLE, ButtonId.WHEEL_UP]
+    assert all(s.hint and isinstance(s.hint, str) for s in steps)
+    assert steps[1].hint != steps[2].hint
+
+
+def test_classify_standard_key():
+    assert classify_standard_key(E.KEY_H) and classify_standard_key(E.KEY_ENTER)
+    assert not classify_standard_key(E.KEY_F13) and not classify_standard_key(E.BTN_LEFT)
+
+
+def test_signalset_basic():
+    s = SignalSet("mouse")
+    assert s.add(*key(MOUSE, E.BTN_SIDE))
+    assert not s.add(*key(MOUSE, E.BTN_SIDE))  # once
+    assert s.contains(*key(MOUSE, E.BTN_SIDE))
+    assert s.names() == ["if0:mouse:BTN_SIDE"]
+    assert s.filtered(E.EV_KEY) == [key(MOUSE, E.BTN_SIDE)]
+    assert s.filtered(E.EV_REL) == []
+
+
+def test_signalset_drops_cursor_motion():
+    s = SignalSet("mouse")
+    assert not s.add(MOUSE, E.EV_REL, E.REL_X) and not s.add(MOUSE, E.EV_REL, E.REL_Y)
+    assert s.add(MOUSE, E.EV_REL, E.REL_WHEEL)
+    assert s.names() == ["if0:mouse:REL_WHEEL"]
+
+
+def test_hunter2_on_keyboard_stores_nothing():
+    for kind in ("keyboard", "keypad", None):
+        s = SignalSet(kind)
+        for c in (E.KEY_H, E.KEY_U, E.KEY_N, E.KEY_T, E.KEY_E, E.KEY_R, E.KEY_2, E.KEY_ENTER):
+            assert not s.add(*key(KBD, c))
+        assert s.names() == [] and s.standard_keys_seen == 1  # sources only, no letters, digits or order
+        assert "hunter2" not in repr(vars(s)).lower()
+
+
+def test_keyboard_extra_keys_kept():
+    s = SignalSet("keyboard")
+    assert s.add(*key(KBD, E.KEY_F13)) and s.add(*key(KBD, E.KEY_VOLUMEUP))
+    assert s.names() == ["if2:keyboard:KEY_F13", "if2:keyboard:KEY_VOLUMEUP"]
+
+
+def test_naga_side_keys_on_mouse_are_stored():
+    s = SignalSet("mouse")
+    for c in (E.KEY_1, E.KEY_2, E.KEY_MINUS, E.KEY_EQUAL):
+        assert s.add(*key(KBD, c))
+    assert not s.add(*key(KBD, E.KEY_A))  # a letter on a mouse's keyboard node is not a side button
+    assert s.standard_keys_seen == 1
+    assert s.names()[0] == "if2:keyboard:KEY_1"
+
+
+def test_guided_recording_report_shape():
+    clock = Clock()
+    steps = GuidedSteps([(ButtonId.SIDE_1, "s1"), (ButtonId.SIDE_2, "s2"), (ButtonId.SIDE_3, "s3")])
+    r = Recording("mouse", "mmo", steps, clock=clock)
+    r.start()
+    assert r.current.button == ButtonId.SIDE_1
+    r.record(*key(KBD, E.KEY_1))
+    r.record(*key(KBD, E.KEY_1))
+    r.next()
+    r.absent()
+    assert r.current.button == ButtonId.SIDE_3
+    assert not r.finished
+    b = r.finish(standard_keys_seen=0)
+    assert b == {"template": "mmo", "results": {"side_1": ["if2:keyboard:KEY_1"], "side_2": "absent"},
+                 "signals": [], "standard_keys_seen": []}
+    assert sanitize({"buttons": b})["buttons"] == b
+
+
+def test_free_recording_collects_signals():
+    r = Recording("mouse", "generic", None, clock=Clock())
+    r.start()
+    assert r.current is None
+    r.record(MOUSE, E.EV_KEY, E.BTN_EXTRA)
+    r.record(MOUSE, E.EV_KEY, E.BTN_EXTRA)
+    r.record(MOUSE, E.EV_REL, E.REL_HWHEEL)
+    b = r.finish()
+    assert b["results"] == {} and b["signals"] == ["if0:mouse:BTN_EXTRA", "if0:mouse:REL_HWHEEL"]
+
+
+def test_recording_auto_stop_after_120s():
+    clock = Clock()
+    r = Recording("mouse", "generic", GuidedSteps([(ButtonId.LEFT, "left")]), clock=clock)
+    r.start()
+    clock.t += 119
+    assert not r.expired
+    assert r.record(*key(MOUSE, E.BTN_LEFT))
+    clock.t += 1
+    assert r.expired and r.finished
+    assert not r.record(*key(MOUSE, E.BTN_RIGHT))  # ignored after the stop
+    assert r.finish()["results"] == {"left": ["if0:mouse:BTN_LEFT"]}
+
+
+def test_recording_must_start_and_finish_ends():
+    r = Recording("mouse", "ergo", GuidedSteps([(ButtonId.LEFT, "left")]), clock=Clock())
+    with pytest.raises(RuntimeError):
+        r.record(*key(MOUSE, E.BTN_LEFT))
+    r.start()
+    r.next()
+    assert r.current is None and r.finished
+    r.finish()
+    assert r.finished
+
+
+def test_standard_keys_seen_in_report_is_count_only():
+    r = Recording("keyboard", "generic", None, clock=Clock())
+    r.start()
+    for c in (E.KEY_H, E.KEY_ENTER):
+        r.record(*key(KBD, c))
+    b = r.finish(standard_keys_seen=1)
+    assert b["signals"] == [] and b["standard_keys_seen"] == ["1 input source(s)"]
+    assert "hunter2" not in json.dumps(b)
