@@ -433,3 +433,21 @@ async def test_learning_takes_only_a_press(tmp_path):
     await kbd.push(ev(E.EV_KEY, E.KEY_F13, 1), ev(E.EV_SYN, 0, 0))
     assert learned == [InputSignal("if01", E.EV_KEY, E.KEY_F13)]
     await s.close()
+
+
+async def test_reload_picks_up_a_plate_change(tmp_path):
+    from razertux.hw.button_maps import identify
+    s, store, _ = make_session(tmp_path, model=NAGA)
+    ms = store.for_model(NAGA)
+    ds = ms.load_device_settings()
+    ds.plate = 6
+    ms.save_device_settings(ds)
+    await s.reload()
+    assert identify(s.router._map,
+                    "if02", E.EV_KEY, E.KEY_7, 1) is None
+    ds.plate = 12
+    ms.save_device_settings(ds)
+    await s.reload()
+    assert identify(s.router._map,
+                    "if02", E.EV_KEY, E.KEY_7, 1) == ButtonId.SIDE_7
+    await s.close()

@@ -301,11 +301,12 @@
    "element": "left",
    "side": "right",
    "anchor": [
-    0.9024,
-    0.0391
+    0.5976,
+    0.1094
    ],
    "through": [
-    "right"
+    "right",
+    "wheel"
    ]
   },
   "right": {
@@ -314,7 +315,7 @@
    "side": "right",
    "anchor": [
     0.3289,
-    0.1181
+    0.1969
    ]
   },
   "wheel_up": {
@@ -323,7 +324,7 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.1429
+    0.2571
    ],
    "through": [
     "right"
@@ -335,7 +336,7 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.3429
+    0.4286
    ],
    "through": [
     "right"
@@ -348,7 +349,7 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.5429
+    0.6
    ],
    "through": [
     "right"
@@ -360,7 +361,7 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.7429
+    0.7714
    ],
    "through": [
     "right"

@@ -2,6 +2,8 @@
 the switch for the top buttons (top right), like Synapse's Customize page."""
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
@@ -17,9 +19,11 @@ class ButtonsTab(QWidget):
     layerChanged = Signal(str)
     remapToggled = Signal(bool)  # "Obere Tasten frei belegen" (per profile)
 
-    def __init__(self, model_store: ModelStore | None = None, parent: QWidget | None = None):
+    def __init__(self, model_store: ModelStore | None = None,
+                 on_plate_saved: Callable[[], object] | None = None, parent: QWidget | None = None):
         super().__init__(parent)
         self.model_store = model_store
+        self.on_plate_saved = on_plate_saved  # tells the daemon (Reload) after a saved plate change
         self.info = load_devices()[DEFAULT_MODEL]  # until the window picks the connected device
         self.layer_buttons: dict[str, QPushButton] = {}
         self.layer_pill = PillToggle()
@@ -76,6 +80,8 @@ class ButtonsTab(QWidget):
             ds = self.model_store.load_device_settings()
             ds.plate = self.plate
             self.model_store.save_device_settings(ds)
+            if self.on_plate_saved is not None:
+                self.on_plate_saved()
         self._apply_plate()
 
     def set_layer(self, layer: str) -> None:

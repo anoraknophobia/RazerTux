@@ -74,3 +74,28 @@ def test_bindings_survive_a_plate_change(qapp, store):
     shown = t.mouse_view.button_text(ButtonId.SIDE_1)
     t.plate_combo.setCurrentIndex(1)
     assert t.mouse_view.button_text(ButtonId.SIDE_1) == shown
+
+
+def test_plate_change_tells_the_daemon_to_reload(qapp, store):
+    calls = []
+    t = ButtonsTab(store.for_model(NAGA_MODEL), lambda: calls.append(1))
+    assert calls == []
+    t.plate_combo.setCurrentIndex(1)
+    t.plate_combo.setCurrentIndex(0)
+    assert calls == [1, 1]  # after the settings were saved
+
+
+def test_main_window_wires_the_reload(qapp, tmp_path):
+    from fake_daemon import FakeTransport
+    from razertux.gui.dbus_client import DaemonClient
+    from razertux.gui.main_window import MainWindow
+    s = ConfigStore(tmp_path)
+    s.save_profile(default_profile())
+    s.save_settings(Settings(active_profile="default"))
+    client = DaemonClient(FakeTransport())
+    seen = []
+    client.reload = lambda: seen.append("Reload") or True
+    w = MainWindow(s, client)
+    w.buttons_tab.plate_combo.setCurrentIndex(2)
+    assert seen == ["Reload"] and s.for_model(NAGA_MODEL).load_device_settings().plate == 2
+    w.close()
