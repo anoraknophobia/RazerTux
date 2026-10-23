@@ -91,3 +91,20 @@ def test_diagnostics_contains_pid_and_hex_but_no_serial():
 
 def test_backup_path_per_model(tmp_path):
     assert backup_path("naga_v2_pro", tmp_path) == tmp_path / "backups" / "naga_v2_pro.json"
+
+
+def test_probe_records_response_of_real_style_non_ok_error():
+    """HidrawTransport raises RazerError (carrying the response) on non-OK status."""
+    class Raising(FakeTransport):
+        def query(self, report):
+            if (report[6], report[7]) == (0x04, 0x85):
+                resp = RazerResponse(0x05, 0x04, 0x85, 0, b"")
+                raise RazerError("command 0x04/0x85 failed with status 0x05", response=resp)
+            return super().query(report)
+
+    r = probe(RazerMouse(INFO, Raising(good().responses)))
+    assert not r.ok
+    assert any("dpi" in p for p in r.problems)
+    assert any(b[:4] == bytes([0x05, 0x04, 0x85, 0]) for _, b in r.raw)
+    assert "05 04 85 00" in diagnostics(INFO, 0x00AB, r, r.raw)
+

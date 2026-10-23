@@ -20,7 +20,9 @@ BUSY_RETRIES = 10
 
 
 class RazerError(Exception):
-    pass
+    def __init__(self, message: str = "", response: RazerResponse | None = None):
+        super().__init__(message)
+        self.response = response  # the parsed non-OK response, if one was received
 
 
 def _ioc(direction: int, nr: int, size: int) -> int:
@@ -80,7 +82,8 @@ class HidrawTransport:
         if resp.status != STATUS_OK:
             raise RazerError(
                 f"command {resp.cmd_class:#04x}/{resp.cmd_id:#04x} "
-                f"failed with status {resp.status:#04x}"
+                f"failed with status {resp.status:#04x}",
+                response=resp,
             )
         return resp
 

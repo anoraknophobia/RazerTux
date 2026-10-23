@@ -63,6 +63,13 @@ def test_query_fail_raises():
         t.query(build_report(0, 0x81, b""))
 
 
+def test_query_fail_error_carries_response():
+    t, _ = make([STATUS_FAIL])
+    with pytest.raises(RazerError) as ei:
+        t.query(build_report(0, 0x81, b""))
+    assert ei.value.response is not None and ei.value.response.status == STATUS_FAIL
+
+
 def test_find_control_hidraw_none(monkeypatch):
     class Ctx:
         def list_devices(self, **kw):

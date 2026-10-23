@@ -13,6 +13,7 @@ from .. import __version__
 from ..devices.db import DeviceInfo
 from .mouse import RazerMouse
 from .report import STATUS_OK, RazerResponse
+from .transport import RazerError
 
 DPI_MIN = 100
 
@@ -31,15 +32,21 @@ class _Recorder:
     def __init__(self, inner):
         self._inner = inner
         self.label = ""
-        self.records: list[tuple[str, int, int, RazerResponse]] = []
+        self.records: list[tuple[str, int, int, RazerResponse | None]] = []
 
     def query(self, report: bytes) -> RazerResponse:
-        resp = self._inner.query(report)
+        try:
+            resp = self._inner.query(report)
+        except RazerError as e:  # real transport raises on non-OK status: keep the evidence
+            self.records.append((self.label, report[6], report[7], getattr(e, "response", None)))
+            raise
         self.records.append((self.label, report[6], report[7], resp))
         return resp
 
 
-def _raw(resp: RazerResponse) -> bytes:
+def _raw(resp: RazerResponse | None) -> bytes:
+    if resp is None:
+        return b""
     return bytes([resp.status, resp.cmd_class, resp.cmd_id, resp.size]) + resp.args
 
 
@@ -76,29 +83,28 @@ def probe(mouse: RazerMouse) -> ProbeResult:
             except Exception as e:  # RazerError, ValueError, parse errors
                 problems.append(f"{name}: read failed ({e})")
                 continue
-            bad = False
             for _, cls, cid, resp in rec.records[start:]:
+                if resp is None:
+                    problems.append(f"{name}: no response for {cls:#04x}/{cid:#04x}")
+                    continue
                 if resp.status != STATUS_OK:
                     problems.append(f"{name}: status {resp.status:#04x}")
-                    bad = True
                 if (resp.cmd_class, resp.cmd_id) != (cls, cid):
                     problems.append(
                         f"{name}: response echoes {resp.cmd_class:#04x}/{resp.cmd_id:#04x}, "
                         f"expected {cls:#04x}/{cid:#04x}")
-                    bad = True
             values[name] = v
             msg = check_range(name, v)
             if msg:
                 problems.append(msg)
                 bad = True
-            if bad:
-                continue
     finally:
         mouse._t = rec._inner
 
     if checked == 0:
         problems.append("no readable core feature (firmware, dpi, poll_rate)")
-    raw = [(f"{label} {cls:#04x}/{cid:#04x}", _raw(resp)) for label, cls, cid, resp in rec.records]
+    raw = [(f"{label} {cls:#04x}/{cid:#04x}" + (" (no response)" if resp is None else ""),
+            _raw(resp)) for label, cls, cid, resp in rec.records]
     return ProbeResult(ok=not problems, values=values, problems=problems, raw=raw)
 
 
