@@ -136,10 +136,19 @@ Built = C.Built
 
 
 @dataclass(frozen=True)
+class _OwnTxn:
+    """A packet the OpenRazer handler sends with its own transaction id instead of the
+    Command's (Ruling M5), e.g. one whose transaction_id is set to 0xFF explicitly."""
+    built: Built
+    txn: int
+
+
+@dataclass(frozen=True)
 class _Pattern:
     needs_led: bool
     effects: frozenset[str]  # effects this pattern can express
-    build: Callable[[_Fx], list[Built]]  # packets in send order
+    # packets in send order; a plain Built uses Command.txn, _OwnTxn its own
+    build: Callable[[_Fx], list[Built | _OwnTxn]]
 
 
 def _b(name: str) -> Callable[..., Built]:
@@ -173,12 +182,13 @@ _STATE, _RGB, _LEFF = ("razer_chroma_standard_set_led_state", "razer_chroma_stan
 _STD_NONE = "razer_chroma_standard_matrix_effect_none"
 
 
-def _none_branch(f: _Fx) -> list[Built]:
-    # matrix_effect_none_common: `if (led_id == SCROLL_WHEEL_LED) led_state(false)
-    # else standard_matrix_effect_none()` -- ALTERNATIVES chosen by the LED
+def _none_branch(f: _Fx) -> list[Built | _OwnTxn]:
+    # matrix_effect_none_common: `if (led_id == SCROLL_WHEEL_LED) { led_state(false);
+    # txn = 0x3F } else { standard_matrix_effect_none(); txn = 0xFF }` -- ALTERNATIVES
+    # chosen by the LED; the database's txn (0x3F) belongs to the led_state branch only.
     if f.led == SCROLL_WHEEL_LED:
         return [_b(_STATE)(f.store, f.led, 0)]
-    return [_b(_STD_NONE)()]
+    return [_OwnTxn(_b(_STD_NONE)(), 0xFF)]
 
 
 EFFECT_PATTERNS: dict[tuple[str, ...], _Pattern] = dict([
@@ -448,8 +458,11 @@ class RazerMouse:
             raise UnsupportedFeature(f"{self.info.model}: set_effect:{zone}:{effect}")
         cmd, pattern, led = plan
         packets = pattern.build(_Fx(led, effect, _check_rgb(lz.color), store))  # all built first
-        for built in packets:
-            self._send(cmd.txn, built)
+        for p in packets:
+            if isinstance(p, _OwnTxn):
+                self._send(p.txn, p.built)
+            else:
+                self._send(cmd.txn, p)
 
     # -- snapshot ----------------------------------------------------------------
 

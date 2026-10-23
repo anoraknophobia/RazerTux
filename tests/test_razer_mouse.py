@@ -592,3 +592,18 @@ def test_restore_generic_missing_supported_field_is_failed():
     assert restore_backup(m, {}) == ["poll_rate", "dpi_stages", "dpi", "scroll_mode",
                                      "scroll_acceleration", "scroll_smart_reel"]
     assert t.sent == []
+
+
+def test_none_branch_per_packet_txn_orochi():
+    # none_common (orochi group): led_state gets txn 0x3F, but the standard_matrix_effect_none
+    # branch sets transaction_id.id = 0xFF -- the Command's txn (0x3F) must not be used there
+    orochi = load_devices()["orochi"]
+    m = make_mouse(orochi, None, pid=next(iter(orochi.pids)))
+    alt = m.info.protocol["set_effect:backlight:none"]
+    assert alt.steps == (STATE, "razer_chroma_standard_matrix_effect_none") and alt.txn == 0x3F
+    t = echo()
+    m = make_mouse(orochi, t, pid=next(iter(orochi.pids)))
+    m.set_effect("backlight", Z("off"))
+    m.set_effect("scroll", Z("off"))
+    assert [(r.cmd_class, r.cmd_id) for r in t.requests] == [(0x03, 0x0A), (0x03, 0x00)]
+    assert [r[1] for r in t.raw] == [0xFF, 0x3F]
