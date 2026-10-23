@@ -105,13 +105,17 @@ def test_source_from_links_ignores_other_devices():
     assert source_from_links([BY_ID + "mouse"]) is None  # legacy mouseN node
 
 
+NAGA = {0x00A7, 0x00A8}
+DA = "/dev/input/by-id/usb-Razer_Razer_DeathAdder_V2-"
+
+
 def _props(iface, devname="/dev/input/event18", pid="00a7", links="", **extra):
     return {"DEVNAME": devname, "ID_VENDOR_ID": "1532", "ID_MODEL_ID": pid,
             "ID_USB_INTERFACE_NUM": iface, "DEVLINKS": links, **extra}
 
 
 def test_classify_prefers_by_id_link():
-    assert classify(_props("00", links=BY_ID + "if02-event-kbd")) == "if02"
+    assert classify(_props("00", links=BY_ID + "if02-event-kbd"), NAGA) == (0xA7, "if02")
 
 
 @pytest.mark.parametrize("props,source", [
@@ -121,14 +125,27 @@ def test_classify_prefers_by_id_link():
     (_props("02", pid="00a8", ID_INPUT_KEYBOARD="1"), "if02"),
 ])
 def test_classify_wireless_fallback(props, source):
-    assert classify(props) == source
+    assert classify(props, NAGA) == (0xA8, source)
 
 
 def test_classify_rejects_foreign_and_non_event_nodes():
-    assert classify({**_props("00", ID_INPUT_MOUSE="1"), "ID_VENDOR_ID": "046d"}) is None
-    assert classify({**_props("00", ID_INPUT_MOUSE="1"), "ID_MODEL_ID": "0099"}) is None
-    assert classify(_props("00", devname="/dev/input/mouse3", ID_INPUT_MOUSE="1")) is None
-    assert classify({"DEVNAME": "/dev/input/event30", "NAME": f'"{VIRTUAL_NAME}"'}) is None
+    assert classify({**_props("00", ID_INPUT_MOUSE="1"), "ID_VENDOR_ID": "046d"}, NAGA) is None
+    assert classify({**_props("00", ID_INPUT_MOUSE="1"), "ID_MODEL_ID": "0099"}, NAGA) is None
+    assert classify(_props("00", devname="/dev/input/mouse3", ID_INPUT_MOUSE="1"), NAGA) is None
+    assert classify({"DEVNAME": "/dev/input/event30", "NAME": f'"{VIRTUAL_NAME}"'}, NAGA) is None
+
+
+def test_classify_known_pid_from_db_set():
+    props = _props("00", pid="0084", links=DA + "if01-event-kbd")
+    assert classify(props, {0x84}) == (0x84, "if01")
+    assert classify(props, NAGA) is None  # unknown PID
+
+
+def test_source_from_links_generic_names():
+    assert source_from_links([DA + "event-mouse"]) == "mouse"
+    assert source_from_links([DA + "if01-event-kbd"]) == "if01"
+    assert source_from_links([DA + "if01-event-mouse"]) == "if01_mouse"
+    assert source_from_links([DA + "event-if01"]) == "if01_event"
 
 
 # -- watcher ---------------------------------------------------------------

@@ -33,6 +33,28 @@ class ButtonId(StrEnum):
     WHEEL_RIGHT = "wheel_right"
     TOP_1 = "top_1"
     TOP_2 = "top_2"
+    BACK = "back"
+    FORWARD = "forward"
+    DPI_UP = "dpi_up"
+    DPI_DOWN = "dpi_down"
+    CLUTCH = "clutch"
+    PROFILE = "profile"
+    LEARN_1 = "learn_1"
+    LEARN_2 = "learn_2"
+    LEARN_3 = "learn_3"
+    LEARN_4 = "learn_4"
+    LEARN_5 = "learn_5"
+    LEARN_6 = "learn_6"
+    LEARN_7 = "learn_7"
+    LEARN_8 = "learn_8"
+    LEARN_9 = "learn_9"
+    LEARN_10 = "learn_10"
+    LEARN_11 = "learn_11"
+    LEARN_12 = "learn_12"
+    LEARN_13 = "learn_13"
+    LEARN_14 = "learn_14"
+    LEARN_15 = "learn_15"
+    LEARN_16 = "learn_16"
 
 
 # by-id suffix -> source name used by identify()
@@ -65,18 +87,25 @@ _MOUSE_KEYS = {
 }
 
 
+def wheel_button(ev_type: int, code: int, value: int) -> ButtonId | None:
+    """Wheel/tilt events as virtual buttons (independent of any device table)."""
+    if ev_type == E.EV_REL and value:
+        if code == E.REL_WHEEL:
+            return ButtonId.WHEEL_UP if value > 0 else ButtonId.WHEEL_DOWN
+        if code == E.REL_HWHEEL:
+            return ButtonId.WHEEL_RIGHT if value > 0 else ButtonId.WHEEL_LEFT
+    return None
+
+
 def identify(source: str, ev_type: int, code: int, value: int) -> ButtonId | None:
-    """Map an evdev event to a button, or None if it is not a button event."""
+    """Naga V2 Pro lookup (verified table); see button_maps.identify for the general one."""
     if ev_type == E.EV_KEY:
         if source == "if02":
             return _SIDE_KEYS.get(code)
         if source == "mouse":
             return _MOUSE_KEYS.get(code)
-    elif ev_type == E.EV_REL and source == "mouse":
-        if code == E.REL_WHEEL and value:
-            return ButtonId.WHEEL_UP if value > 0 else ButtonId.WHEEL_DOWN
-        if code == E.REL_HWHEEL and value:
-            return ButtonId.WHEEL_RIGHT if value > 0 else ButtonId.WHEEL_LEFT
+    elif source == "mouse":
+        return wheel_button(ev_type, code, value)
     return None
 
 

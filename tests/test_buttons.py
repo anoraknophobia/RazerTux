@@ -80,7 +80,7 @@ def test_device_suffixes():
 def test_button_values_are_lowercase_names():
     assert ButtonId.SIDE_1 == "side_1"
     assert ButtonId.WHEEL_LEFT.value == "wheel_left"
-    assert len(ButtonId) == 12 + 3 + 4 + 2
+    assert len(ButtonId) == 12 + 3 + 4 + 2 + 6 + 16
 
 
 def test_probe_recording_maps_to_side_buttons_in_order():

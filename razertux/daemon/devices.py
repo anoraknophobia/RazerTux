@@ -6,6 +6,7 @@ import contextlib
 import errno
 import logging
 import os
+import re
 from collections.abc import Awaitable, Callable, Iterable, Mapping
 from typing import Any
 
@@ -14,7 +15,7 @@ from evdev import InputDevice
 from evdev import ecodes as E
 
 from razertux.engine.output import Output
-from razertux.hw.buttons import NAGA_DEVICE_SUFFIXES, ButtonId, identify, identify_vendor
+from razertux.hw.buttons import ButtonId, identify, identify_vendor
 
 from .uinput_out import VIRTUAL_NAME, VIRTUAL_NAMES
 
@@ -23,8 +24,9 @@ logger = logging.getLogger(__name__)
 __all__ = ["VIRTUAL_NAME", "VIRTUAL_NAMES", "DeviceWatcher", "HidrawReader", "InputRouter",
            "classify", "source_from_links"]
 
-NAGA_VENDOR = "1532"
+NAGA_VENDOR = RAZER_VENDOR = "1532"
 NAGA_PIDS = {"00a7", "00a8"}
+_NAGA_PID_VALUES = {0x00A7, 0x00A8}  # until the daemon passes the full DB PID set
 # Opening right at login can fail until logind/udev applied the seat ACL (EACCES/EPERM),
 # or while another program still holds the grab (EBUSY): those are retried.
 _RETRY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EBUSY}
@@ -32,36 +34,52 @@ _RETRY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EBUSY}
 _WHEEL_AXES = {E.REL_WHEEL, E.REL_HWHEEL, E.REL_WHEEL_HI_RES, E.REL_HWHEEL_HI_RES}
 
 
+_LINK_RE = re.compile(r"-(?:if(?P<n>\d+)-)?event-(?P<kind>mouse|kbd)$|-event-if(?P<ev>\d+)$")
+
+
 def source_from_links(links: Iterable[str]) -> str | None:
-    """Source name from a /dev/input/by-id link suffix, or None."""
+    """Source name from a /dev/input/by-id link suffix, or None.
+
+    event-mouse -> mouse, ifNN-event-kbd -> ifNN, ifNN-event-mouse -> ifNN_mouse,
+    event-ifNN -> ifNN_event."""
     for link in links:
         if "/by-id/" not in link:
             continue
-        for suffix, source in NAGA_DEVICE_SUFFIXES.items():
-            if link.endswith("-" + suffix):
-                return source
+        m = _LINK_RE.search(link)
+        if not m:
+            continue
+        if m["ev"]:
+            return f"if{m['ev']}_event"
+        n, kind = m["n"], m["kind"]
+        if kind == "mouse":
+            return f"if{n}_mouse" if n else "mouse"
+        if n:
+            return f"if{n}"
     return None
 
 
-def classify(props: Mapping[str, str]) -> str | None:
-    """Source name for a udev input device, or None if it is not a Naga event node."""
+def classify(props: Mapping[str, str], known_pids: set[int]) -> tuple[int, str] | None:
+    """(pid, source) for a udev input event node of a known Razer device, else None."""
     if not props.get("DEVNAME", "").startswith("/dev/input/event"):
         return None
-    if (props.get("ID_VENDOR_ID", "").lower() != NAGA_VENDOR
-            or props.get("ID_MODEL_ID", "").lower() not in NAGA_PIDS):
+    if props.get("ID_VENDOR_ID", "").lower() != RAZER_VENDOR:
+        return None
+    try:
+        pid = int(props.get("ID_MODEL_ID", ""), 16)
+    except ValueError:
+        return None
+    if pid not in known_pids:
         return None
     source = source_from_links(props.get("DEVLINKS", "").split())
     if source:
-        return source
+        return pid, source
     # Fallback (e.g. different by-id names on the wireless dongle).
-    iface = props.get("ID_USB_INTERFACE_NUM")
+    iface = props.get("ID_USB_INTERFACE_NUM", "")
     keyboard = props.get("ID_INPUT_KEYBOARD") == "1"
-    if iface == "00" and props.get("ID_INPUT_MOUSE") == "1":
-        return "mouse"
-    if iface == "01":
-        return "if01" if keyboard else "if01_event"
-    if iface == "02" and keyboard:
-        return "if02"
+    if iface == "00":
+        return (pid, "mouse") if props.get("ID_INPUT_MOUSE") == "1" else None
+    if iface.isdigit():
+        return pid, (f"if{iface}" if keyboard else f"if{iface}_event")
     return None
 
 
@@ -136,10 +154,11 @@ class DeviceWatcher:
     def _add(self, udev_dev: Any, attempt: int = 0) -> None:
         if self._stopped:
             return
-        source = classify(dict(udev_dev.properties))
+        found = classify(dict(udev_dev.properties), _NAGA_PID_VALUES)
         path = udev_dev.device_node
-        if source is None or path in self._known:
+        if found is None or path in self._known:
             return
+        source = found[1]
         try:
             dev = self._open(path)
         except OSError as e:
