@@ -36,6 +36,13 @@ Wert per `razertux status` bzw. Sichtprüfung vergleichen. Ergebnis hier eintrag
   wir senden NOSTORE (Layout sonst identisch). Falls die Maus NOSTORE bei 0x04/0x05
   ablehnt, steht das hier.
 
+## Ungeprüft (0.3.0)
+
+- Platten 6/2 der Naga-Grafik (6er- und 2er-Seitenplatte) sind eine Annahme: das Layout
+  wurde aus der 12er-Platte abgeleitet, nicht mit der Hardware gegengeprüft.
+- Der generische Treiber (Datenbank aus OpenRazer) wurde nur mit der Naga V2 Pro
+  gegengeprüft; auf anderer Hardware ist er ungetestet.
+
 ## Mausrad-Haptik (Vorfall 2026-10-22)
 
 - Im Treibermodus (0x03) fühlt sich das Rad anders an; die Maus erwartet offenbar, dass der Host die Haptik setzt.

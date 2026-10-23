@@ -14,7 +14,7 @@
 > `systemctl --user enable --now razertuxd.service`. The GUI is available in German,
 > English, Spanish and French (*View → Language*, see below); this README is in German.
 
-Inoffizieller Linux-Ersatz für Razer Synapse, derzeit für die Razer Naga V2 Pro (getestet
+Inoffizieller Linux-Ersatz für Razer Synapse, derzeit für die Razer Naga V2 Pro und experimentell weitere Razer-Mäuse (getestet
 unter CachyOS/Arch, KDE Plasma Wayland). Besteht aus einem Hintergrunddienst
 (`razertuxd`), einer Kommandozeile (`razertux`) und einer Qt-Oberfläche mit Tray-Symbol
 (`razertux-gui`). Früherer Name: *naga-config* (siehe „Umstieg von naga-config“).
@@ -120,6 +120,43 @@ rm -r ~/.config/razertux
 
 `restore` vor der Deinstallation ausführen, solange der Dienst noch da ist. Das Entfernen
 von `~/.config/razertux` löscht auch die Sicherung und die Profile.
+
+## Unterstützte Mäuse
+
+- **Razer Naga V2 Pro**: geprüft (Funk-Dongle und USB), voller Funktionsumfang.
+- **Alle anderen Razer-Mäuse aus der OpenRazer-Datenbank** (rund 117 Produkt-IDs, siehe
+  `razertux/devices/openrazer_mice.json`): **experimentell**. RazerTux liest zuerst nur
+  (Lese-Probe) und legt eine Sicherung des Gerätezustands an, bevor etwas geschrieben
+  wird. Auf diesen Mäusen sind DPI, Abfragerate und Ähnliches abhängig vom Modell
+  verfügbar; ungetestet heißt: kein Gewähr.
+- Probleme melden: In der Oberfläche **„Diagnose kopieren“** wählen und den Text in ein
+  GitHub-Issue (<https://github.com/anoraknophobia/razertux/issues>) einfügen.
+- Die Datenbank stammt aus OpenRazer (GPL-2.0), siehe `OPENRAZER-NOTICE` (installiert
+  nach `/usr/share/licenses/razertux/`). Die udev-Regel `70-razertux.rules` wird daraus
+  mit `python tools/import_openrazer.py --udev` erzeugt.
+
+## Laser-Grafiken
+
+Die Maus-Ansichten mit den Tasten-Beschriftungen („Laser“-Linien) sind eigene
+Zeichnungen (SVG-Vorlagen im Paket). Es werden keine Razer-Bilder verwendet.
+
+## Bildschirmanzeige (OSD)
+
+Beim Profilwechsel und bei DPI-Stufenwechsel zeigt RazerTux kurz eine Bestätigung auf dem
+Bildschirm. Im Tray-Menü lässt sich die Anzeige ein- und ausschalten.
+
+## Update auf 0.3.0
+
+Die Konfiguration wird beim ersten Start automatisch auf Schema 2 umgestellt. Die alten
+Dateien bleiben unverändert im Unterordner `pre-schema2/` (in `~/.config/razertux/`)
+erhalten.
+
+> **English summary (0.3.0):** Naga V2 Pro is verified; all other OpenRazer mice are
+> experimental (read probe and backup before any write; use "Diagnose kopieren" /
+> copy diagnostics for GitHub issues). Laser drawings are original, no Razer images. An
+> on-screen display (OSD) confirms profile/DPI changes and can be toggled in the tray. The
+> config migrates automatically to schema 2; old files are kept in `pre-schema2/`. The
+> device database is derived from OpenRazer (GPL-2.0), see `OPENRAZER-NOTICE`.
 
 ## Bekannte Grenzen
 

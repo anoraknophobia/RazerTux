@@ -2,9 +2,9 @@
 # RazerTux – not an official Razer product; not affiliated with Razer Inc.
 # Baut aus dem lokalen Git-Checkout (ein Verzeichnis ueber packaging/), kein Netzwerk noetig.
 pkgname=razertux
-pkgver=0.2.3
+pkgver=0.3.0
 pkgrel=1
-pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro)'
+pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro and other Razer mice)'
 arch=('any')
 url='https://github.com/anoraknophobia/razertux'
 license=('GPL-2.0-or-later')
@@ -43,4 +43,5 @@ package() {
   install -Dm644 "$p/razertux.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/razertux.svg"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$p/OPENRAZER-NOTICE" "$pkgdir/usr/share/licenses/$pkgname/OPENRAZER-NOTICE"
 }

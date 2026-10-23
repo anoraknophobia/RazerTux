@@ -55,16 +55,68 @@ def test_unit_starts_with_the_graphical_session():
     assert "WantedBy=default.target" not in lines
 
 
+def _import_tool():
+    import importlib.util
+    import sys
+    spec = importlib.util.spec_from_file_location("import_openrazer", ROOT / "tools" / "import_openrazer.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["import_openrazer"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def test_udev_rules():
+    from razertux.devices.db import load_devices
     r = _read("70-razertux.rules")
-    assert 'idVendor}=="1532"' in r and "00a7|00a8" in r and "uinput" in r
-    assert r.splitlines()[0].startswith("# RazerTux:")
+    lines = r.splitlines()
+    assert lines[0].startswith("# RazerTux:") and "generated" in lines[1].lower()
+    rule = [l for l in lines if not l.startswith("#")]
+    assert len(rule) == 3
+    pids = set()
+    for d in load_devices().values():
+        pids |= set(d.pids) | set(d.pid_protocol)
+    assert len(pids) > 100
+    for sub, line in zip(("hidraw", "input"), rule[:2]):
+        assert line.startswith(f'SUBSYSTEM=="{sub}", ATTRS{{idVendor}}=="1532", ATTRS{{idProduct}}=="')
+        assert line.endswith('", TAG+="uaccess"')
+        listed = line.split('ATTRS{idProduct}=="')[1].split('"')[0].split("|")
+        assert listed == sorted(listed) and all(re.fullmatch(r"[0-9a-f]{4}", x) for x in listed)
+        assert {int(x, 16) for x in listed} == pids
+        assert {"00a7", "00a8"} <= set(listed)
+    assert rule[2] == 'KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"'
+
+
+def test_udev_rules_are_generated_from_the_database():
+    tool = _import_tool()
+    assert tool.udev_rules(tool.json.loads(
+        (ROOT / "razertux" / "devices" / "openrazer_mice.json").read_text())) == _read("70-razertux.rules")
+
+
+def test_openrazer_notice_is_packaged():
+    n = _read("OPENRAZER-NOTICE")
+    assert "OpenRazer" in n and "GPL-2.0" in n and "openrazer_mice.json" in n
+    p = _read("PKGBUILD")
+    assert '"$p/OPENRAZER-NOTICE" "$pkgdir/usr/share/licenses/$pkgname/OPENRAZER-NOTICE"' in p
+    assert "OPENRAZER-NOTICE" in (ROOT / "README.md").read_text()
+
+
+def test_readme_documents_new_sections():
+    r = (ROOT / "README.md").read_text()
+    for h in ("## Unterstützte Mäuse", "## Laser-Grafiken", "## Bildschirmanzeige (OSD)"):
+        assert h in r, h
+    assert "pre-schema2" in r and "Diagnose kopieren" in r
+    assert r.startswith("# RazerTux")
+
+
+def test_hardware_notes_list_unverified_assumptions():
+    h = (ROOT / "docs" / "hardware-notes.md").read_text()
+    assert "Platten 6/2" in h and "generische Treiber" in h
 
 
 def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
-    for line in ("pkgname=razertux", "pkgver=0.2.3", "pkgrel=1", "replaces=(naga-config)",
+    for line in ("pkgname=razertux", "pkgver=0.3.0", "pkgrel=1", "replaces=(naga-config)",
                  "conflicts=(naga-config openrazer-daemon openrazer-driver-dkms)",
                  "provides=()", "install=razertux.install"):
         assert line in lines, line
@@ -122,7 +174,7 @@ def test_icon_is_a_scalable_svg_with_the_green_accent():
 def test_entry_points_match_packaging():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert data["project"]["name"] == "razertux"
-    assert data["project"]["version"] == "0.2.3"
+    assert data["project"]["version"] == "0.3.0"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
                        "razertux-gui": "razertux.gui.app:main"}
@@ -135,7 +187,7 @@ def test_entry_points_match_packaging():
 
 def test_package_version_matches():
     import razertux
-    assert razertux.__version__ == "0.2.3"
+    assert razertux.__version__ == "0.3.0"
 
 
 def test_pyproject_license_is_spdx_expression():
