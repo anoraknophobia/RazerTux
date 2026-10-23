@@ -1,9 +1,10 @@
-"""Naga input devices: discovery/hotplug (udev), grab + routing, vendor hidraw."""
+"""Razer input devices: discovery/hotplug (udev), grab + routing, vendor hidraw."""
 from __future__ import annotations
 
 import asyncio
 import contextlib
 import errno
+import inspect
 import logging
 import os
 import re
@@ -14,8 +15,10 @@ import pyudev
 from evdev import InputDevice
 from evdev import ecodes as E
 
+from razertux.devices.db import load_devices
 from razertux.engine.output import Output
-from razertux.hw.buttons import ButtonId, identify, identify_vendor
+from razertux.hw.button_maps import NAGA_V2_PRO, ButtonMap, InputSignal, identify
+from razertux.hw.buttons import ButtonId, identify_vendor
 
 from .uinput_out import VIRTUAL_NAME, VIRTUAL_NAMES
 
@@ -26,7 +29,12 @@ __all__ = ["VIRTUAL_NAME", "VIRTUAL_NAMES", "DeviceWatcher", "HidrawReader", "In
 
 NAGA_VENDOR = RAZER_VENDOR = "1532"
 NAGA_PIDS = {"00a7", "00a8"}
-_NAGA_PID_VALUES = {0x00A7, 0x00A8}  # until the daemon passes the full DB PID set
+
+
+def known_pids() -> frozenset[int]:
+    """Every USB product id of the device database."""
+    return frozenset(pid for info in load_devices().values() for pid in info.pids)
+
 # Opening right at login can fail until logind/udev applied the seat ACL (EACCES/EPERM),
 # or while another program still holds the grab (EBUSY): those are retried.
 _RETRY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EBUSY}
@@ -90,7 +98,8 @@ def _list_input_devices():
 
 
 class DeviceWatcher:
-    """Reports Naga evdev nodes (initial scan + udev hotplug); never our uinput device.
+    """Reports evdev nodes of every mouse in the device database (initial scan + udev
+    hotplug); never our uinput device. The PID travels with the device (dev.info.product).
 
     on_added(source, dev) may return False when it could not use the device (grab
     failed); like a refused open (EACCES/EPERM/EBUSY) that is retried `retries` times,
@@ -101,7 +110,9 @@ class DeviceWatcher:
                  *, list_devices: Callable[[], Iterable[Any]] = _list_input_devices,
                  open_device: Callable[[str], Any] = InputDevice,
                  retries: int = 5, retry_delay: float = 1.0,
-                 call_later: Callable[..., Any] | None = None) -> None:
+                 call_later: Callable[..., Any] | None = None,
+                 pids: Iterable[int] | None = None) -> None:
+        self._pids = set(known_pids() if pids is None else pids)
         self._on_added = on_added
         self._on_removed = on_removed
         self._list = list_devices
@@ -156,7 +167,7 @@ class DeviceWatcher:
     def _add(self, udev_dev: Any, attempt: int = 0) -> None:
         if self._stopped:
             return
-        found = classify(dict(udev_dev.properties), _NAGA_PID_VALUES)
+        found = classify(dict(udev_dev.properties), self._pids)
         path = udev_dev.device_node
         if found is None or path in self._known:
             return
@@ -173,7 +184,7 @@ class DeviceWatcher:
             dev.close()
             return
         self._known[path] = source
-        logger.info("Naga-Gerät gefunden: %s (%s)", path, source)
+        logger.info("Razer-Gerät gefunden: %s (%s, %#06x)", path, source, found[0])
         try:
             ok = self._on_added(source, dev)
         except Exception:
@@ -186,47 +197,96 @@ class DeviceWatcher:
 
 
 class InputRouter:
-    """Grabs Naga devices, feeds button events into the mapper, forwards the rest."""
+    """Feeds one mouse's button events into its mapper and forwards the rest.
 
-    def __init__(self, mapper: Any, out: Output) -> None:
+    Grab on demand: with grab=False nodes are read but not grabbed and their events
+    are ignored (the system sees the mouse directly). set_grab() switches all nodes.
+    learn(cb): the next EV_KEY press the button map does not know is handed to cb
+    (it may be async) instead of the output; press, repeats and release are swallowed."""
+
+    def __init__(self, mapper: Any, out: Output, button_map: ButtonMap | None = None,
+                 *, grab: bool = True) -> None:
         self._mapper = mapper
         self._out = out
+        self._map: ButtonMap = dict(NAGA_V2_PRO if button_map is None else button_map)
+        self._grab = grab
         self._devs: dict[str, tuple[Any, asyncio.Task]] = {}
+        self._sources: dict[str, str] = {}
+        self._grabbed: set[str] = set()  # paths currently grabbed
         self._top_down: list[ButtonId] = []
         self._bg: set[asyncio.Task] = set()
+        self._learn: Callable[[InputSignal], Any] | None = None
+        self._swallow: set[tuple[str, int]] = set()  # (source, code) of a learned key
 
     @property
     def paths(self) -> set[str]:
         return set(self._devs)
 
+    @property
+    def grabbed(self) -> bool:
+        """Whether nodes are (to be) grabbed."""
+        return self._grab
+
+    def set_map(self, button_map: ButtonMap) -> None:
+        self._map = dict(button_map)
+
     def add(self, source: str, dev: Any) -> bool:
-        """Grab and start reading; False if the grab failed (device closed)."""
+        """Start reading (and grab if grabbing is on); False if the grab failed
+        (device closed)."""
         loop = asyncio.get_running_loop()
         stale = self._devs.pop(dev.path, None)
         if stale:
             # Node path reused before we saw the removal: retire the old device.
             old, task = stale
             task.cancel()
-            with contextlib.suppress(OSError):
-                old.ungrab()
+            if dev.path in self._grabbed:
+                with contextlib.suppress(OSError):
+                    old.ungrab()
+            self._grabbed.discard(dev.path)
             old.close()
             # Created before the new reader task, so the release runs first.
-            bg = loop.create_task(self._release())
-            self._bg.add(bg)
-            bg.add_done_callback(self._bg.discard)
-        try:
-            dev.grab()
-        except OSError as e:
-            logger.warning("Kann %s nicht exklusiv öffnen (grab): %s", dev.path, e)
-            dev.close()
-            return False
+            self._background(self._release())
+        if self._grab:
+            try:
+                dev.grab()
+            except OSError as e:
+                logger.warning("Kann %s nicht exklusiv öffnen (grab): %s", dev.path, e)
+                dev.close()
+                return False
+            self._grabbed.add(dev.path)
         task = loop.create_task(self._read(source, dev))
         self._devs[dev.path] = (dev, task)
+        self._sources[dev.path] = source
         return True
+
+    async def set_grab(self, on: bool) -> None:
+        """Grab or release every node. Releasing first lets go of held outputs."""
+        self._grab = on
+        if not on:
+            self._swallow.clear()  # their releases now go to the system, not to us
+            await self._release()
+        for path, (dev, _task) in self._devs.items():
+            if on and path not in self._grabbed:
+                try:
+                    dev.grab()
+                except OSError as e:
+                    logger.warning("Kann %s nicht exklusiv öffnen (grab): %s", path, e)
+                    continue
+                self._grabbed.add(path)
+            elif not on and path in self._grabbed:
+                with contextlib.suppress(OSError):
+                    dev.ungrab()
+                self._grabbed.discard(path)
+
+    def learn(self, callback: Callable[[InputSignal], Any] | None) -> None:
+        """Hand the next unknown key press to callback (None: stop learning)."""
+        self._learn = callback
 
     async def remove(self, path: str) -> None:
         """Device unplugged: stop reading, forget it, release everything held."""
         entry = self._devs.pop(path, None)
+        self._grabbed.discard(path)
+        self._sources.pop(path, None)
         if entry:
             dev, task = entry
             await _cancel(task)
@@ -239,11 +299,13 @@ class InputRouter:
         if self._bg:
             await asyncio.gather(*list(self._bg), return_exceptions=True)
         await self._release()  # key-ups still reach uinput before we let go
-        for dev, _task in self._devs.values():
-            with contextlib.suppress(OSError):
-                dev.ungrab()
+        for path, (dev, _task) in self._devs.items():
+            if path in self._grabbed:
+                with contextlib.suppress(OSError):
+                    dev.ungrab()
             dev.close()
         self._devs.clear()
+        self._grabbed.clear()
 
     async def vendor_report(self, report: bytes) -> None:
         res = identify_vendor(report)
@@ -258,6 +320,11 @@ class InputRouter:
             while self._top_down:
                 await self._mapper.handle(self._top_down.pop(), 0)
 
+    def _background(self, coro: Any) -> None:
+        bg = asyncio.get_running_loop().create_task(coro)
+        self._bg.add(bg)
+        bg.add_done_callback(self._bg.discard)
+
     async def _release(self) -> None:
         self._top_down.clear()
         try:
@@ -269,6 +336,8 @@ class InputRouter:
         pending = False
         try:
             async for event in dev.async_read_loop():
+                if dev.path not in self._grabbed:
+                    continue  # not ours: the system gets this node's events itself
                 try:
                     pending = await self._dispatch(source, event, pending)
                 except Exception:
@@ -283,8 +352,24 @@ class InputRouter:
         # Read loop ended: the device is gone or unusable.
         if self._devs.get(dev.path, (None,))[0] is dev:
             del self._devs[dev.path]
+            self._grabbed.discard(dev.path)
+            self._sources.pop(dev.path, None)
             dev.close()
             await self._release()
+
+    async def _learned(self, source: str, code: int) -> bool:
+        """Learning: True if this key event was taken (and must not be output)."""
+        if (source, code) in self._swallow:
+            return True
+        signal = InputSignal(source, E.EV_KEY, code)
+        if self._learn is None or signal in self._map:
+            return False
+        callback, self._learn = self._learn, None
+        self._swallow.add((source, code))
+        result = callback(signal)
+        if inspect.isawaitable(result):
+            await result
+        return True
 
     async def _dispatch(self, source: str, event: Any, pending: bool) -> bool:
         """Handle one event; returns whether forwarded output awaits a sync."""
@@ -296,7 +381,12 @@ class InputRouter:
             return pending
         if t == E.EV_MSC:
             return pending
-        button = identify(source, t, code, value)
+        if t == E.EV_KEY and (self._learn is not None or self._swallow):
+            if await self._learned(source, code):
+                if value == 0:
+                    self._swallow.discard((source, code))
+                return pending
+        button = identify(self._map, source, t, code, value)
         if button is not None:
             await self._mapper.handle(button, value)
             return pending

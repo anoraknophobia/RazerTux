@@ -256,6 +256,7 @@
   "daemon": {
     "Akkustand {level} % – bitte die Maus laden.": "Batterie à {level} % – veuillez recharger la souris.",
     "Keine lesbare Sicherung unter {path}: {error}": "Aucune sauvegarde lisible dans {path} : {error}",
+    "{name}: Akku schwach": "{name} : batterie faible",
     "Naga V2 Pro: Akku schwach": "Naga V2 Pro : batterie faible",
     "Unbekanntes Profil: {profile}": "Profil inconnu : {profile}",
     "Wiederherstellen des Originalzustands ist noch nicht umgesetzt": "La restauration de l’état d’origine n’est pas encore implémentée"

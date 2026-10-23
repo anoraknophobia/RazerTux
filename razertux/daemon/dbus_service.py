@@ -14,9 +14,9 @@ from dbus_next.service import ServiceInterface
 from dbus_next.service import method as _dbus_method
 from dbus_next.service import signal as _dbus_signal
 
+from razertux.backup import backup_path as model_backup_path
 from razertux.backup import load_backup
-from razertux.config.migrate import default_config_dir
-from razertux.config.model import Profile, Settings, validate
+from razertux.config.model import NAGA_MODEL, Profile, Settings, validate
 from razertux.config.store import ConfigStore
 from razertux.i18n import apply_settings as apply_language, tr
 
@@ -71,8 +71,7 @@ class NagaService(ServiceInterface):
         self._apply_settings = apply_settings
         self._restore = restore
         self._openrazer = openrazer_loaded
-        self._backup_path = backup_path or (
-            default_config_dir() / "mouse-backup.json")
+        self._backup_path = backup_path or model_backup_path(NAGA_MODEL, store.root)
         self._settings = store.load_settings()
         apply_language(self._settings)  # language of config errors and notifications
         self.active_profile_id = self._settings.active_profile

@@ -541,9 +541,16 @@ def make_daemon(tmp_path, transport=None, find_control=lambda pids: "/dev/hidraw
                transport_factory=lambda path: t,
                find_control=find_control,
                openrazer_loaded=lambda: openrazer, retry_delay=0,
-               apply_device_settings=applied.append,
-               backup_path=tmp_path / "mouse-backup.json", **extra)
+               apply_device_settings=applied.append, **extra)
     return d, t
+
+
+def naga(d):
+    return d.sessions["naga_v2_pro"]
+
+
+def naga_backup(root):
+    return root / "backups" / "naga_v2_pro.json"
 
 
 def modes(t):
@@ -594,12 +601,12 @@ async def test_daemon_unplug_releases_and_disconnects(tmp_path):
     d, t = make_daemon(tmp_path)
     await d.start()
     released = []
-    orig = d.mapper.release_all
+    orig = naga(d).mapper.release_all
 
     async def spy():
         released.append(1)
         await orig()
-    d.mapper.release_all = spy
+    naga(d).mapper.release_all = spy
     d.on_added("mouse", FakeDev("/dev/input/event18"))
     await d.settle()
     d.on_removed("/dev/input/event18")
@@ -643,8 +650,7 @@ def two_node_daemon(tmp_path):
     d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=n.transport,
                find_control=n.find_control, find_vendor=n.find_vendor,
                hidraw_reader=reader, openrazer_loaded=lambda: False, retry_delay=0,
-               apply_device_settings=lambda p: None,
-               backup_path=tmp_path / "mouse-backup.json")
+               apply_device_settings=lambda p: None)
     return d, n, readers
 
 
@@ -706,7 +712,7 @@ async def test_daemon_start_loads_active_profile(tmp_path):
     await d.start()
     assert d.service.active_profile_id == "game"
     out = d.out
-    await d.mapper.handle(ButtonId.SIDE_1, 1)
+    await naga(d).mapper.handle(ButtonId.SIDE_1, 1)
     assert ("key", E.KEY_A, 1) in out.events
     await d.shutdown()
 
@@ -882,8 +888,7 @@ async def connected(tmp_path, profile=None, transport=None, product=0x00A7, sett
     t = transport or naga_transport()
     d = Daemon(ConfigStore(tmp_path), RecOut(), transport_factory=lambda p: t,
                find_control=lambda pids: "/dev/hidraw2", find_vendor=lambda pids: None,
-               openrazer_loaded=lambda: False, retry_delay=0,
-               backup_path=tmp_path / "mouse-backup.json")
+               openrazer_loaded=lambda: False, retry_delay=0)
     if settings:
         d.service._store.save_settings(settings)
         d.service._settings = settings
@@ -926,11 +931,11 @@ async def test_daemon_skips_scroll_zone_when_mouse_reports_none(tmp_path):
 async def test_dpi_stepping_clamps_without_wrap(tmp_path):
     d, t = await connected(tmp_path, full_profile())  # active stage 2 of 800/1600/3200
     base = len(dpi_writes(t))
-    d._on_dpi_stage("up")
-    d._on_dpi_stage("up")  # clamped at last
-    d._on_dpi_stage("down")
-    d._on_dpi_stage("down")
-    d._on_dpi_stage("down")  # clamped at first
+    naga(d)._on_dpi_stage("up")
+    naga(d)._on_dpi_stage("up")  # clamped at last
+    naga(d)._on_dpi_stage("down")
+    naga(d)._on_dpi_stage("down")
+    naga(d)._on_dpi_stage("down")  # clamped at first
     assert dpi_writes(t)[base:] == [3200, 1600, 800]
     last = [r for r in t.requests if (r.cmd_class, r.cmd_id) == (0x04, 0x05)][-1]
     assert last.args[0] == 0  # NOSTORE
@@ -940,9 +945,9 @@ async def test_dpi_stepping_clamps_without_wrap(tmp_path):
 async def test_dpi_stepping_falls_back_to_onboard_stages(tmp_path):
     d, t = await connected(tmp_path)  # default profile: no stages; onboard 800/1600/3200 active 2
     assert (0x04, 0x05) not in t.sent  # connect itself writes no DPI
-    d._on_dpi_stage("up")
-    d._on_dpi_stage("up")
-    d._on_dpi_stage("down")
+    naga(d)._on_dpi_stage("up")
+    naga(d)._on_dpi_stage("up")
+    naga(d)._on_dpi_stage("down")
     assert dpi_writes(t) == [3200, 1600]
     assert (0x04, 0x06) not in t.sent  # stages themselves never rewritten
     await d.shutdown()
@@ -952,13 +957,13 @@ async def test_dpi_stage_index_resets_on_profile_switch(tmp_path):
     other = Profile(id="o", name="O", dpi_stages=[(400, 400), (500, 500)], active_stage=1)
     d, t = await connected(tmp_path, full_profile())
     d.service._store.save_profile(other)
-    d._on_dpi_stage("up")
+    naga(d)._on_dpi_stage("up")
     await d.service.activate("o")
     n = len(dpi_writes(t))
-    d._on_dpi_stage("up")
+    naga(d)._on_dpi_stage("up")
     assert dpi_writes(t)[n:] == [500]
     await d.service.activate("p")
-    d._on_dpi_stage("down")  # reset to profile.active_stage (2) -> 800
+    naga(d)._on_dpi_stage("down")  # reset to profile.active_stage (2) -> 800
     assert dpi_writes(t)[-1] == 800
     await d.shutdown()
 
@@ -968,17 +973,17 @@ async def test_dpi_stepping_error_is_logged_and_index_kept(tmp_path, caplog):
     ok = t.responses[(0x04, 0x05)]
     t.responses[(0x04, 0x05)] = lambda a: (_ for _ in ()).throw(OSError("weg"))
     with caplog.at_level(logging.WARNING):
-        d._on_dpi_stage("up")
+        naga(d)._on_dpi_stage("up")
     assert "nicht gesetzt" in caplog.text
     t.responses[(0x04, 0x05)] = ok
-    d._on_dpi_stage("up")  # still goes to stage 3, index was not advanced on failure
+    naga(d)._on_dpi_stage("up")  # still goes to stage 3, index was not advanced on failure
     assert dpi_writes(t)[-1] == 3200
     await d.shutdown()
 
 
 async def test_dpi_stepping_without_mouse_is_noop(tmp_path):
     d = Daemon(ConfigStore(tmp_path), RecOut(), openrazer_loaded=lambda: False)
-    d._on_dpi_stage("up")  # must not raise
+    naga(d)._on_dpi_stage("up")  # must not raise
 
 
 async def test_daemon_restore_writes_backup_with_varstore_keeps_mode(tmp_path):
@@ -1004,13 +1009,13 @@ async def test_daemon_restore_without_mouse_raises_dbus_error(tmp_path):
 
 async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
     d, t = await connected(tmp_path, full_profile())  # stepping over profile stages
-    assert d._stages == [(800, 800), (1600, 1600), (3200, 3200)]
+    assert naga(d)._stages == [(800, 800), (1600, 1600), (3200, 3200)]
     stages = bytes([1, 1, 2]) + b"".join(
         bytes([i, v >> 8, v & 0xFF, v >> 8, v & 0xFF, 0, 0]) for i, v in enumerate((400, 500), start=1))
     t.responses[(0x04, 0x83)] = stages  # what the mouse reports after the restore
     d._restore_backup({})
-    assert d._stages == [(400, 400), (500, 500)] and d._stage_idx == 0
-    d._on_dpi_stage("up")
+    assert naga(d)._stages == [(400, 400), (500, 500)] and naga(d)._stage_idx == 0
+    naga(d)._on_dpi_stage("up")
     assert dpi_writes(t)[-1] == 500
     await d.shutdown()
 
@@ -1018,9 +1023,9 @@ async def test_restore_resets_dpi_stage_state_to_onboard(tmp_path):
 async def test_dpi_cycle_wraps_to_first_stage(tmp_path):
     d, t = await connected(tmp_path, full_profile())  # active stage 2 of 800/1600/3200
     base = len(dpi_writes(t))
-    d._on_dpi_stage("cycle")
-    d._on_dpi_stage("cycle")  # wraps
-    d._on_dpi_stage("cycle")
+    naga(d)._on_dpi_stage("cycle")
+    naga(d)._on_dpi_stage("cycle")  # wraps
+    naga(d)._on_dpi_stage("cycle")
     assert dpi_writes(t)[base:] == [3200, 800, 1600]
     await d.shutdown()
 
@@ -1028,7 +1033,7 @@ async def test_dpi_cycle_wraps_to_first_stage(tmp_path):
 async def test_dpi_cycle_single_stage_writes_nothing(tmp_path):
     d, t = await connected(tmp_path, full_profile(dpi_stages=[(900, 900)], active_stage=1))
     base = len(dpi_writes(t))
-    d._on_dpi_stage("cycle")
+    naga(d)._on_dpi_stage("cycle")
     assert dpi_writes(t)[base:] == []
     await d.shutdown()
 
@@ -1042,7 +1047,8 @@ BACKUP = {"poll_rate": 500, "dpi": [1800, 1800],
 
 
 def write_backup(tmp_path):
-    (tmp_path / "mouse-backup.json").write_text(json.dumps(BACKUP))
+    naga_backup(tmp_path).parent.mkdir(parents=True, exist_ok=True)
+    naga_backup(tmp_path).write_text(json.dumps(BACKUP))
 
 
 def since(t, n):
@@ -1066,7 +1072,7 @@ async def test_shutdown_writes_back_dpi_stages_and_poll_rate(tmp_path, caplog):
 async def test_shutdown_after_dpi_stepping_writes_back_dpi(tmp_path):
     write_backup(tmp_path)
     d, t = await connected(tmp_path)  # default profile: nothing persistent written
-    d._on_dpi_stage("up")
+    naga(d)._on_dpi_stage("up")
     n = len(t.requests)
     await d.shutdown()
     assert [w[:2] for w in since(t, n)] == [(0x04, 0x05)]
@@ -1081,7 +1087,7 @@ async def test_shutdown_without_changes_writes_nothing(tmp_path):
 
 
 async def test_shutdown_without_backup_logs_warning(tmp_path, caplog):
-    (tmp_path / "mouse-backup.json").mkdir()  # unreadable (and not auto-created)
+    naga_backup(tmp_path).mkdir(parents=True)  # unreadable (and not auto-created)
     d, t = await connected(tmp_path, full_profile(lighting={}))
     n = len(t.requests)
     with caplog.at_level(logging.WARNING):
@@ -1106,13 +1112,12 @@ async def test_first_connect_creates_backup_before_applying(tmp_path):
                find_control=lambda pids: "/dev/hidraw2", find_vendor=lambda pids: None,
                openrazer_loaded=lambda: False, retry_delay=0,
                apply_device_settings=lambda p: applied_at.append(
-                   (tmp_path / "mouse-backup.json").exists()),
-               backup_path=tmp_path / "mouse-backup.json")
+                   naga_backup(tmp_path).exists()))
     await d.start()
     d.on_added("mouse", FakeDev("/dev/input/event18"))
     await d.settle()
     assert applied_at == [True]  # snapshot taken before the profile touched the mouse
-    backup = json.loads((tmp_path / "mouse-backup.json").read_text())
+    backup = json.loads(naga_backup(tmp_path).read_text())
     assert backup["dpi"] == [800, 800] and backup["poll_rate"] == 1000
     await d.shutdown()
 
@@ -1120,7 +1125,7 @@ async def test_first_connect_creates_backup_before_applying(tmp_path):
 async def test_existing_backup_is_never_overwritten_on_connect(tmp_path):
     write_backup(tmp_path)
     d, t = await connected(tmp_path)
-    assert json.loads((tmp_path / "mouse-backup.json").read_text()) == BACKUP
+    assert json.loads(naga_backup(tmp_path).read_text()) == BACKUP
     await d.shutdown()
 
 
@@ -1128,7 +1133,7 @@ async def test_backup_failure_on_connect_is_logged_not_fatal(tmp_path, caplog):
     t = FakeTransport({(0x00, 0x04): lambda a: a[:2]})  # no readable core values
     with caplog.at_level(logging.WARNING):
         d, _ = await connected(tmp_path, transport=t)
-    assert not (tmp_path / "mouse-backup.json").exists()
+    assert not naga_backup(tmp_path).exists()
     assert d.hw_status()["connected"] is True
     assert "Sicherung" in caplog.text
     await d.shutdown()
@@ -1174,19 +1179,19 @@ async def test_reload_applies_power_settings(tmp_path):
 
 async def test_wireless_connect_starts_battery_monitor(tmp_path):
     d, t = await connected(tmp_path, product=0x00A8)
-    assert d._battery is not None
+    assert naga(d)._battery is not None
     statuses = []
     d.service.notify_status = lambda: statuses.append(d.hw_status())
     t.responses[(0x07, 0x80)] = bytes([0, 0x80])  # ~50 %
-    d._battery.poll()
+    naga(d)._battery.poll()
     assert statuses and statuses[-1]["battery"] == 50
     await d.shutdown()
-    assert d._battery is None
+    assert naga(d)._battery is None
 
 
 async def test_wired_connect_has_no_battery_monitor(tmp_path):
     d, t = await connected(tmp_path)
-    assert d._battery is None
+    assert naga(d)._battery is None
     await d.shutdown()
 
 
@@ -1196,8 +1201,8 @@ async def test_low_battery_sends_desktop_notification(tmp_path):
     d.notify = lambda title, body: sent.append((title, body))
     t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 % < default 15
     t.responses[(0x07, 0x84)] = bytes([0, 0])   # not charging
-    d._battery.poll()
-    d._battery.poll()
+    naga(d)._battery.poll()
+    naga(d)._battery.poll()
     assert len(sent) == 1 and "10" in sent[0][1]
     await d.shutdown()
 
@@ -1208,12 +1213,12 @@ async def test_low_battery_not_repeated_after_reconnect(tmp_path):
     d.notify = lambda title, body: sent.append(body)
     t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
     t.responses[(0x07, 0x84)] = bytes([0, 0])
-    d._battery.poll()
+    naga(d)._battery.poll()
     d.on_removed("/dev/input/event18")
     await d.settle()
     d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
     await d.settle()
-    d._battery.poll()
+    naga(d)._battery.poll()
     assert len(sent) == 1
     await d.shutdown()
 
@@ -1253,7 +1258,7 @@ async def test_top_buttons_ignored_in_normal_mode(tmp_path):
 
     async def handle(button, value):
         calls.append((button, value))
-    d.mapper.handle = handle
+    naga(d).mapper.handle = handle
     await d.start()
     d.on_added("mouse", FakeDev("/dev/input/event18"))
     await d.settle()
@@ -1351,13 +1356,13 @@ async def test_wake_up_after_failed_polls_reapplies_mode_and_profile(tmp_path):
     await d.settle()
     assert modes(t) == [DRIVER_MODE] and len(applied) == 1
     battery = t.responses.pop((0x07, 0x80))
-    d._battery.poll()  # asleep: no answer
-    d._battery.poll()
+    naga(d)._battery.poll()  # asleep: no answer
+    naga(d)._battery.poll()
     assert modes(t) == [DRIVER_MODE] and len(applied) == 1
     t.responses[(0x07, 0x80)] = battery
-    d._battery.poll()  # awake again
+    naga(d)._battery.poll()  # awake again
     assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
-    d._battery.poll()  # nothing new: no further writes
+    naga(d)._battery.poll()  # nothing new: no further writes
     assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
     await d.shutdown()
 
@@ -1373,10 +1378,10 @@ async def test_device_mode_mismatch_on_poll_reapplies(tmp_path):
     d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
     await d.settle()
     t.responses[(0x00, 0x84)] = bytes([DRIVER_MODE, 0])
-    d._battery.poll()
+    naga(d)._battery.poll()
     assert modes(t) == [DRIVER_MODE] and len(applied) == 1  # matches: nothing to do
     t.responses[(0x00, 0x84)] = bytes([NORMAL_MODE, 0])  # woke up in normal mode
-    d._battery.poll()
+    naga(d)._battery.poll()
     assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
     await d.shutdown()
 

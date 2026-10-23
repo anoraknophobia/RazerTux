@@ -222,6 +222,6 @@ async def test_low_battery_notification_is_translated(tmp_path):
     d.notify = lambda title, body: sent.append((title, body))
     t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
     t.responses[(0x07, 0x84)] = bytes([0, 0])
-    d._battery.poll()
+    d.sessions["naga_v2_pro"]._battery.poll()
     assert sent == [("Naga V2 Pro: Low battery", "Battery at 10 % – please charge the mouse.")]
     await d.shutdown()

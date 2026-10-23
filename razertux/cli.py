@@ -7,14 +7,16 @@ import sys
 import warnings
 from pathlib import Path
 
-from .backup import BackupError, load_backup, restore_backup, save_backup
-from .config.migrate import default_config_dir, migrate_legacy_config
+from .backup import BackupError, backup_path, load_backup, restore_backup, save_backup
+from .config.migrate import default_config_dir, migrate_legacy_config, migrate_schema_2
+from .config.model import NAGA_MODEL
 from .razer.naga_v2_pro import NagaV2Pro
 from .razer.transport import HidrawTransport, find_control_hidraw
 
 
 def default_backup_path() -> Path:
-    return default_config_dir() / "mouse-backup.json"
+    """The Naga V2 Pro's backup (the daemon's, per model since config schema 2)."""
+    return backup_path(NAGA_MODEL, default_config_dir())
 
 
 def _open_transport(hidraw: str | None):
@@ -86,6 +88,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     if getattr(args, "path", None) is None and args.cmd != "status":
         migrate_legacy_config()  # the default backup may still be in ~/.config/naga-config
+        migrate_schema_2(default_config_dir())  # mouse-backup.json -> backups/naga_v2_pro.json
 
     if args.cmd == "backup":
         path = args.path or default_backup_path()

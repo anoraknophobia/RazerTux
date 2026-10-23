@@ -56,7 +56,7 @@ def test_cli_backup_writes_then_refuses(monkeypatch, tmp_path, capsys):
 
 def test_cli_default_backup_path(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert cli.default_backup_path() == tmp_path / ".config/razertux/mouse-backup.json"
+    assert cli.default_backup_path() == tmp_path / ".config/razertux/backups/naga_v2_pro.json"
 
 
 def test_backup_refuses_when_core_fields_missing(tmp_path):

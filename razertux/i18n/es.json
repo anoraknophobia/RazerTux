@@ -256,6 +256,7 @@
   "daemon": {
     "Akkustand {level} % – bitte die Maus laden.": "Batería al {level} %: carga el ratón.",
     "Keine lesbare Sicherung unter {path}: {error}": "No hay una copia de seguridad legible en {path}: {error}",
+    "{name}: Akku schwach": "{name}: batería baja",
     "Naga V2 Pro: Akku schwach": "Naga V2 Pro: batería baja",
     "Unbekanntes Profil: {profile}": "Perfil desconocido: {profile}",
     "Wiederherstellen des Originalzustands ist noch nicht umgesetzt": "Restaurar el estado original aún no está implementado"

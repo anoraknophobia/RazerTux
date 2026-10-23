@@ -126,6 +126,15 @@ class ModelStore:
         return self._store.errors
 
     @property
+    def config(self) -> ConfigStore:
+        """The whole configuration (settings, macros) this model's store belongs to."""
+        return self._store
+
+    @property
+    def root(self) -> Path:
+        return self._store.root
+
+    @property
     def _profiles_dir(self) -> Path:
         return self._store.root / "profiles" / self.model
 

@@ -40,7 +40,6 @@ def test_default_dirs(home):
     assert migrate.default_config_dir() == home / ".config" / "razertux"
     assert migrate.legacy_config_dir() == home / ".config" / "naga-config"
     assert daemon_main.default_config_dir() == home / ".config" / "razertux"
-    assert daemon_main.default_backup_path() == home / ".config" / "razertux" / "mouse-backup.json"
 
 
 def test_copies_the_whole_directory_and_leaves_the_old_one(home, caplog):
@@ -176,8 +175,9 @@ def test_cli_restore_finds_the_migrated_backup(home, monkeypatch):
     loaded = []
     monkeypatch.setattr(cli, "load_backup", lambda p: loaded.append(p) or (_ for _ in ()).throw(OSError("stop")))
     cli.main(["restore"])
-    assert loaded == [home / ".config" / "razertux" / "mouse-backup.json"]
+    assert loaded == [home / ".config" / "razertux" / "backups" / "naga_v2_pro.json"]
     assert (home / ".config" / "razertux" / "mouse-backup.json").is_file()
+    assert (home / ".config" / "razertux" / "backups" / "naga_v2_pro.json").is_file()
 
 
 # --- schema 2 -------------------------------------------------------------

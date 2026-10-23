@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 
 from evdev import ecodes as E
 
@@ -35,21 +35,28 @@ DEFAULT_OUTPUT: dict[ButtonId, int | tuple[int, int, int]] = {
     ButtonId.LEFT: E.BTN_LEFT,
     ButtonId.RIGHT: E.BTN_RIGHT,
     ButtonId.MIDDLE: E.BTN_MIDDLE,
+    ButtonId.BACK: E.BTN_SIDE,
+    ButtonId.FORWARD: E.BTN_EXTRA,
     ButtonId.WHEEL_UP: (E.REL_WHEEL, E.REL_WHEEL_HI_RES, 1),
     ButtonId.WHEEL_DOWN: (E.REL_WHEEL, E.REL_WHEEL_HI_RES, -1),
     ButtonId.WHEEL_LEFT: (E.REL_HWHEEL, E.REL_HWHEEL_HI_RES, -1),
     ButtonId.WHEEL_RIGHT: (E.REL_HWHEEL, E.REL_HWHEEL_HI_RES, 1),
 }
 _WHEEL = {ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT}
-# same as default_profile() (R20): front = DPI up, back = cycle through the stages
-_DEFAULT_DPI = {ButtonId.TOP_1: "up", ButtonId.TOP_2: "cycle"}
+# Naga V2 Pro only, same as default_profile() (R20): front top button = DPI up,
+# back = cycle through the stages. Other mice pass default_dpi={}.
+NAGA_DEFAULT_DPI: Mapping[ButtonId, str] = {ButtonId.TOP_1: "up", ButtonId.TOP_2: "cycle"}
 
 
 class Mapper:
     def __init__(self, profile: Profile, macros: dict[str, Macro], out: Output,
                  on_dpi_stage: Callable[[str], None] = lambda d: None,
-                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep, *,
+                 default_dpi: Mapping[ButtonId, str] = NAGA_DEFAULT_DPI) -> None:
+        """default_dpi: DPI steps of buttons left at DefaultAction (Naga top buttons)."""
         self._profile = profile
+        self._default_dpi = dict(default_dpi)
+        self._defaults: dict[ButtonId, int] = {}  # learned buttons: their own key code
         self._macros = macros
         self._out = out
         self._on_dpi = on_dpi_stage
@@ -60,6 +67,11 @@ class Mapper:
 
     def set_macros(self, macros: dict[str, Macro]) -> None:
         self._macros = macros
+
+    def set_defaults(self, defaults: Mapping[ButtonId, int]) -> None:
+        """Factory output of buttons outside DEFAULT_OUTPUT (learned buttons: the key
+        code they send), used for DefaultAction."""
+        self._defaults = dict(defaults)
 
     async def set_profile(self, profile: Profile) -> None:
         tasks = self._reset()
@@ -114,7 +126,7 @@ class Mapper:
         if isinstance(action, ComboAction):
             return list(action.codes)
         if isinstance(action, DefaultAction):
-            code = DEFAULT_OUTPUT.get(button)
+            code = DEFAULT_OUTPUT.get(button, self._defaults.get(button))
             return [code] if isinstance(code, int) else []
         return []
 
@@ -125,8 +137,8 @@ class Mapper:
             self._on_dpi(action.direction)
         elif isinstance(action, MacroAction):
             self._start_macro(button, action, action.mode)
-        elif isinstance(action, DefaultAction) and button in _DEFAULT_DPI:
-            self._on_dpi(_DEFAULT_DPI[button])
+        elif isinstance(action, DefaultAction) and button in self._default_dpi:
+            self._on_dpi(self._default_dpi[button])
         else:
             self._key_batch(self._codes(button, action), 1)
 
