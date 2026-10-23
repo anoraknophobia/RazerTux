@@ -15,6 +15,7 @@ from razertux.devices import db
 from razertux.razer.report import STATUS_OK, RazerResponse, build_report, parse_report
 from razertux.razer.transport import RazerError
 from razertux.recorder import backend, helper, keyfilter, whitelist
+from razertux.recorder.keyfilter import SignalFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = ROOT / "packaging" / "io.github.razertux.record.policy"
@@ -878,3 +879,16 @@ def test_polkit_policy():
     ann = {x.get("key"): x.text for x in a.findall("annotate")}
     assert ann == {"org.freedesktop.policykit.exec.path": "/usr/lib/razertux/razertux-record-helper"}
     assert backend.HELPER_PATH == "/usr/lib/razertux/razertux-record-helper"
+
+
+def test_filter_wheel_direction_and_hires():
+    f = SignalFilter("mouse")
+    src = "if0:mouse"
+    assert f.feed(src, E.EV_REL, E.REL_WHEEL, 1) == (src, E.EV_REL, E.REL_WHEEL, 1)
+    assert f.feed(src, E.EV_REL, E.REL_WHEEL, 3) is None  # magnitude does not matter
+    assert f.feed(src, E.EV_REL, E.REL_WHEEL, -1) == (src, E.EV_REL, E.REL_WHEEL, -1)
+    assert f.feed(src, E.EV_REL, E.REL_WHEEL_HI_RES, 120) is None
+    assert f.feed(src, E.EV_REL, E.REL_HWHEEL_HI_RES, -120) is None
+    assert f.feed(src, E.EV_REL, E.REL_HWHEEL, 0) is None
+    assert f.feed(src, E.EV_REL, E.REL_HWHEEL, -1) == (src, E.EV_REL, E.REL_HWHEEL, -1)
+    assert f.feed(src, E.EV_REL, E.REL_X, 5) == (src, E.EV_REL, E.REL_X)

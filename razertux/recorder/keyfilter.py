@@ -37,6 +37,12 @@ GRID_KEYS: frozenset[int] = frozenset(
 SIGNAL_TYPES = frozenset({E.EV_KEY, E.EV_REL, E.EV_ABS})
 
 
+# Wheel axes keep the direction of the scroll (and nothing else: no magnitude); the hi-res twins
+# duplicate every notch and are collapsed into the plain axes.
+WHEEL_AXES = frozenset({E.REL_WHEEL, E.REL_HWHEEL})
+HI_RES_AXES = frozenset({E.REL_WHEEL_HI_RES, E.REL_HWHEEL_HI_RES})
+
+
 def classify_standard_key(code: int) -> bool:
     """True for an ordinary typing key (never recorded on keyboards and other non-mouse kinds)."""
     return code in STANDARD_KEYS
@@ -67,13 +73,24 @@ def drops(kind: str | None, source: str, code: int) -> bool:
 class SignalFilter:
     def __init__(self, kind: str | None):
         self.kind = kind
-        self._seen: set[tuple[str, int, int]] = set()
+        self._seen: set[tuple] = set()
         self._standard_sources: set[str] = set()
 
-    def feed(self, source: str, ev_type: int, code: int, value: int) -> tuple[str, int, int] | None:
-        """The new signal (source, ev_type, code) to pass on, or None."""
+    def feed(self, source: str, ev_type: int, code: int, value: int) -> tuple | None:
+        """The new signal (source, ev_type, code) to pass on, or None. Wheel axes carry a 4th
+        element, the direction (+1 / -1)."""
         if ev_type not in SIGNAL_TYPES:
             return None
+        if ev_type == E.EV_REL and code in HI_RES_AXES:
+            return None
+        if ev_type == E.EV_REL and code in WHEEL_AXES:
+            if value == 0:
+                return None
+            sig = (source, ev_type, code, 1 if value > 0 else -1)
+            if sig in self._seen:
+                return None
+            self._seen.add(sig)
+            return sig
         if ev_type == E.EV_KEY:
             if value != 1:  # release / autorepeat
                 return None

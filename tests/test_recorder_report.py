@@ -16,7 +16,7 @@ def make(**kw):
         interfaces=[{"number": 0, "class": 3, "subclass": 1, "protocol": 2, "hid_descriptor_hex": "05010902",
                     "descriptor_sha1": "a" * 40, "evdev": {"mouse": ["BTN_LEFT"]}}],
         buttons={"template": "naga_12", "results": {"BTN_1": ["KEY_1"], "BTN_2": "absent"},
-                 "signals": ["KEY_F13"], "standard_keys_seen": ["BTN_LEFT"]},
+                 "signals": ["KEY_F13"], "standard_keys_seen": 1},
         reads={"dpi": {"raw": "0102", "value": 800, "status": "ok"}},
         light={"logo": "yes"},
         notes="works",
@@ -176,3 +176,22 @@ def test_long_product_and_notes_terminate():
     r2.device["usb_product"] = "é" * 5000
     url2, _ = issue_url(r2)
     assert len(url2) <= 8000
+
+
+def test_standard_keys_seen_int_contract():
+    def sk(v):
+        return sanitize(make(buttons={"results": {}, "standard_keys_seen": v}))["buttons"]["standard_keys_seen"]
+    assert sk(3) == 3 and sk(0) == 0
+    assert sk(True) == 0 and sk(-1) == 0 and sk("x") == 0 and sk(None) == 0
+    assert sk(["a", "b"]) == 2  # old list shape
+    assert "Standard keys seen on 2 input source(s)" in summary_text(make(buttons={"results": {}, "standard_keys_seen": 2}))
+    d = sanitize(make())
+    assert sanitize(d) == d
+
+
+def test_buttons_timeout_and_duplicates_roundtrip():
+    b = {"template": "mmo", "results": {"side_1": ["a:b:KEY_1"]}, "signals": [], "standard_keys_seen": 0,
+         "duplicates": ["a:b:KEY_1"], "timed_out": True, "stopped_at": "side_2"}
+    out = sanitize(make(buttons=b))["buttons"]
+    assert out == b
+    assert "timed out at side_2" in summary_text(make(buttons=b))

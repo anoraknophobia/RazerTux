@@ -19,7 +19,7 @@ READ_NAMES = {"firmware", "serial_present", "dpi", "dpi_stages", "poll_rate", "b
 _EVDEV_NODES = {"mouse", "keyboard", "consumer", "system", "other", "misc"}
 _DEVICE_KEYS = {"vid", "pid", "usb_manufacturer", "usb_product", "bcdDevice", "kind", "db_model", "connection"}
 _SYSTEM_KEYS = {"razertux", "kernel", "distro"}
-_BUTTON_KEYS = {"template", "results", "signals", "standard_keys_seen"}
+_BUTTON_KEYS = {"template", "results", "signals", "standard_keys_seen", "duplicates", "timed_out", "stopped_at"}
 _TOP = ("schema", "version", "device", "system", "interfaces", "buttons", "reads", "light", "notes")
 _HEX = re.compile(r"^[0-9a-fA-F]*$")
 _NAME = re.compile(r"^[A-Za-z0-9_]{1,40}$")
@@ -219,7 +219,15 @@ def sanitize(data):
             results[str(k)] = "absent" if v == "absent" else _strlist(v)
     buttons["results"] = results
     buttons["signals"] = _strlist(b.get("signals"))
-    buttons["standard_keys_seen"] = _strlist(b.get("standard_keys_seen"))
+    sk = b.get("standard_keys_seen")
+    if isinstance(sk, (list, tuple)):  # old shape: a list of labels
+        sk = len(sk)
+    buttons["standard_keys_seen"] = sk if isinstance(sk, int) and not isinstance(sk, bool) and sk >= 0 else 0
+    buttons["duplicates"] = _strlist(b.get("duplicates"))
+    if b.get("timed_out") is True:
+        buttons["timed_out"] = True
+    if isinstance(b.get("stopped_at"), str) and _NAME.match(b["stopped_at"]):
+        buttons["stopped_at"] = b["stopped_at"]
     reads = {}
     for k, v in _d(data.get("reads")).items():
         r = _read(k, v)
@@ -262,8 +270,12 @@ def summary_text(report: Report) -> str:
         lines.append(f"  {name}: {sig if isinstance(sig, str) else ', '.join(sig) or 'no signal'}")
     if b["signals"]:
         lines.append("Other signals: " + ", ".join(b["signals"]))
+    if b["duplicates"]:
+        lines.append("Ambiguous (same signal on several buttons): " + ", ".join(b["duplicates"]))
+    if b.get("timed_out"):
+        lines.append(f"Recording timed out at {b.get('stopped_at', '?')}")
     if b["standard_keys_seen"]:
-        lines.append("Standard keys seen: " + ", ".join(b["standard_keys_seen"]))
+        lines.append(f"Standard keys seen on {b['standard_keys_seen']} input source(s)")
     for k, v in sorted(d["reads"].items()):
         lines.append(f"Read {k}: value {v.get('value', '-')} status {v.get('status', '?')}")
     light = d["light"]
