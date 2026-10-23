@@ -357,12 +357,13 @@ class InputRouter:
             dev.close()
             await self._release()
 
-    async def _learned(self, source: str, code: int) -> bool:
-        """Learning: True if this key event was taken (and must not be output)."""
+    async def _learned(self, source: str, code: int, value: int) -> bool:
+        """Learning: True if this key event was taken (and must not be output).
+        Only a press (value 1) is learned; releases and repeats are not."""
         if (source, code) in self._swallow:
             return True
         signal = InputSignal(source, E.EV_KEY, code)
-        if self._learn is None or signal in self._map:
+        if self._learn is None or value != 1 or signal in self._map:
             return False
         callback, self._learn = self._learn, None
         self._swallow.add((source, code))
@@ -382,7 +383,7 @@ class InputRouter:
         if t == E.EV_MSC:
             return pending
         if t == E.EV_KEY and (self._learn is not None or self._swallow):
-            if await self._learned(source, code):
+            if await self._learned(source, code, value):
                 if value == 0:
                     self._swallow.discard((source, code))
                 return pending

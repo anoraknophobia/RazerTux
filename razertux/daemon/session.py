@@ -458,9 +458,11 @@ class DeviceSession:
             self._written |= apply_generic_settings(self._mouse, profile)
 
     def apply_power(self, settings: Settings) -> None:
-        """Idle time and the mouse's low power threshold (both persistent; None = keep)."""
+        """Idle time and the mouse's low power threshold (both persistent; None = keep).
+        Ruling M9: these settings are global, so only verified mice (the Naga) get them;
+        experimental mice never do."""
         m = self._mouse
-        if m is None:
+        if m is None or not self.info.verified:
             return
         for field, value in (("idle_time", settings.idle_time),
                              ("low_battery_threshold", settings.low_battery_threshold)):
@@ -478,7 +480,7 @@ class DeviceSession:
     def _write_back(self) -> None:
         """R17: persistent values we changed go back to the backup's (VARSTORE), so
         other systems (Windows/Synapse) find the mouse as it was."""
-        if self._mouse is None or not self._written:
+        if self._mouse is None or not self._write_ok or not self._written:
             return
         fields = set(self._written)
         if "dpi_stages" in fields:
@@ -678,6 +680,11 @@ class DeviceSession:
         self._mouse = mouse
         if self._write_ok:
             self._ensure_backup(mouse)  # before anything persistent is written
+            if not self.info.verified and not self.backup_path.exists():
+                # experimental mouse: nothing to restore from -> never write to it
+                self._write_ok = False
+                logger.warning("Keine Sicherung von %s – Maus bleibt bis zum Neuverbinden "
+                               "schreibgeschützt", self.info.name)
         self._power_applied = {}
         self._poll_failed = False
         self._mode = None

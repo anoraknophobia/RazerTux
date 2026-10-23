@@ -329,3 +329,75 @@ async def test_naga_with_failed_probe_only_warns(tmp_path, caplog):
     assert d.sessions[NAGA].status()["writable"] is True
     assert "Probe" in caplog.text
     await d.shutdown()
+
+
+# -- fix round 1 ---------------------------------------------------------------------
+
+async def test_failed_backup_makes_experimental_mouse_read_only(tmp_path, monkeypatch):
+    from razertux.backup import BackupError
+    from razertux.daemon import session as sess
+
+    def boom(mouse, path):
+        raise BackupError("kaputt")
+    monkeypatch.setattr(sess, "save_backup", boom)
+    t = da_transport()
+    s, store, _ = make_session(tmp_path, transport=t)
+    store.for_model(DA).save_profile(da_profile())
+    store.save_settings(Settings(active_profiles={DA: "dpi"}))
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event30", product=DA_PID))
+    await s.settle()
+    assert s.status()["connected"] is True and s.status()["writable"] is False
+    await s.activate("dpi")
+    await s.close()
+    assert writes(t) == []
+
+
+async def test_no_write_back_after_replug_with_failed_probe(tmp_path):
+    good, bad = da_transport(), bad_probe_transport()
+    current = [good]
+    store = ConfigStore(tmp_path)
+    s = DeviceSession(info(DA), store.for_model(DA), RecOut(),
+                      transport_factory=lambda path: current[0],
+                      find_control=lambda pids: "/dev/hidraw9",
+                      find_vendor=lambda pids: None, retry_delay=0)
+    store.for_model(DA).save_profile(da_profile())
+    store.save_settings(Settings(active_profiles={DA: "dpi"}))
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event30", product=DA_PID))
+    await s.settle()
+    assert (0x04, 0x05) in writes(good)  # persistent DPI/poll rate written
+    s.remove_input("/dev/input/event30")
+    await s.settle()
+    current[0] = bad
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event31", product=DA_PID))
+    await s.settle()
+    assert s.status()["writable"] is False
+    await s.close()
+    assert writes(bad) == []  # no R17 write-back to a mouse that failed the probe
+
+
+async def test_power_settings_never_reach_experimental_mice(tmp_path):
+    model, pid = "basilisk_ultimate", 0x0086
+    t = FakeTransport.full()
+    s, store, _ = make_session(tmp_path, model=model, transport=t)
+    assert s.status()["verified"] is False
+    store.save_settings(Settings(idle_time=600, low_battery_threshold=10))
+    s.add_input(pid, "mouse", QueueDev("/dev/input/event30", product=pid))
+    await s.settle()
+    assert s.status()["writable"] is True
+    await s.reload()
+    assert (0x07, 0x03) not in t.sent and (0x07, 0x01) not in t.sent  # Ruling M9
+    await s.close()
+
+
+async def test_learning_takes_only_a_press(tmp_path):
+    learned = []
+    s, store, _ = make_session(tmp_path, on_learned=learned.append)
+    kbd = QueueDev("/dev/input/event31", product=DA_PID)
+    s.add_input(DA_PID, "if01", kbd)
+    await s.settle()
+    await s.start_learning()
+    await kbd.push(ev(E.EV_KEY, E.KEY_F14, 0), ev(E.EV_KEY, E.KEY_F14, 2), ev(E.EV_SYN, 0, 0))
+    assert learned == []
+    await kbd.push(ev(E.EV_KEY, E.KEY_F13, 1), ev(E.EV_SYN, 0, 0))
+    assert learned == [InputSignal("if01", E.EV_KEY, E.KEY_F13)]
+    await s.close()
