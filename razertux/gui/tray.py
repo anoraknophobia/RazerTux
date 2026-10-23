@@ -44,6 +44,7 @@ class TrayIcon(QSystemTrayIcon):
     quitRequested = Signal()
     themeRequested = Signal(str)  # "synapse" | "system"
     languageRequested = Signal(str)  # Settings.language
+    osdRequested = Signal(bool)  # Settings.osd
 
     def __init__(self, client: DaemonClient, parent: QObject | None = None,
                  dialog_parent: QWidget | None = None):
@@ -52,6 +53,7 @@ class TrayIcon(QSystemTrayIcon):
         self._dialog_parent = dialog_parent
         self._theme = "synapse"
         self._language = "system"
+        self._osd = True
         self._language_menu: QMenu | None = None
         self.setToolTip(APP_NAME)
         self.menu = QMenu()
@@ -80,6 +82,10 @@ class TrayIcon(QSystemTrayIcon):
         self._theme = name
         self.rebuild_menu()
 
+    def set_osd_checked(self, on: bool) -> None:
+        self._osd = on
+        self.rebuild_menu()
+
     def set_language_checked(self, name: str) -> None:
         self._language = name
         self.rebuild_menu()
@@ -105,6 +111,10 @@ class TrayIcon(QSystemTrayIcon):
         colours.setCheckable(True)
         colours.setChecked(self._theme == "system")
         colours.triggered.connect(lambda on: self.themeRequested.emit("system" if on else "synapse"))
+        osd = m.addAction(self.tr("Bildschirmanzeige"))
+        osd.setCheckable(True)
+        osd.setChecked(self._osd)
+        osd.triggered.connect(lambda on: self.osdRequested.emit(on))
         self._language_menu = add_language_menu(m, self._language, self.languageRequested.emit)
         m.addAction(self.tr("Fenster öffnen")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
         if flat:  # with several devices every submenu restores its own mouse

@@ -240,13 +240,15 @@ class Settings:
     language: str  # "system" | "de" | "en" | "es" | "fr" (GUI restart needed)
     dpi_limit: int  # GUI slider maximum, one of DPI_LIMIT_CHOICES
     last_model: str  # device model the window showed last ("" = none yet)
+    osd: bool  # on-screen display on profile / DPI changes
 
     def __init__(self, active_profile: str | None = None, low_battery_notify: int = 15,
                  theme: str = "synapse", idle_time: int | None = None,
                  low_battery_threshold: int | None = None,
                  scroll_stage_names: dict[int, str] | None = None,
                  language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
-                 active_profiles: dict[str, str] | None = None, last_model: str = ""):
+                 active_profiles: dict[str, str] | None = None, last_model: str = "",
+                 osd: bool = True):
         self.active_profiles = dict(active_profiles or {})
         if active_profile is not None:
             self.active_profiles[NAGA_MODEL] = active_profile
@@ -259,6 +261,7 @@ class Settings:
         self.language = language
         self.dpi_limit = dpi_limit
         self.last_model = last_model
+        self.osd = osd
 
     @property
     def active_profile(self) -> str:
@@ -279,7 +282,8 @@ class Settings:
                                        sorted(self.scroll_stage_names.items())},
                 "language": self.language,
                 "dpi_limit": self.dpi_limit,
-                "last_model": self.last_model}
+                "last_model": self.last_model,
+                "osd": self.osd}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
@@ -297,7 +301,7 @@ class Settings:
                    d.get("low_battery_threshold"), stage_names,
                    str(d.get("language", "system")),
                    _dpi_limit(d.get("dpi_limit")), active_profiles=active,
-                   last_model=str(d.get("last_model", "")))
+                   last_model=str(d.get("last_model", "")), osd=bool(d.get("osd", True)))
 
 
 @dataclass

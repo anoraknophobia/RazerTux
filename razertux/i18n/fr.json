@@ -273,7 +273,8 @@
     "Teilweise wiederhergestellt": "Restauration partielle",
     "Wiederhergestellt": "Restauré",
     "Wiederherstellen fehlgeschlagen": "Échec de la restauration",
-    "Wiederherstellen nicht möglich": "Restauration impossible"
+    "Wiederherstellen nicht möglich": "Restauration impossible",
+    "Bildschirmanzeige": "Affichage à l'écran"
   },
   "app": {
     "Konfiguration für die Razer Naga V2 Pro": "Configuration de la Razer Naga V2 Pro",
@@ -408,5 +409,9 @@
     "Schließen": "Fermer",
     "Speichern fehlgeschlagen:": "Échec de l’enregistrement :",
     "Taste anlernen: %1": "Apprendre le bouton : %1"
+  },
+  "OsdWindow": {
+    "DPI": "DPI",
+    "PROFIL": "PROFIL"
   }
 }

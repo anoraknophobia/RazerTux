@@ -26,7 +26,7 @@ def test_menu_when_up(tray):
     assert "Akku: 80 %" in texts
     assert texts[-3:] == ["Fenster öffnen", "Originalzustand wiederherstellen", "Beenden"]
     radios = {a.text(): a.isChecked() for a in tr.menu.actions()
-              if a.isCheckable() and a.text() != "Systemfarben verwenden"}
+              if a.isCheckable() and a.text() not in ("Systemfarben verwenden", "Bildschirmanzeige")}
     assert radios == {"Standard": False, "Zwei": True}
 
 
@@ -256,3 +256,15 @@ def test_daemon_error_in_device_list_keeps_menu_usable(qapp):
     t.call = orig
     tr.rebuild_menu()
     assert set(_submenus(tr)) == {"Razer Naga V2 Pro", "Razer DeathAdder V2"}
+
+
+def test_osd_toggle_in_menu(tray):
+    tr, t = tray
+    seen = []
+    tr.osdRequested.connect(seen.append)
+    act = next(a for a in tr.menu.actions() if a.text() == "Bildschirmanzeige")
+    assert act.isCheckable() and act.isChecked()
+    act.trigger()
+    assert seen == [False]
+    tr.set_osd_checked(False)
+    assert not next(a for a in tr.menu.actions() if a.text() == "Bildschirmanzeige").isChecked()

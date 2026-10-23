@@ -43,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
         LanguageController, install_language, restart_args, start_new_instance,
     )
     from razertux.gui.main_window import MainWindow
+    from razertux.gui.osd import OsdController
     from razertux.gui.theme import ThemeController
     from razertux.gui.tray import TrayIcon, app_icon
 
@@ -72,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
         view.set_theme_checked(theme.name)
         view.themeRequested.connect(theme.set_theme)
         theme.changed.connect(view.set_theme_checked)
+    osd = OsdController(client, store, theme_name=lambda: theme.name)
+    tray.set_osd_checked(osd.enabled)
+    tray.osdRequested.connect(osd.set_enabled)
     language = LanguageController(store, dialog_parent=window)
     for view in (window, tray):
         view.set_language_checked(language.name)
