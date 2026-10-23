@@ -188,7 +188,8 @@ def test_entry_points_match_packaging():
     assert data["project"]["version"] == "0.3.0"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
-                       "razertux-gui": "razertux.gui.app:main"}
+                       "razertux-gui": "razertux.gui.app:main",
+                       "razertux-record": "razertux.gui.recorder_wizard:main"}
     assert "ExecStart=/usr/bin/razertuxd" in _read("razertuxd.service")
     assert "Exec=/usr/bin/razertuxd" in _read("io.github.razertux.service")
     for f in ("razertux.desktop", "razertux-tray.desktop"):

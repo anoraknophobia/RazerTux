@@ -44,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     from razertux.gui.main_window import MainWindow
     from razertux.gui.osd import OsdController
+    from razertux.gui.recorder_wizard import open_recorder
     from razertux.gui.theme import ThemeController
     from razertux.gui.tray import TrayIcon, app_icon
 
@@ -108,6 +109,7 @@ def main(argv: list[str] | None = None) -> int:
     tray.showWindowRequested.connect(show_window)
     tray.toggleWindowRequested.connect(toggle_window)
     tray.quitRequested.connect(quit_app)
+    tray.recordRequested.connect(lambda: open_recorder(window, client))
     instance.showRequested.connect(show_window)
     if have_tray:
         tray.show()

@@ -18,6 +18,7 @@ test = ["pytest", "pytest-asyncio"]
 razertux = "razertux.cli:main"
 razertuxd = "razertux.daemon.main:main"
 razertux-gui = "razertux.gui.app:main"
+razertux-record = "razertux.gui.recorder_wizard:main"
 
 [tool.setuptools.packages.find]
 include = ["razertux*"]
