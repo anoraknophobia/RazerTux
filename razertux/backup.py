@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 CORE_FIELDS = ("firmware", "dpi", "poll_rate")
 
 
+def backup_path(model: str, root: Path) -> Path:
+    """Per-device backup file. (The Naga's legacy path root/mouse-backup.json is migrated later.)"""
+    return Path(root) / "backups" / f"{model}.json"
+
+
 class BackupError(Exception):
     pass
 
