@@ -81,27 +81,18 @@ class TrayIcon(QSystemTrayIcon):
     # -- menu -----------------------------------------------------------------
     def rebuild_menu(self) -> None:
         m = self.menu
-        m.clear()
         if self._language_menu is not None:  # clear() keeps submenus alive
-            self._language_menu.deleteLater()
-        up = self.client.is_available
-        if not up:
+            try:
+                self._language_menu.deleteLater()
+            except RuntimeError:  # already gone
+                pass
+            self._language_menu = None
+        m.clear()
+        try:
+            self._add_daemon_entries(m)
+        except DaemonError:  # daemon going away mid-rebuild (e.g. restart)
+            m.clear()
             m.addAction(self.tr("Dienst läuft nicht")).setEnabled(False)
-        else:
-            active = self.client.active_profile()
-            group = QActionGroup(m)
-            group.setExclusive(True)
-            profiles = self.client.list_profiles()
-            names = dict(profiles)
-            m.addAction(self.tr("Aktives Profil: %1").replace("%1", names.get(active, active))).setEnabled(False)
-            for pid, name in profiles:
-                a = m.addAction(name)
-                a.setCheckable(True)
-                a.setChecked(pid == active)
-                group.addAction(a)
-                a.triggered.connect(lambda _=False, pid=pid: self.client.activate_profile(pid))
-            m.addSeparator()
-            m.addAction(battery_text(self.client.status())).setEnabled(False)
         m.addSeparator()
         colours = m.addAction(self.tr("Systemfarben verwenden"))
         colours.setCheckable(True)
@@ -112,6 +103,25 @@ class TrayIcon(QSystemTrayIcon):
         m.addAction(self.tr("Originalzustand wiederherstellen")).triggered.connect(lambda _=False: self.restore_original())
         m.addSeparator()
         m.addAction(self.tr("Beenden")).triggered.connect(lambda _=False: self.quitRequested.emit())
+
+    def _add_daemon_entries(self, m: QMenu) -> None:
+        if not self.client.is_available:
+            m.addAction(self.tr("Dienst läuft nicht")).setEnabled(False)
+            return
+        active = self.client.active_profile()
+        group = QActionGroup(m)
+        group.setExclusive(True)
+        profiles = self.client.list_profiles()
+        names = dict(profiles)
+        m.addAction(self.tr("Aktives Profil: %1").replace("%1", names.get(active, active))).setEnabled(False)
+        for pid, name in profiles:
+            a = m.addAction(name)
+            a.setCheckable(True)
+            a.setChecked(pid == active)
+            group.addAction(a)
+            a.triggered.connect(lambda _=False, pid=pid: self.client.activate_profile(pid))
+        m.addSeparator()
+        m.addAction(battery_text(self.client.status())).setEnabled(False)
 
     def menu_texts(self) -> list[str]:
         return [a.text() for a in self.menu.actions() if not a.isSeparator()]

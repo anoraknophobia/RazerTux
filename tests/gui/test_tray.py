@@ -121,3 +121,25 @@ def test_system_colours_toggle(tray):
     tr.rebuild_menu()
     action = next(a for a in tr.menu.actions() if a.text() == "Systemfarben verwenden")
     assert action.isChecked()
+
+
+def test_daemon_error_mid_rebuild_keeps_menu_usable(tray):
+    # hardware: daemon restarting -> "Remote peer disconnected" during the rebuild;
+    # the menu stayed empty for good (every later rebuild hit a deleted submenu)
+    from razertux.gui.dbus_client import DaemonError
+    tr, t = tray
+    orig = t.call
+
+    def failing(member, signature="", args=()):
+        if member == "GetActiveProfile":
+            raise DaemonError("org.freedesktop.DBus.Error.NoReply", "Remote peer disconnected")
+        return orig(member, signature, args)
+
+    t.call = failing
+    tr.rebuild_menu()
+    assert tr.menu_texts()[0] == "Dienst läuft nicht"
+    assert tr.menu_texts()[-1] == "Beenden"
+    t.call = orig
+    tr.rebuild_menu()  # must not raise on the old language submenu
+    tr.rebuild_menu()
+    assert "Aktives Profil: Zwei" in tr.menu_texts() and tr.menu_texts()[-1] == "Beenden"
