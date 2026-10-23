@@ -306,3 +306,38 @@ def test_write_does_not_touch_device_mode():
     d.set_poll_rate(500)
     d.set_dpi(800, 800)
     assert (0x00, 0x04) not in t.sent
+
+
+def _onboard(active, dpis):
+    entries = b"".join(bytes([i, d >> 8, d & 0xFF, d >> 8, d & 0xFF, 0, 0])
+                       for i, d in enumerate(dpis, start=1))
+    return bytes([VARSTORE, active, len(dpis)]) + entries
+
+
+def test_repair_active_stage_valid_table_untouched():
+    t = FakeTransport({(0x04, 0x83): _onboard(2, [2500, 800, 1600])})
+    assert NagaV2Pro(t).repair_active_stage() == (800, 800)
+    assert t.sent == [(0x04, 0x83)]
+    assert t.requests[0].args[0] == VARSTORE and t.requests[0].size == 0x26
+
+
+def test_repair_active_stage_invalid_id_reactivates_first():
+    # seen on hardware: active id 0x0b with 5 stages -> firmware used DPI 52582
+    table = _onboard(0x0B, [2500, 800, 1600, 3200, 6400])
+    t = FakeTransport({(0x04, 0x83): table, (0x04, 0x06): lambda a: a})
+    assert NagaV2Pro(t).repair_active_stage() == (2500, 2500)
+    w = t.requests[1]
+    assert (w.cmd_class, w.cmd_id, w.size) == (0x04, 0x06, 0x26)
+    assert w.args[:3] == bytes([VARSTORE, 1, 5])
+    assert w.args[3:3 + 35] == table[3:]  # stage entries written back unchanged
+
+
+@pytest.mark.parametrize("table", [
+    bytes([VARSTORE, 9, 0]),                       # no stages
+    _onboard(9, [2500, 800])[:10],                 # truncated
+    _onboard(9, [2500])[:3] + bytes([1, 0xCD, 0x66, 0xCD, 0x66, 0, 0]),  # 52582
+])
+def test_repair_active_stage_invalid_table_not_written(table):
+    t = FakeTransport({(0x04, 0x83): table, (0x04, 0x06): lambda a: a})
+    assert NagaV2Pro(t).repair_active_stage() is None
+    assert (0x04, 0x06) not in t.sent

@@ -137,6 +137,28 @@ class NagaV2Pro:
             args += bytes([i, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])
         self._get(0x04, 0x06, bytes(args), 0x26)
 
+    def repair_active_stage(self) -> tuple[int, int] | None:
+        """Onboard stage table (class 0x04 id 0x83 VARSTORE, the one the back top
+        button cycles; entries carry 1-based stage ids). If the active id is not in
+        the table, make the first stage active again (VARSTORE, entries unchanged).
+        Seen on hardware: active 0x0b with 5 stages, the mouse then ran at 52582 DPI.
+        Returns the active stage's (x, y), or None if the table is unusable."""
+        a = self._get(0x04, 0x83, bytes([VARSTORE]), 0x26)
+        if len(a) < 3:
+            return None
+        active, count = a[1], a[2]
+        if not 1 <= count <= 5 or len(a) < 3 + 7 * count:
+            return None
+        entries = [a[3 + 7 * i: 10 + 7 * i] for i in range(count)]
+        dpis = {e[0]: ((e[1] << 8) | e[2], (e[3] << 8) | e[4]) for e in entries}
+        if not all(100 <= v <= 30000 for xy in dpis.values() for v in xy):
+            return None
+        if active in dpis:
+            return dpis[active]
+        first = entries[0][0]
+        self._get(0x04, 0x06, bytes([VARSTORE, first, count]) + b"".join(entries), 0x26)
+        return dpis[first]
+
     def set_poll_rate(self, hz: int) -> None:
         """razer_chroma_misc_set_polling_rate: class 0x00 id 0x05 size 1 (no storage arg)."""
         if hz not in _POLL_BYTE:

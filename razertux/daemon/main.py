@@ -15,7 +15,7 @@ from collections.abc import Awaitable, Callable, Coroutine
 from pathlib import Path
 from typing import Any
 
-from razertux.config.model import Profile, Settings, default_profile
+from razertux.config.model import DPI_MAX, DPI_MIN, Profile, Settings, default_profile
 from razertux.config.store import ConfigStore
 from razertux.engine.mapper import Mapper
 from razertux.hw.buttons import DRIVER_MODE, NORMAL_MODE, parse_notification
@@ -289,12 +289,37 @@ class Daemon:
             kind, value = note
             if kind == "scroll_stage":
                 self._set_scroll_stage(value)
+            elif not DPI_MIN <= value <= DPI_MAX:
+                self._fix_invalid_dpi(value)
             elif self._hw["dpi"] != value:
                 self._hw["dpi"] = value
                 self.service.notify_status()
             return
         if self._mode == DRIVER_MODE:
             await self.router.vendor_report(report)
+
+    def _fix_invalid_dpi(self, bad: int) -> None:
+        """The mouse reported a DPI beyond its range (an invalid onboard stage):
+        re-activate a valid stage and set that stage's DPI."""
+        logger.warning("Maus meldet ungültige DPI %d (erlaubt %d-%d) – wird korrigiert",
+                       bad, DPI_MIN, DPI_MAX)
+        naga = self._naga
+        if naga is None:
+            return
+        xy = _safe(naga.repair_active_stage, None)
+        if xy is None:
+            last = self._hw["dpi"]
+            if not DPI_MIN <= last <= DPI_MAX:
+                logger.warning("Keine gültige DPI bekannt – bitte DPI im Reiter Leistung setzen")
+                return
+            xy = (last, last)
+        try:
+            naga.set_dpi(*xy)
+        except _HW_ERRORS as e:
+            logger.warning("DPI %dx%d nicht gesetzt: %s", xy[0], xy[1], e)
+            return
+        self._hw["dpi"] = xy[0]
+        self.service.notify_status()
 
     def _set_scroll_stage(self, stage: int) -> None:
         if stage == self._scroll_stage:

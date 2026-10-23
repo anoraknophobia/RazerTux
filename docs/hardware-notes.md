@@ -66,3 +66,19 @@ aus → Normalmodus; bei Verbinden, Profilwechsel und Reload), beim sauberen Bee
 Normalmodus. Im Normalmodus ignoriert der Dienst die Belegungen von TOP_1/TOP_2. Der Dienst
 wertet `05 3a`/`05 02` in beiden Modi aus (Status `scroll_stage`, `dpi`) und merkt sich den
 letzten Slot in `~/.config/razertux/state.json`.
+
+## DPI-Stufen in der Maus (2026-10-23)
+
+- Die Stufen-Tabelle, die die obere hintere Taste durchschaltet, liest `0x04/0x83` (VARSTORE, Größe 0x26):
+  `[store, aktive Stufen-ID, Anzahl, je Stufe: ID x_hi x_lo y_hi y_lo 00 00]`, IDs 1-basiert (von Synapse geschrieben).
+  `0x04/0x06` schreibt dieselbe Tabelle. `0x04/0x86` (OpenRazer) zeigt nur 1 Stufe.
+- Beobachtet: aktive ID 0x0b bei 5 Stufen → Maus lief mit 52582×5696 DPI. Ursache vermutlich eine Lese-Suche
+  über unbekannte Befehle der Klasse 0x04. Seit 0.2.1 korrigiert der Dienst eine gemeldete DPI außerhalb
+  100–30000 sofort (`repair_active_stage` + `set_dpi`).
+- Auf Wunsch des Nutzers umsortiert: 800, 1600, 2500 (aktiv), 3200, 6400.
+
+## Mausrad-Stufen: Suche nach Setz-Befehl (2026-10-23)
+
+- Meldung `05 3a <slot> <0x80|preset>`, Preset-IDs: Standard 1, Distinct 2, Ultra-fine 3, Adaptive 4, Smooth 5, Custom 6.
+- `0x02/0x18` (OpenRazer-PR #2741) → Status 0x05 (nicht unterstützt). Kein Lese-Befehl liefert Tension/Steps.
+  Nächster Schritt: USB-Mitschnitt unter Windows.

@@ -1355,3 +1355,53 @@ async def test_device_mode_mismatch_on_poll_reapplies(tmp_path):
     d._battery.poll()
     assert modes(t) == [DRIVER_MODE, DRIVER_MODE] and len(applied) == 2
     await d.shutdown()
+
+
+def _onboard_table(active):
+    dpis = [2500, 800, 1600, 3200, 6400]
+    return bytes([1, active, len(dpis)]) + b"".join(
+        bytes([i, d >> 8, d & 0xFF, d >> 8, d & 0xFF, 0, 0]) for i, d in enumerate(dpis, 1))
+
+
+async def _connected_with_reader(tmp_path, table):
+    readers = []
+    t = naga_transport()
+    t.responses[(0x04, 0x83)] = table
+    t.responses[(0x04, 0x06)] = lambda a: a
+    d, _ = make_daemon(tmp_path, transport=t, readers=readers)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    return d, t, readers[-1]
+
+
+async def test_invalid_dpi_notification_repairs_stage_and_dpi(tmp_path):
+    # hardware: back top button landed on stage id 0x0b -> mouse reported 52582 DPI
+    d, t, reader = await _connected_with_reader(tmp_path, _onboard_table(0x0B))
+    t.requests.clear()
+    await reader.report(bytes.fromhex("0502cd661640") + bytes(10))
+    writes = [(r.cmd_class, r.cmd_id, bytes(r.args[:5])) for r in t.requests
+              if (r.cmd_class, r.cmd_id) in ((0x04, 0x06), (0x04, 0x05))]
+    assert writes[0][:2] == (0x04, 0x06) and writes[0][2][:3] == bytes([1, 1, 5])
+    assert writes[1] == (0x04, 0x05, bytes([0, 0x09, 0xC4, 0x09, 0xC4]))
+    assert d.hw_status()["dpi"] == 2500
+    await d.shutdown()
+
+
+async def test_invalid_dpi_with_valid_table_sets_active_stage_dpi(tmp_path):
+    d, t, reader = await _connected_with_reader(tmp_path, _onboard_table(3))
+    t.requests.clear()
+    await reader.report(bytes.fromhex("0502cd66cd66") + bytes(10))
+    assert (0x04, 0x06) not in [(r.cmd_class, r.cmd_id) for r in t.requests]
+    dpi = [r for r in t.requests if (r.cmd_class, r.cmd_id) == (0x04, 0x05)]
+    assert bytes(dpi[0].args[1:5]) == bytes([0x06, 0x40, 0x06, 0x40])  # stage 3: 1600
+    assert d.hw_status()["dpi"] == 1600
+    await d.shutdown()
+
+
+async def test_valid_dpi_notification_writes_nothing(tmp_path):
+    d, t, reader = await _connected_with_reader(tmp_path, _onboard_table(0x0B))
+    t.requests.clear()
+    await reader.report(bytes.fromhex("0502753075300000") + bytes(8))  # 30000 = max
+    assert t.requests == [] and d.hw_status()["dpi"] == 30000
+    await d.shutdown()
