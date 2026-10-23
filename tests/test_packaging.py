@@ -64,7 +64,7 @@ def test_udev_rules():
 def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
-    for line in ("pkgname=razertux", "pkgver=0.2.2", "pkgrel=1", "replaces=(naga-config)",
+    for line in ("pkgname=razertux", "pkgver=0.2.3", "pkgrel=1", "replaces=(naga-config)",
                  "conflicts=(naga-config openrazer-daemon openrazer-driver-dkms)",
                  "provides=()", "install=razertux.install"):
         assert line in lines, line
@@ -122,7 +122,7 @@ def test_icon_is_a_scalable_svg_with_the_green_accent():
 def test_entry_points_match_packaging():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert data["project"]["name"] == "razertux"
-    assert data["project"]["version"] == "0.2.2"
+    assert data["project"]["version"] == "0.2.3"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
                        "razertux-gui": "razertux.gui.app:main"}
@@ -135,7 +135,7 @@ def test_entry_points_match_packaging():
 
 def test_package_version_matches():
     import razertux
-    assert razertux.__version__ == "0.2.2"
+    assert razertux.__version__ == "0.2.3"
 
 
 def test_pyproject_license_is_spdx_expression():

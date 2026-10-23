@@ -122,3 +122,56 @@ def test_poll_rate_buttons(tab):
     assert p.poll_rate == 1000
     tab.poll_buttons[None].click()
     assert p.poll_rate is None
+
+
+from razertux.config.model import DPI_LIMIT_CHOICES, Settings
+
+
+def test_dpi_limit_default_caps_sliders_at_10000(tab):
+    s = Settings("p")
+    assert s.dpi_limit == 10000
+    tab.load_settings(s)
+    tab.load(staged())
+    assert tab.limit_combo.currentData() == 10000
+    for r in tab.rows:
+        assert r.slider.maximum() * 50 == 10000 and r.spin_x.maximum() == 10000
+    tab.rows[0].spin_x.setValue(25000)
+    assert tab.rows[0].spin_x.value() == 10000
+
+
+def test_dpi_limit_change_updates_rows_and_settings(tab):
+    s = Settings("p")
+    tab.load_settings(s)
+    tab.load(staged())
+    tab.changes.clear()
+    tab.limit_combo.setCurrentIndex(DPI_LIMIT_CHOICES.index(30000))
+    assert s.dpi_limit == 30000 and tab.changes
+    assert all(r.spin_x.maximum() == 30000 and r.spin_y.maximum() == 30000 for r in tab.rows)
+    assert DPI_LIMIT_CHOICES[0] < 10000 < DPI_LIMIT_CHOICES[-1] == 30000
+
+
+def test_profile_above_limit_is_not_cut(tab):
+    tab.load_settings(Settings("p"))
+    p = Profile(id="p", name="P", dpi_stages=[(800, 800), (16000, 16000)], active_stage=1)
+    tab.load(p)
+    assert tab.rows[1].values() == (16000, 16000)
+    assert p.dpi_stages == [(800, 800), (16000, 16000)] and tab.changes == []
+
+
+def test_settings_dpi_limit_roundtrip_and_invalid():
+    s = Settings("p", dpi_limit=16000)
+    assert Settings.from_dict(s.to_dict()).dpi_limit == 16000
+    d = Settings("p").to_dict()
+    for bad in (123, "x", 99999):
+        d["dpi_limit"] = bad
+        assert Settings.from_dict(d).dpi_limit == 10000
+    del d["dpi_limit"]
+    assert Settings.from_dict(d).dpi_limit == 10000
+
+
+def test_added_stage_stays_within_limit(tab):
+    tab.load_settings(Settings("p"))
+    p = Profile(id="p", name="P", dpi_stages=[(800, 800), (6400, 6400)], active_stage=1)
+    tab.load(p)
+    assert tab.add_stage()
+    assert p.dpi_stages[-1] == (10000, 10000)

@@ -180,7 +180,9 @@
     "DPI dieses Profils festlegen": "Definir los DPI de este perfil",
     "Empfindlichkeit": "Sensibilidad",
     "Empfindlichkeitsstufen": "Niveles de sensibilidad",
+    "Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.": "Valor máximo de los controles de DPI. El ratón admite hasta %1 DPI.",
     "Nicht ändern": "Sin cambios",
+    "Reglergrenze": "Límite del control",
     "Stufe hinzufügen": "Añadir nivel",
     "Wie oft pro Sekunde (Hz) die Maus Daten sendet.": "Cuántas veces por segundo (Hz) envía datos el ratón.",
     "X/Y getrennt": "Sensibilidad X-Y independiente"

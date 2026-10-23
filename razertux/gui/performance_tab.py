@@ -9,11 +9,13 @@ import math
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QButtonGroup, QCheckBox, QGridLayout, QHBoxLayout, QLabel, QPushButton,
+    QButtonGroup, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QLabel, QPushButton,
     QRadioButton, QSlider, QSpinBox, QVBoxLayout, QWidget,
 )
 
-from razertux.config.model import DPI_MAX, DPI_MIN, MAX_STAGES, POLL_RATES, Profile
+from razertux.config.model import (
+    DEFAULT_DPI_LIMIT, DPI_LIMIT_CHOICES, DPI_MAX, DPI_MIN, MAX_STAGES, POLL_RATES, Profile, Settings,
+)
 from razertux.gui.widgets import Card, ToggleSwitch, description
 
 DPI_STEP = 50
@@ -60,6 +62,17 @@ class StageRow(QWidget):
         self.spin_x.valueChanged.connect(self._x_changed)
         self.spin_y.valueChanged.connect(self._y_changed)
 
+    def set_limit(self, limit: int) -> None:
+        """Slider/spin maximum; never below the current values (no silent cuts)."""
+        top = max(limit, self.spin_x.value(), self.spin_y.value())
+        for w in (self.spin_x, self.spin_y):
+            w.blockSignals(True)
+            w.setMaximum(top)
+            w.blockSignals(False)
+        self.slider.blockSignals(True)
+        self.slider.setMaximum(top // DPI_STEP)
+        self.slider.blockSignals(False)
+
     def set_values(self, x: int, y: int) -> None:
         for w, v in ((self.spin_x, x), (self.spin_y, y), (self.slider, x // DPI_STEP)):
             w.blockSignals(True)
@@ -97,6 +110,8 @@ class PerformanceTab(QWidget):
         self.rows: list[StageRow] = []
         # full stage list + active index while "Empfindlichkeitsstufen" is off
         self._stashed: tuple[list[tuple[int, int]], int] | None = None
+        self.settings: Settings | None = None
+        self._limit = DEFAULT_DPI_LIMIT
 
         sens = Card(self.tr("Empfindlichkeit"))
         sens.add(description(self.tr("Anzahl der Punkte pro Zoll (DPI), um die sich der Zeiger bewegt.")))
@@ -117,9 +132,18 @@ class PerformanceTab(QWidget):
         scale = QHBoxLayout()
         scale.addWidget(QLabel(self.tr("DPI")))
         scale.addStretch(1)
-        scale.addWidget(QLabel(self.tr("%1 – %2, Schritte von %3")
-                               .replace("%1", str(DPI_MIN)).replace("%2", str(DPI_MAX))
-                               .replace("%3", str(DPI_STEP))))
+        self.scale_label = QLabel()
+        scale.addWidget(self.scale_label)
+        scale.addSpacing(16)
+        scale.addWidget(QLabel(self.tr("Reglergrenze")))
+        self.limit_combo = QComboBox()
+        self.limit_combo.setToolTip(self.tr("Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.")
+                                    .replace("%1", str(DPI_MAX)))
+        for v in DPI_LIMIT_CHOICES:
+            self.limit_combo.addItem(str(v), v)
+        self.limit_combo.setCurrentIndex(DPI_LIMIT_CHOICES.index(DEFAULT_DPI_LIMIT))
+        scale.addWidget(self.limit_combo)
+        self._update_scale_label()
         rows_lay.addLayout(scale)
         self.rows_layout = QVBoxLayout()
         rows_lay.addLayout(self.rows_layout)
@@ -157,6 +181,36 @@ class PerformanceTab(QWidget):
         self.stages_toggle.toggled.connect(self._on_stages_toggle)
         self.split_box.toggled.connect(self._on_split)
         self.add_btn.clicked.connect(lambda _=False: self.add_stage())
+        self.limit_combo.currentIndexChanged.connect(self._on_limit)
+
+    # -- DPI limit (global setting) ----------------------------------------------
+    def load_settings(self, settings: Settings) -> None:
+        self.settings = settings
+        self.limit_combo.blockSignals(True)
+        self.limit_combo.setCurrentIndex(DPI_LIMIT_CHOICES.index(settings.dpi_limit))
+        self.limit_combo.blockSignals(False)
+        self._apply_limit(settings.dpi_limit)
+
+    def _on_limit(self, _index: int) -> None:
+        limit = self.limit_combo.currentData()
+        self._apply_limit(limit)
+        if self.settings is not None:
+            self.settings.dpi_limit = limit
+            self.changed.emit()
+
+    def _apply_limit(self, limit: int) -> None:
+        self._limit = limit
+        for r in self.rows:
+            r.set_limit(limit)
+        self._update_scale_label()
+
+    def _double(self, v: int) -> int:
+        """Next stage's default: twice the value, at most the slider limit."""
+        return max(min(_round_dpi(v * 2), self._limit), v)
+
+    def _update_scale_label(self) -> None:
+        self.scale_label.setText(self.tr("%1 – %2, Schritte von %3").replace("%1", str(DPI_MIN))
+                                 .replace("%2", str(self._limit)).replace("%3", str(DPI_STEP)))
 
     # -- loading ---------------------------------------------------------------
     def load(self, profile: Profile) -> None:
@@ -183,6 +237,7 @@ class PerformanceTab(QWidget):
         for x, y in stages:
             row = StageRow()
             row.set_values(x, y)
+            row.set_limit(self._limit)
             row.edited.connect(self._commit)
             row.radio.toggled.connect(lambda on: on and self._commit())
             row.remove_btn.clicked.connect(lambda _=False, r=row: self.remove_stage(self.rows.index(r)))
@@ -215,7 +270,7 @@ class PerformanceTab(QWidget):
             return False
         stages = [r.values() for r in self.rows]
         x, y = stages[-1]
-        stages.append((_round_dpi(x * 2), _round_dpi(y * 2)))
+        stages.append((self._double(x), self._double(y)))
         self._rebuild(stages, self._active())
         self._commit()
         return True
@@ -249,7 +304,7 @@ class PerformanceTab(QWidget):
             self._rebuild(full, active)
         elif len(stages) == 1:
             x, y = stages[0]
-            self._rebuild([(x, y), (_round_dpi(x * 2), _round_dpi(y * 2))], 0)
+            self._rebuild([(x, y), (self._double(x), self._double(y))], 0)
         self._update_rows()
         self._commit()
 

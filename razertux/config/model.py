@@ -15,6 +15,9 @@ Zone = Literal["logo", "scroll", "thumb"]
 
 POLL_RATES = (125, 500, 1000)
 DPI_MIN, DPI_MAX, MAX_STAGES = 100, 30000, 5
+# upper end of the DPI sliders in the GUI (user setting; the mouse itself goes to DPI_MAX)
+DPI_LIMIT_CHOICES = (6400, 10000, 16000, 20000, 30000)
+DEFAULT_DPI_LIMIT = 10000
 
 
 # --- actions -------------------------------------------------------------
@@ -219,6 +222,7 @@ class Settings:
     low_battery_threshold: int | None = None
     scroll_stage_names: dict[int, str] = field(default_factory=default_stage_names)
     language: str = "system"  # "system" | "de" | "en" | "es" | "fr" (GUI restart needed)
+    dpi_limit: int = DEFAULT_DPI_LIMIT  # GUI slider maximum, one of DPI_LIMIT_CHOICES
 
     def to_dict(self) -> dict[str, Any]:
         return {"active_profile": self.active_profile,
@@ -228,7 +232,8 @@ class Settings:
                 "low_battery_threshold": self.low_battery_threshold,
                 "scroll_stage_names": {str(k): v for k, v in
                                        sorted(self.scroll_stage_names.items())},
-                "language": self.language}
+                "language": self.language,
+                "dpi_limit": self.dpi_limit}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
@@ -240,7 +245,12 @@ class Settings:
         return cls(d["active_profile"], d.get("low_battery_notify", 15),
                    d.get("theme", "synapse"), d.get("idle_time"),
                    d.get("low_battery_threshold"), stage_names,
-                   str(d.get("language", "system")))
+                   str(d.get("language", "system")),
+                   _dpi_limit(d.get("dpi_limit")))
+
+
+def _dpi_limit(value: Any) -> int:
+    return value if value in DPI_LIMIT_CHOICES and isinstance(value, int) else DEFAULT_DPI_LIMIT
 
 
 def default_profile() -> Profile:

@@ -180,7 +180,9 @@
     "DPI dieses Profils festlegen": "Set DPI for this profile",
     "Empfindlichkeit": "Sensitivity",
     "Empfindlichkeitsstufen": "Sensitivity Stages",
+    "Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.": "Highest value of the DPI sliders. The mouse itself goes up to %1 DPI.",
     "Nicht ändern": "Don't change",
+    "Reglergrenze": "Slider limit",
     "Stufe hinzufügen": "Add stage",
     "Wie oft pro Sekunde (Hz) die Maus Daten sendet.": "How often per second (Hz) the mouse sends data.",
     "X/Y getrennt": "Enable X-Y sensitivity"

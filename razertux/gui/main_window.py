@@ -30,7 +30,7 @@ from razertux.gui.scroll_tab import ScrollTab
 from razertux.hw.buttons import ButtonId
 
 POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # GUI-owned settings
-                "scroll_stage_names")
+                "scroll_stage_names", "dpi_limit")
 
 
 class MainWindow(QMainWindow, ProfileActions):
@@ -101,6 +101,7 @@ class MainWindow(QMainWindow, ProfileActions):
             self.tabs.addTab(widget, name)
         self.power_tab.load(self.settings)
         self.scroll_tab.load(self.settings)
+        self.performance_tab.load_settings(self.settings)
         view = self.menuBar().addMenu(self.tr("Ansicht"))
         self.system_colors_action = view.addAction(self.tr("Systemfarben verwenden"))
         self.system_colors_action.setCheckable(True)
@@ -178,6 +179,7 @@ class MainWindow(QMainWindow, ProfileActions):
         self._settings_baseline = self._power_dict()
         self.power_tab.load(self.settings)
         self.scroll_tab.load(self.settings)
+        self.performance_tab.load_settings(self.settings)
 
     def set_theme_checked(self, name: str) -> None:
         self.system_colors_action.setChecked(name == "system")

@@ -180,7 +180,9 @@
     "DPI dieses Profils festlegen": "Définir les DPI de ce profil",
     "Empfindlichkeit": "Sensibilité",
     "Empfindlichkeitsstufen": "Niveaux de sensibilité",
+    "Höchster Wert der DPI-Regler. Die Maus selbst kann bis %1 DPI.": "Valeur maximale des curseurs DPI. La souris elle-même va jusqu’à %1 DPI.",
     "Nicht ändern": "Ne pas modifier",
+    "Reglergrenze": "Limite du curseur",
     "Stufe hinzufügen": "Ajouter un niveau",
     "Wie oft pro Sekunde (Hz) die Maus Daten sendet.": "Nombre d’envois de données par seconde (Hz) de la souris.",
     "X/Y getrennt": "Sensibilité X-Y séparée"
