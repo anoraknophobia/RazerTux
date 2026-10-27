@@ -237,11 +237,11 @@
     "Off": "Desactivado",
     "Don't change": "No cambiar",
     "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Se aplica al perfil. «No cambiar» deja el ajuste del ratón como está.",
-    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. The values of “Custom” can be set below (experimental).": "El ratón tiene seis niveles de rueda, con los nombres de Synapse. Haz clic en un nivel para cambiar a él, o usa el botón superior delantero. Los valores de “Custom” se ajustan abajo (experimental).",
-    "Custom stage (experimental)": "Nivel Custom (experimental)",
-    "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it. Work in progress: if the wheel feels wrong, choose other values here or select “Custom” in Synapse again.": "Ajusta la tensión y los pasos del nivel “Custom” en el ratón, como lo hace Synapse. En desarrollo: si la rueda se siente mal, elige otros valores aquí o vuelve a seleccionar “Custom” en Synapse.",
     "Apply to the mouse": "Aplicar al ratón",
-    "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed in the mouse (values as in Razer Synapse); “Custom” can be set below.": "Cambia con un clic en un nivel o con el botón superior delantero. Los niveles 1–5 están fijos en el ratón (valores como en Razer Synapse); “Custom” se ajusta abajo."
+    "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed in the mouse (values as in Razer Synapse); “Custom” can be set below.": "Cambia con un clic en un nivel o con el botón superior delantero. Los niveles 1–5 están fijos en el ratón (valores como en Razer Synapse); “Custom” se ajusta abajo.",
+    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. The values of “Custom” can be set below.": "El ratón tiene seis niveles de rueda, con los nombres de Synapse. Haz clic en un nivel para cambiar a él, o usa el botón superior delantero. Los valores de “Custom” se ajustan abajo.",
+    "Custom stage": "Nivel Custom",
+    "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it.": "Ajusta la tensión y los pasos del nivel “Custom” en el ratón, como lo hace Synapse."
   },
   "StageRow": {
     "Active stage": "Nivel activo",
@@ -249,8 +249,7 @@
     "Remove stage": "Quitar nivel",
     "Y": "Y",
     "active": "activo",
-    "Click to switch the mouse to this stage": "Haz clic para cambiar el ratón a este nivel",
-    "adjustable below (WIP)": "ajustable abajo (WIP)"
+    "Click to switch the mouse to this stage": "Haz clic para cambiar el ratón a este nivel"
   },
   "TrayIcon": {
     "Polling rate": "Tasa de sondeo",

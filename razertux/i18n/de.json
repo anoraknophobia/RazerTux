@@ -237,11 +237,11 @@
     "Off": "Aus",
     "Don't change": "Nicht ändern",
     "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.",
-    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. The values of “Custom” can be set below (experimental).": "Die Maus hat sechs Mausrad-Stufen, benannt wie in Synapse. Klick auf eine Stufe, um zu ihr zu wechseln, oder nutze die vordere obere Taste. Die Werte von „Custom“ kannst du unten einstellen (experimentell).",
-    "Custom stage (experimental)": "Stufe Custom (experimentell)",
-    "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it. Work in progress: if the wheel feels wrong, choose other values here or select “Custom” in Synapse again.": "Setzt Widerstand und Raster der Stufe „Custom“ in der Maus, so wie Synapse es macht. Noch in Arbeit: Fühlt sich das Mausrad falsch an, wähl hier andere Werte oder wähl „Custom“ in Synapse noch einmal aus.",
     "Apply to the mouse": "Auf die Maus übertragen",
-    "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed in the mouse (values as in Razer Synapse); “Custom” can be set below.": "Umschalten per Klick auf eine Stufe oder mit der vorderen oberen Taste. Die Stufen 1–5 sind fest in der Maus hinterlegt (Werte wie in Razer Synapse); „Custom“ lässt sich unten einstellen."
+    "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed in the mouse (values as in Razer Synapse); “Custom” can be set below.": "Umschalten per Klick auf eine Stufe oder mit der vorderen oberen Taste. Die Stufen 1–5 sind fest in der Maus hinterlegt (Werte wie in Razer Synapse); „Custom“ lässt sich unten einstellen.",
+    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. The values of “Custom” can be set below.": "Die Maus hat sechs Mausrad-Stufen, benannt wie in Synapse. Klick auf eine Stufe, um zu ihr zu wechseln, oder nutze die vordere obere Taste. Die Werte von „Custom“ kannst du unten einstellen.",
+    "Custom stage": "Stufe Custom",
+    "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it.": "Setzt Widerstand und Raster der Stufe „Custom“ in der Maus, so wie Synapse es macht."
   },
   "StageRow": {
     "Active stage": "Aktive Stufe",
@@ -249,8 +249,7 @@
     "Remove stage": "Stufe entfernen",
     "Y": "Y",
     "active": "aktiv",
-    "Click to switch the mouse to this stage": "Klicken, um die Maus auf diese Stufe umzuschalten",
-    "adjustable below (WIP)": "unten einstellbar (WIP)"
+    "Click to switch the mouse to this stage": "Klicken, um die Maus auf diese Stufe umzuschalten"
   },
   "TrayIcon": {
     "Polling rate": "Abfragerate",

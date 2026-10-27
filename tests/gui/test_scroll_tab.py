@@ -22,10 +22,11 @@ def test_six_stages_with_fixed_names(tab):
     assert tab.changes == []
 
 
-def test_custom_stage_is_marked_work_in_progress(tab):
+def test_custom_stage_has_no_wip_marker_any_more(tab):
     tab.load(Settings("default"))
-    assert [not r.wip.isHidden() for r in tab.rows] == [False] * 5 + [True]
-    assert "WIP" in tab.rows[5].wip.text()
+    texts = " ".join(w.text() for w in tab.findChildren(type(tab.hint)))
+    assert "WIP" not in texts and "experimental" not in texts
+    assert tab.custom_card.isVisibleTo(tab) or tab.naga_cards.isHidden()
 
 
 def test_click_on_a_stage_requests_it(tab, qapp):

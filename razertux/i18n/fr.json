@@ -237,11 +237,11 @@
     "Off": "Désactivé",
     "Don't change": "Ne pas modifier",
     "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "S'applique au profil. « Ne pas modifier » laisse le réglage de la souris tel quel.",
-    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. The values of “Custom” can be set below (experimental).": "La souris a six niveaux de molette, nommés comme dans Synapse. Cliquez sur un niveau pour y passer, ou utilisez le bouton supérieur avant. Les valeurs de « Custom » se règlent ci-dessous (expérimental).",
-    "Custom stage (experimental)": "Niveau Custom (expérimental)",
-    "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it. Work in progress: if the wheel feels wrong, choose other values here or select “Custom” in Synapse again.": "Règle la résistance et les crans du niveau « Custom » dans la souris, comme le fait Synapse. En cours de développement : si la molette semble anormale, choisissez d’autres valeurs ici ou resélectionnez « Custom » dans Synapse.",
     "Apply to the mouse": "Appliquer à la souris",
-    "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed in the mouse (values as in Razer Synapse); “Custom” can be set below.": "Changez d’un clic sur un niveau ou avec le bouton supérieur avant. Les niveaux 1 à 5 sont fixes dans la souris (valeurs comme dans Razer Synapse) ; « Custom » se règle ci-dessous."
+    "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed in the mouse (values as in Razer Synapse); “Custom” can be set below.": "Changez d’un clic sur un niveau ou avec le bouton supérieur avant. Les niveaux 1 à 5 sont fixes dans la souris (valeurs comme dans Razer Synapse) ; « Custom » se règle ci-dessous.",
+    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. The values of “Custom” can be set below.": "La souris a six niveaux de molette, nommés comme dans Synapse. Cliquez sur un niveau pour y passer, ou utilisez le bouton supérieur avant. Les valeurs de « Custom » se règlent ci-dessous.",
+    "Custom stage": "Niveau Custom",
+    "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it.": "Règle la résistance et les crans du niveau « Custom » dans la souris, comme le fait Synapse."
   },
   "StageRow": {
     "Active stage": "Niveau actif",
@@ -249,8 +249,7 @@
     "Remove stage": "Supprimer le niveau",
     "Y": "Y",
     "active": "actif",
-    "Click to switch the mouse to this stage": "Cliquez pour passer la souris à ce niveau",
-    "adjustable below (WIP)": "réglable ci-dessous (WIP)"
+    "Click to switch the mouse to this stage": "Cliquez pour passer la souris à ce niveau"
   },
   "TrayIcon": {
     "Polling rate": "Taux d’interrogation",
