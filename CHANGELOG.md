@@ -13,7 +13,7 @@ All notable changes to RazerTux. Each version below becomes a GitHub release wit
 
 ### Changed
 - RazerTux can be installed next to OpenRazer (no more package conflict; OpenRazer is an
-  optional dependency). The banner now suggests the OpenRazer mode instead of uninstalling.
+  optional dependency). The "uninstall OpenRazer" banner is gone.
 
 ### Fixed
 - Naga V2 Pro top buttons in driver mode work while OpenRazer's kernel driver is loaded

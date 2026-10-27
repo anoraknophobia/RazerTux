@@ -769,14 +769,15 @@ async def test_daemon_activate_applies_when_connected(tmp_path):
     await d.shutdown()
 
 
-async def test_daemon_warns_when_openrazer_loaded(tmp_path, caplog):
+async def test_daemon_notes_openrazer_loaded_without_warning(tmp_path, caplog):
+    """RazerTux mode next to a loaded OpenRazer driver is a valid choice: info, no warning."""
     d, _ = make_daemon(tmp_path, openrazer=True)
-    await d.start()
-    d.on_added("mouse", FakeDev("/dev/input/event18"))
-    await d.settle()
-    warnings = [r for r in caplog.records
-                if r.levelname == "WARNING" and "OpenRazer" in r.getMessage()]
-    assert len(warnings) == 2  # startup + connect
+    with caplog.at_level("INFO"):
+        await d.start()
+        d.on_added("mouse", FakeDev("/dev/input/event18"))
+        await d.settle()
+    notes = [r for r in caplog.records if "OpenRazer" in r.getMessage()]
+    assert len(notes) == 2 and {r.levelname for r in notes} == {"INFO"}  # startup + connect
     await d.shutdown()
 
 

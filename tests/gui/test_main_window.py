@@ -167,19 +167,14 @@ def test_store_errors_are_shown(env):
     assert w.errors_banner.isVisible() and "p2.json" in w.errors_banner.label.text()
 
 
-def test_banner_only_in_razertux_mode(env):
+def test_no_banner_while_openrazer_mode_works_or_razertux_chosen(env):
+    """RazerTux alone next to an installed OpenRazer is a valid choice: no nagging."""
     w, *_ = env
     w.show()
-    assert not w.openrazer_banner.isVisible()
-    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True,
-                                                "device_access": "razertux"})
-    assert w.openrazer_banner.isVisible()
-    assert "View → Device access" in w.openrazer_banner.label.text()
-    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True,
-                                                "device_access": "openrazer"})
-    assert not w.openrazer_banner.isVisible()
-    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": False})
-    assert not w.openrazer_banner.isVisible()
+    for access in ("razertux", "openrazer", "openrazer-unknown-device"):
+        w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True,
+                                                    "device_access": access})
+        assert not w.openrazer_banner.isVisible(), access
 
 
 def test_openrazer_unavailable_shown(env):

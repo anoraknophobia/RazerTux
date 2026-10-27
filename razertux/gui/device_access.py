@@ -22,10 +22,7 @@ def banner_text(status: dict) -> str:
     access = status.get("device_access", "razertux")
     if access == "openrazer-unavailable":
         return _tr("OpenRazer not running – RazerTux manages everything for now")
-    if access == "razertux" and status.get("openrazer_loaded"):
-        return _tr("OpenRazer detected – switch to “RazerTux + OpenRazer” under "
-                   "View → Device access")
-    return ""
+    return ""  # RazerTux alone next to an installed OpenRazer is a valid choice
 
 
 class DeviceAccessMenu:

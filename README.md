@@ -226,7 +226,8 @@ it. Choose under **View → Device access**:
 
 - **RazerTux** (default): RazerTux talks to the mouse itself. No kernel module needed.
   Lighting, DPI and polling rate are set temporarily and the mouse's own values are written
-  back when RazerTux stops.
+  back when RazerTux stops. This also works with OpenRazer installed, as long as no other
+  tool (e.g. Polychromatic) changes the same settings.
 - **RazerTux + OpenRazer**: whatever the OpenRazer daemon offers for your mouse (lighting
   zones, polling rate, battery, power settings, DPI) goes through OpenRazer, so tools like
   Polychromatic and RazerTux do not fight. OpenRazer stores these values in the mouse

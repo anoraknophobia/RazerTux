@@ -241,7 +241,7 @@ async def test_conflict_warning_only_in_razertux_mode(tmp_path, caplog):
     store.save_settings(Settings(device_access="razertux"))
     with caplog.at_level(logging.WARNING):
         d._warn_openrazer()
-    assert "Device access" in caplog.text
+    assert "razermouse" not in caplog.text  # RazerTux alone is a valid choice, no warning
     await d.shutdown()
 
 

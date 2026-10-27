@@ -57,8 +57,7 @@
   "DeviceAccess": {
     "Device access": "Accès au périphérique",
     "OpenRazer daemon not running": "Le service OpenRazer n’est pas lancé",
-    "OpenRazer not running – RazerTux manages everything for now": "OpenRazer n’est pas lancé – RazerTux gère tout pour l’instant",
-    "OpenRazer detected – switch to “RazerTux + OpenRazer” under View → Device access": "OpenRazer détecté – passez à « RazerTux + OpenRazer » dans Affichage → Accès au périphérique"
+    "OpenRazer not running – RazerTux manages everything for now": "OpenRazer n’est pas lancé – RazerTux gère tout pour l’instant"
   },
   "HeaderBar": {
     "Profile": "Profil",
