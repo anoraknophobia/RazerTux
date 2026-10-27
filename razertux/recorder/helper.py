@@ -49,8 +49,6 @@ from pathlib import Path
 
 from razertux.devices import db
 from razertux.razer.transport import HidrawTransport, _FcntlIo
-from evdev import ecodes as E
-
 from razertux.recorder.discover import RAZER_VID, Node, _event_kind, list_razer_devices
 from razertux.recorder.keyfilter import SignalFilter
 from razertux.recorder.whitelist import LIGHT_STATES, DeviceSession, has_razer_feature_report
@@ -199,7 +197,6 @@ class _Open:
     session: DeviceSession | None
     transport: object | None
     events: list[tuple[str, str]]
-    full_keyboards: frozenset[str] = frozenset()  # labels of nodes that can type letters
 
 
 def _reject_constant(name: str):
@@ -325,13 +322,10 @@ class Helper:
                 except OSError:
                     transport = None
         session = DeviceSession(pid, transport) if transport is not None else None
-        picked = [(e, f"if{i.number}:{_event_kind(e)}") for i in dev.interfaces if i.number in sel
+        events = [(e.path, f"if{i.number}:{_event_kind(e)}") for i in dev.interfaces if i.number in sel
                   for e in i.events if _EVENT_RE.fullmatch(e.path) and self._allowed(e)]
-        events = [(e.path, label) for e, label in picked]
-        # a label shared by several nodes counts as a full keyboard if any of them is one
-        full = frozenset(label for e, label in picked if E.KEY_A in e.key)
         kind = db.kind_by_pid(pid) or "unknown"
-        self._dev = _Open(pid, kind, session, transport, events, full)
+        self._dev = _Open(pid, kind, session, transport, events)
         emit({"ok": True, "pid": pid, "kind": kind, "model": info.model if info else "",
               "control": session is not None,
               "reads": session.reads if session else [],
@@ -373,7 +367,7 @@ class Helper:
         except OSError:
             emit({"error": "cannot open input nodes"})
             return True
-        filt = SignalFilter(kind, self._dev.full_keyboards)
+        filt = SignalFilter(kind)
         deadline = self._clock() + seconds
         keep = True
         try:

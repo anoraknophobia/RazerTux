@@ -2,14 +2,15 @@
 
 Qt-free. Fed with the listen events of the record helper (``signal`` triples); the keylogger rules
 of ``keyfilter`` are applied again here. What is stored, per guided step and for the free recording:
-the set of distinct signal names "if<N>:<node kind>:<code name>" (wheel axes with their direction
-":+"/":-"), presses only, each once, in first-seen order; no values, no timing, no repeats and no
-cursor motion (REL_X/REL_Y). Ordinary typing keys are never stored on any kind but mice; on mice
-the digit row KEY_1..KEY_0, KEY_MINUS and KEY_EQUAL (the Naga number grid) are stored when they
-come from a node that cannot type letters (the helper drops them on nodes with KEY_A), and keys of
-non-keyboard nodes are stored as they are. Of dropped typing keys only the number of distinct
-sources that sent any is kept (``standard_keys_seen``). Produces the ``buttons`` section of the
-device report.
+the SET of distinct signal names "if<N>:<node kind>:<code name>" (wheel axes with their direction
+":+"/":-"), presses only, each once; no values, no timing, no repeats, no cursor motion
+(REL_X/REL_Y) and no order: every list in the report (per-button results, free signals,
+duplicates) is sorted. Ordinary typing keys are never stored on any kind but mice. On mice, keys of
+non-keyboard nodes are stored as they are, and on nodes classified "keyboard" only the number
+grid KEY_1..KEY_0, KEY_MINUS, KEY_EQUAL (the Naga side buttons, whatever else the node declares):
+digits pressed there may be stored as a set, never in the order they were pressed. Of dropped
+typing keys only the number of distinct sources that sent any is kept (``standard_keys_seen``).
+Produces the ``buttons`` section of the device report.
 """
 from __future__ import annotations
 
@@ -105,6 +106,7 @@ class SignalSet:
         return [s for s in self._items if s[1] == ev_type]
 
     def names(self) -> list[str]:
+        """First-seen order: for the live display only (``finish`` sorts what is reported)."""
         return [f"{i[0]}:{signal_name(i[1], i[2])}" + (("" if len(i) < 4 else ":+" if i[3] > 0 else ":-"))
                 for i in self._items]
 
@@ -175,7 +177,7 @@ class Recording:
         step = self.current
         if step is not None:
             self._std_sources |= self._set.standard_sources
-            self._results[step.button.value] = value if value is not None else self._set.names()
+            self._results[step.button.value] = value if value is not None else sorted(self._set.names())
             self._index += 1
             self._set = SignalSet(self.kind)
 
@@ -209,13 +211,13 @@ class Recording:
                 out["timed_out"] = True
                 out["stopped_at"] = step.button.value
             elif self._set.names():
-                results[step.button.value] = self._set.names()
+                results[step.button.value] = sorted(self._set.names())
         counts: dict[str, int] = {}
         for v in results.values():
             for n in (v if isinstance(v, list) else ()):
                 counts[n] = counts.get(n, 0) + 1
         out["results"] = results
-        out["duplicates"] = [n for n, c in counts.items() if c > 1]  # ambiguous for the importer
-        out["signals"] = self._set.names() if self.steps is None else []
+        out["duplicates"] = sorted(n for n, c in counts.items() if c > 1)  # ambiguous for the importer
+        out["signals"] = sorted(self._set.names()) if self.steps is None else []  # never press order
         out["standard_keys_seen"] = max(int(standard_keys_seen), len(self._std_sources | self._set.standard_sources))
         return out

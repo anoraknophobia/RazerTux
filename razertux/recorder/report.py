@@ -239,14 +239,14 @@ def _sanitize(data):
     results = {}
     for k, v in _d(b.get("results")).items():
         if _NAME.match(str(k)) and not _BAD_KEY.search(str(k)):
-            results[str(k)] = "absent" if v == "absent" else _strlist(v)
+            results[str(k)] = "absent" if v == "absent" else sorted(_strlist(v))  # never an order
     buttons["results"] = results
-    buttons["signals"] = _strlist(b.get("signals"))
+    buttons["signals"] = sorted(_strlist(b.get("signals")))
     sk = b.get("standard_keys_seen")
     if isinstance(sk, (list, tuple)):  # old shape: a list of labels
         sk = len(sk)
     buttons["standard_keys_seen"] = sk if isinstance(sk, int) and not isinstance(sk, bool) and sk >= 0 else 0
-    buttons["duplicates"] = _strlist(b.get("duplicates"))
+    buttons["duplicates"] = sorted(_strlist(b.get("duplicates")))
     if b.get("timed_out") is True:
         buttons["timed_out"] = True
     if isinstance(b.get("stopped_at"), str) and _NAME.match(b["stopped_at"]):

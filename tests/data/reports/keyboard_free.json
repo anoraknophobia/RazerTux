@@ -5,11 +5,11 @@
   ],
   "results": {},
   "signals": [
+   "if0:mouse:REL_HWHEEL:+",
+   "if1:keyboard:KEY_F13",
    "if1:keyboard:KEY_F13",
    "if1:keyboard:KEY_F14",
-   "if0:mouse:REL_HWHEEL:+",
-   "if1:keyboard:KEY_F15",
-   "if1:keyboard:KEY_F13"
+   "if1:keyboard:KEY_F15"
   ],
   "standard_keys_seen": 2
  },

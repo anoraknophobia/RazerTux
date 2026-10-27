@@ -218,3 +218,15 @@ def test_user_kind_whitelisted_and_in_summary():
     for bad in ("toaster", "unknown", 3, "keyboard and more"):
         r.device["user_kind"] = bad
         assert "user_kind" not in sanitize(r)["device"]
+
+
+
+def test_sanitize_sorts_every_signal_list():
+    """Ruling R-6: whatever order a (hand-made) report has, the sanitized one stores none."""
+    data = {"buttons": {"template": "free", "signals": ["if1:keyboard:KEY_3", "if1:keyboard:KEY_1"],
+                        "results": {"side_1": ["if1:keyboard:KEY_9", "if1:keyboard:KEY_2"], "side_2": "absent"},
+                        "duplicates": ["if1:keyboard:KEY_9", "if1:keyboard:KEY_2"]}}
+    b = sanitize(data)["buttons"]
+    assert b["signals"] == ["if1:keyboard:KEY_1", "if1:keyboard:KEY_3"]
+    assert b["results"] == {"side_1": ["if1:keyboard:KEY_2", "if1:keyboard:KEY_9"], "side_2": "absent"}
+    assert b["duplicates"] == ["if1:keyboard:KEY_2", "if1:keyboard:KEY_9"]

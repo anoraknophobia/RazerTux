@@ -228,3 +228,30 @@ def test_no_signal_drops_what_the_step_caught():
     assert r.caught == []
     assert r.current.button == ButtonId.TOP_2
     assert r.finish()["results"] == {"top_1": []}
+
+
+
+def test_report_lists_are_sorted_never_in_press_order():
+    """Ruling R-6: no order is stored, so digits typed on a mouse's keyboard node (a PIN on the
+    number grid) cannot be read back from the report."""
+    for order in ([E.KEY_3, E.KEY_1, E.KEY_2], [E.KEY_2, E.KEY_3, E.KEY_1]):
+        r = Recording("mouse", "free", clock=lambda: 0.0)
+        r.start()
+        for code in order:
+            r.record(KBD, E.EV_KEY, code)
+        assert r.finish()["signals"] == ["if2:keyboard:KEY_1", "if2:keyboard:KEY_2", "if2:keyboard:KEY_3"]
+
+
+def test_guided_results_and_duplicates_are_sorted():
+    steps = GuidedSteps([(ButtonId.SIDE_1, "s1"), (ButtonId.SIDE_2, "s2")])
+    r = Recording("mouse", "mmo", steps, clock=lambda: 0.0)
+    r.start()
+    for code in (E.KEY_9, E.KEY_4):
+        r.record(KBD, E.EV_KEY, code)
+    r.next()
+    for code in (E.KEY_9, E.KEY_4):
+        r.record(KBD, E.EV_KEY, code)
+    out = r.finish()
+    assert out["results"]["side_1"] == ["if2:keyboard:KEY_4", "if2:keyboard:KEY_9"]
+    assert out["results"]["side_2"] == ["if2:keyboard:KEY_4", "if2:keyboard:KEY_9"]
+    assert out["duplicates"] == ["if2:keyboard:KEY_4", "if2:keyboard:KEY_9"]

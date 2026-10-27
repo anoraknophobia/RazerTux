@@ -992,23 +992,18 @@ def test_razer_feature_report_in_descriptor(desc, ok):
     assert whitelist.has_razer_feature_report(desc) is ok
 
 
-def test_mouse_full_keyboard_node_drops_the_grid_too():
-    f = keyfilter.SignalFilter("mouse", full_keyboards={"if2:keyboard"})
-    events = [press(E.KEY_1), press(E.KEY_A), press(E.KEY_F13), press(E.BTN_SIDE)]
-    assert _feed(f, events, "if2:keyboard") == [("if2:keyboard", E.EV_KEY, E.KEY_F13),
-                                                ("if2:keyboard", E.EV_KEY, E.BTN_SIDE)]
-    assert f.standard_keys_seen == 1
-    assert _feed(f, [press(E.KEY_1)], "if1:keyboard") == [("if1:keyboard", E.EV_KEY, E.KEY_1)]
-
-
-def test_listen_on_mouse_drops_grid_keys_of_a_node_with_letter_keys(tmp_path):
+def test_listen_on_mouse_keeps_grid_keys_of_a_keyboard_node_with_letter_keys(tmp_path):
+    """Ruling R-6: the real Naga V2 Pro keyboard node declares KEY_A; its side buttons (the number
+    grid) must still be recorded on a mouse. Letters stay dropped."""
     rig = Rig(tmp_path)
     add_device(Path(rig.root), "5-8", 0x00A7, [(3, [("Razer Naga V2 Pro", MOUSE_CAPS)]),
                                                (3, [("Razer Naga V2 Pro Keyboard", KBD_CAPS)])])
-    rig.batches[:] = [[("if1:keyboard", *press(E.KEY_1)), ("if1:keyboard", *press(E.KEY_F13))]]
+    rig.batches[:] = [[("if1:keyboard", *press(E.KEY_1)), ("if1:keyboard", *press(E.KEY_A)),
+                       ("if1:keyboard", *press(E.KEY_F13))]]
     rig.one({"op": "open", "pid": 0xA7, "bus": "5-8"})
     out, _ = rig.send({"op": "listen", "seconds": 1})
-    assert out == [{"signal": ["if1:keyboard", E.EV_KEY, E.KEY_F13]},
+    assert out == [{"signal": ["if1:keyboard", E.EV_KEY, E.KEY_1]},
+                   {"signal": ["if1:keyboard", E.EV_KEY, E.KEY_F13]},
                    {"done": True, "standard_keys_seen": 1}]
 
 
