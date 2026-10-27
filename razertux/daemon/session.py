@@ -229,6 +229,12 @@ class DeviceSession:
         self.router = InputRouter(self.mapper, out, grab=needs_grab(None, self.device_settings, info))
         self._refresh_map()
         self._learning = False
+        self._grab_lock = asyncio.Lock()  # serialises grab changes (pause/resume/learning)
+        self._paused = False  # device recorder: grabs released, mapping stopped
+        # device recorder: the helper shares the control node, so while paused nothing is sent
+        # on it (writes, mode, onboard stage reads, battery polls); True when something was
+        # skipped and resume() must apply the active profile
+        self._skipped_while_paused = False
 
         self._paths: set[str] = set()  # every input node of this model we were given
         self._mouse_path: str | None = None  # mouse node whose control channel we use
@@ -301,6 +307,7 @@ class DeviceSession:
     async def close(self) -> None:
         """Clean shutdown: write-back, normal mode, release and ungrab."""
         await self.settle()
+        self._paused = False
         self._write_back()
         await self._disconnect(reset_mode=True)
         await self.router.close()
@@ -366,15 +373,57 @@ class DeviceSession:
                                   if s.ev_type == E.EV_KEY})  # the key it sends
 
     def _wants_grab(self, profile: Profile | None = None) -> bool:
+        if self._paused:
+            return False
         profile = self.profile if profile is None else profile
         return self._learning or needs_grab(profile, self.device_settings, self.info)
 
     async def _update_grab(self) -> None:
-        want = self._wants_grab()
-        if want != self.router.grabbed:
-            logger.info("%s: input devices %s", self.info.name,
-                        "grabbed" if want else "released")
-            await self.router.set_grab(want)
+        async with self._grab_lock:
+            while True:  # state may change while set_grab awaits: settle on the latest
+                want = self._wants_grab()
+                if want == self.router.grabbed:
+                    return
+                logger.info("%s: input devices %s", self.info.name,
+                            "grabbed" if want else "released")
+                await self.router.set_grab(want)
+
+    # -- pause (device recorder) ---------------------------------------------------------
+
+    async def pause(self) -> None:
+        """Release every grab and stop mapping, so a recorder can read the raw device.
+        Learning ends. Profile switches and reloads keep the nodes released until
+        resume(). Idempotent."""
+        if self._paused:
+            return
+        self._paused = True
+        self.router.learn(None)
+        self._learning = False
+        await self._update_grab()
+        self._on_status()
+
+    async def resume(self) -> None:
+        """Back to the grab state the active profile asks for, then apply what was held back
+        while paused. Idempotent. If re-grabbing fails the session stays paused (the caller
+        retries)."""
+        if not self._paused:
+            return
+        self._paused = False
+        try:
+            await self._update_grab()
+        except BaseException:
+            self._paused = True
+            raise
+        if self._skipped_while_paused and self._mouse is not None:
+            self._skipped_while_paused = False
+            self._sync_mode(self.profile)
+            self._apply_active()
+            self.apply_power(self._settings())
+        self._on_status()
+
+    @property
+    def paused(self) -> bool:
+        return self._paused
 
     # -- learning --------------------------------------------------------------------
 
@@ -405,7 +454,8 @@ class DeviceSession:
                 "model": self.model, "name": self.info.name,
                 "verified": self.info.verified, "writable": self.writable,
                 "probe_ok": None if self.probe_result is None else self.probe_result.ok,
-                "grabbed": self.router.grabbed, "learning": self._learning}
+                "grabbed": self.router.grabbed, "learning": self._learning,
+                "paused": self._paused}
 
     def diagnostics(self) -> str:
         if self.probe_result is None or self._pid is None:
@@ -439,9 +489,13 @@ class DeviceSession:
         return m is not None and (isinstance(m, NagaV2Pro) or m.supports(feature))
 
     def _writes_allowed(self) -> bool:
-        """False (nothing is written) when not connected or read-only after a failed
-        probe; that case was logged once at connect."""
+        """False (nothing is written) when not connected, paused for the device recorder
+        (applied on resume) or read-only after a failed probe; that case was logged once
+        at connect."""
         if self._mouse is None:
+            return False
+        if self._paused:
+            self._skipped_while_paused = True
             return False
         if not self._write_ok:
             logger.debug("%s write-protected: setting discarded", self.info.name)
@@ -508,6 +562,9 @@ class DeviceSession:
         naga = self._naga
         mode = device_mode_for(profile)
         if naga is None or mode == self._mode:
+            return
+        if self._paused:
+            self._skipped_while_paused = True
             return
         try:
             naga.set_device_mode(mode)
@@ -587,6 +644,9 @@ class DeviceSession:
             return
         self._stages, self._stage_idx = [], 0
         if self._mouse is None or not self._can("dpi_stages"):
+            return
+        if self._paused:
+            self._skipped_while_paused = True
             return
         onboard = _safe(self._mouse.dpi_stages, None)
         if onboard and onboard[1]:
@@ -750,7 +810,7 @@ class DeviceSession:
                 else self._hw["connection"],
                 threshold=lambda: self._settings().low_battery_notify,
                 notify=self._low_battery, state=self._battery_warn,
-                on_poll=self._after_poll)
+                on_poll=self._after_poll, suspended=lambda: self._paused)
             self._battery.poll()
             self._battery.start()
         self._on_status()

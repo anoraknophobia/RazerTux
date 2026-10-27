@@ -1,0 +1,50 @@
+{
+ "buttons": {
+  "duplicates": [
+   "if1:keyboard:KEY_F15"
+  ],
+  "results": {},
+  "signals": [
+   "if0:mouse:REL_HWHEEL:+",
+   "if1:keyboard:KEY_F13",
+   "if1:keyboard:KEY_F13",
+   "if1:keyboard:KEY_F14",
+   "if1:keyboard:KEY_F15"
+  ],
+  "standard_keys_seen": 2
+ },
+ "device": {
+  "bcdDevice": "0100",
+  "connection": "wired",
+  "kind": "keypad",
+  "pid": 768,
+  "usb_manufacturer": "Razer",
+  "usb_product": "Razer Keypad X",
+  "user_kind": "keypad",
+  "vid": 5426
+ },
+ "interfaces": [
+  {
+   "class": 3,
+   "descriptor_sha1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "evdev": {
+    "keyboard": [
+     "KEY_F13"
+    ]
+   },
+   "number": 1,
+   "protocol": 1,
+   "subclass": 1
+  }
+ ],
+ "light": {},
+ "notes": "",
+ "reads": {},
+ "schema": "razertux-device-report",
+ "system": {
+  "distro": "CachyOS 20260101",
+  "kernel": "7.2.10-1-cachyos",
+  "razertux": "0.3.0"
+ },
+ "version": 1
+}

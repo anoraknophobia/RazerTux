@@ -2,6 +2,7 @@
 """Generate razertux/devices/openrazer_mice.json from an OpenRazer checkout.
 
 Usage: python tools/import_openrazer.py <openrazer-clone> > razertux/devices/openrazer_mice.json
+       python tools/import_openrazer.py <openrazer-clone> --others > razertux/devices/openrazer_other.json
        python tools/import_openrazer.py --udev > packaging/70-razertux.rules
 
 The OpenRazer sources are only read as text (``ast`` for the daemon classes, a small
@@ -11,6 +12,7 @@ Source data: OpenRazer (GPL-2.0-only), https://github.com/openrazer/openrazer
 from __future__ import annotations
 
 import ast
+import inspect
 import json
 import re
 import subprocess
@@ -52,6 +54,7 @@ FILE_FEATURES = {
 }
 KINDS = {"Wired": "wired", "Wireless": "wireless", "Receiver": "receiver", "Bluetooth": "bluetooth", "Dongle": "receiver"}
 SKIP_EFFECTS = {"custom"}
+KIND_TYPES = {"mouse", "keyboard", "keypad", "headset", "mousemat", "accessory", "core"}
 
 
 # --------------------------------------------------------------------------- C scanning
@@ -85,6 +88,9 @@ def function_body(src: str, name: str) -> str | None:
         return None
     start = m.end() - 1
     return src[start + 1:match_brace(src, start)]
+
+
+PROBE_EXPR = r"(?:dev->usb_pid|usb_dev->descriptor\.idProduct)"
 
 
 def top_level_switches(body: str, expr: str = r"(?:device|dev)->usb_pid"):
@@ -144,6 +150,66 @@ HELPER_RE = re.compile(r"\b(razer_attr_(?:read|write)_\w+)\s*\(")
 RAW_RE = re.compile(r"\bget_razer_report\s*\(\s*(0x[0-9A-Fa-f]+)\s*,\s*(0x[0-9A-Fa-f]+)\s*,\s*(0x[0-9A-Fa-f]+)\s*\)")
 
 
+def parse_constants(text: str) -> dict[str, int]:
+    """``#define NAME 0x..`` and ``NAME = 0x..`` enum entries of a C header."""
+    text = strip_comments(text)
+    out = {m[1]: int(m[2], 0) for m in re.finditer(r"#define\s+(\w+)\s+(0x[0-9A-Fa-f]+|\d+)\b", text)}
+    out.update({m[1]: int(m[2], 0) for m in re.finditer(r"\b([A-Z][A-Z0-9_]+)\s*=\s*(0x[0-9A-Fa-f]+|\d+)\s*[,}\n]", text)})
+    return out
+
+
+def call_args(text: str, bre, consts: dict[str, int]) -> tuple:
+    """Arguments of the first builder call in ``text``: known constants/numbers resolved, the rest "*"."""
+    m = bre.search(text)
+    if not m:
+        return ()
+    depth, cur, parts = 1, [], []
+    for c in text[m.end():]:
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        if c == "," and depth == 1:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(c)
+    parts.append("".join(cur))
+    parts = [p.strip() for p in parts]
+    if parts == [""]:
+        return ()
+    out = []
+    for p in parts:
+        if p in consts:
+            out.append(consts[p])
+        elif re.fullmatch(r"0x[0-9A-Fa-f]+|\d+", p):
+            out.append(int(p, 0))
+        else:
+            out.append("*")
+    return tuple(out)
+
+
+def resolve_blade(src: str, is_blade: bool) -> str:
+    """Keep one branch of every ``if (is_blade_laptop(device)) {A} else {B}``."""
+    pat = re.compile(r"if\s*\(\s*is_blade_laptop\s*\(\s*device\s*\)\s*\)\s*\{")
+    pos = 0
+    while True:
+        m = pat.search(src, pos)
+        if not m:
+            return src
+        a_end = match_brace(src, m.end() - 1)
+        e = re.compile(r"\s*else\s*\{").match(src, a_end + 1)
+        if not e:
+            pos = m.end()
+            continue
+        b_end = match_brace(src, e.end() - 1)
+        keep = src[m.end() - 1:a_end + 1] if is_blade else src[e.end() - 1:b_end + 1]
+        src = src[:m.start()] + keep + src[b_end + 1:]
+        pos = m.start() + len(keep)
+
+
 def _first_builder(text, bre):
     m = bre.search(text)
     return m.group(1) if m else None
@@ -169,7 +235,7 @@ def _first_txn(text):
     return int(m.group(1), 0) if m else None
 
 
-def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _depth: int = 0):
+def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _depth: int = 0, consts=None):
     """Map pid (or 'default') -> Command for one driver function.
 
     Per pid: builder and transaction id come from its case group; a group without builder that
@@ -192,6 +258,9 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
     outside.append(body[last:])
     outside_text = "\n".join(outside)
 
+    def cargs(text):
+        return call_args(text, bre, consts) if consts is not None else ()
+
     spec: dict = {}  # key -> dict(fn, txn, blocked)
     for _s, sw, _e in switches:
         for labels, text in split_groups(sw):
@@ -201,9 +270,10 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
                 key = "default" if lab == "default" else pids.get(lab)
                 if key is None:
                     continue
-                cur = spec.setdefault(key, {"fn": None, "txn": None, "blocked": False, "steps": ()})
+                cur = spec.setdefault(key, {"fn": None, "txn": None, "blocked": False, "steps": (), "args": ()})
                 if fn and not cur["fn"]:
                     cur["steps"] = steps
+                    cur["args"] = cargs(text)
                 elif not fn and not cur["fn"] and not cur["steps"]:
                     cur["steps"] = steps  # raw prelude only; builder comes from default/fallback
                 cur["fn"] = cur["fn"] or fn
@@ -213,15 +283,16 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
     fallback_fn = _first_builder(outside_text, bre)
     fallback_steps = _steps(outside_text, bre)
     fallback_txn = _first_txn(outside_text)
+    fallback_args = cargs(outside_text)
     if fallback_fn is None and not any(v["fn"] for v in spec.values()):
         for helper in dict.fromkeys(HELPER_RE.findall(body)):
             if helper != func and _depth < 2:
-                sub = parse_switch(src, helper, pids, builders, _depth + 1)
+                sub = parse_switch(src, helper, pids, builders, _depth + 1, consts)
                 if sub:
                     return sub
         return {}
 
-    default = spec.get("default", {"fn": None, "txn": None, "blocked": False, "steps": ()})
+    default = spec.get("default", {"fn": None, "txn": None, "blocked": False, "steps": (), "args": ()})
     out: dict = {}
 
     def resolve(key, entry):
@@ -237,7 +308,11 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
         txn = entry["txn"]
         if txn is None:
             txn = default["txn"] if default["txn"] is not None else fallback_txn
-        return Command(fn, DEFAULT_TXN if txn is None else txn, steps)
+        if entry["fn"]:
+            args = entry["args"]
+        else:
+            args = default["args"] if default["fn"] else fallback_args
+        return Command(fn, DEFAULT_TXN if txn is None else txn, steps, args)
 
     for key, entry in spec.items():
         if key == "default":
@@ -251,14 +326,15 @@ def parse_switch(src: str, func: str, pids: dict[str, int], builders=None, _dept
     return out
 
 
-def parse_probe(src: str, pids: dict[str, int]) -> dict[int, set[str]]:
-    """pid -> sysfs attribute names created in razer_mouse_probe (fallthrough aware)."""
+def parse_probe(src: str, pids: dict[str, int], func: str = "razer_mouse_probe",
+                expr: str = r"dev->usb_pid") -> dict[int, set[str]]:
+    """pid -> sysfs attribute names created in the driver's probe function (fallthrough aware)."""
     src = strip_comments(src)
-    body = function_body(src, "razer_mouse_probe")
+    body = function_body(src, func)
     if body is None:
         return {}
     file_re = re.compile(r"CREATE_DEVICE_FILE\s*\([^,]+,\s*&dev_attr_(\w+)\s*\)")
-    switches = [s for s in top_level_switches(body, r"dev->usb_pid") if "CREATE_DEVICE_FILE" in s[1]]
+    switches = [s for s in top_level_switches(body, expr) if "CREATE_DEVICE_FILE" in s[1]]
     common: set[str] = set()
     last = 0
     for start, _t, end in switches:
@@ -303,6 +379,22 @@ class ClassInfo:
     pids: dict[int, str] = field(default_factory=dict)
     dpi_max: int = 0
     poll_rates: tuple[int, ...] = ()
+    kind: str = "mouse"
+
+
+def device_kind(methods, class_name: str) -> str:
+    """Device kind from the daemon class: the ``get_device_type_<x>`` method (docks by class name)."""
+    for m in methods or ():
+        t = re.match(r"get_device_type_(\w+)$", m)
+        if not t:
+            continue
+        t = t.group(1)
+        if t not in KIND_TYPES:
+            raise ValueError(f"{class_name}: unknown daemon device type {m!r}")
+        if t == "accessory":
+            return "dock" if "Dock" in class_name else "accessory"
+        return "other" if t == "core" else t  # the Razer Core is the one explicit "other"
+    raise ValueError(f"{class_name}: no get_device_type_* method")
 
 
 def model_slug(class_name: str) -> str:
@@ -347,7 +439,8 @@ def _class_attr(classes, cname, attr):
     return None
 
 
-def parse_daemon_classes(text: str) -> dict[str, ClassInfo]:
+def parse_daemon_classes(text: str, kinds: bool = False) -> dict[str, ClassInfo]:
+    """``kinds=True`` derives each model's kind from get_device_type_* (raises when unknown)."""
     tree = ast.parse(text)
     classes = {n.name: n for n in tree.body if isinstance(n, ast.ClassDef)}
     devices: dict[str, ClassInfo] = {}
@@ -360,6 +453,8 @@ def parse_daemon_classes(text: str) -> dict[str, ClassInfo]:
         name = m.group(1) if m else "Razer " + model_slug(cname).replace("_", " ").title()
         slug = model_slug(cname)
         info = devices.setdefault(slug, ClassInfo(slug, name))
+        if kinds and not info.pids:
+            info.kind = device_kind(_class_attr(classes, cname, "METHODS"), cname)
         info.pids[pid] = class_kind(cname)
         dpi_max = _class_attr(classes, cname, "DPI_MAX") or 0
         info.dpi_max = max(info.dpi_max, dpi_max)
@@ -512,6 +607,140 @@ def build_db(clone: Path, stderr=sys.stderr) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- non-mouse devices
+
+# daemon module -> kernel driver (identity PIDs come from the driver header)
+OTHER_SOURCES = {
+    "keyboards": "razerkbd_driver",
+    "accessory": "razeraccessory_driver",
+    "core": "razeraccessory_driver",
+    "monitor": "razeraccessory_driver",
+    "mouse_mat": "razeraccessory_driver",
+    "headsets": "razerkraken_driver",
+}
+PROBES = {"razerkbd_driver": "razer_kbd_probe", "razeraccessory_driver": "razer_accessory_probe"}
+# (protocol key, sysfs attribute) read/written device-wide; kraken (a different USB protocol) has none
+OTHER_COMMANDS = (
+    ("get_firmware", "razer_attr_read_firmware_version", "firmware_version"),
+    ("get_serial", "razer_attr_read_device_serial", "device_serial"),
+    ("get_battery", "razer_attr_read_charge_level", "charge_level"),
+    ("get_charging", "razer_attr_read_charge_status", "charge_status"),
+    ("get_brightness:matrix", "razer_attr_read_matrix_brightness", "matrix_brightness"),
+    ("set_effect:matrix:static", "razer_attr_write_matrix_effect_static", "matrix_effect_static"),
+)
+OTHER_FEATURES = {**FILE_FEATURES, "matrix_brightness": "brightness", "matrix_effect_static": "static_effect"}
+
+
+def blade_laptop_pids(driver_src: str, pids: dict[str, int]) -> set[int]:
+    """PIDs for which razerkbd reads the serial from DMI instead of the device."""
+    body = function_body(strip_comments(driver_src), "is_blade_laptop")
+    return {pids[n] for n in re.findall(r"case\s+(\w+)\s*:", body or "") if n in pids}
+
+
+def build_other_db(clone: Path, stderr=sys.stderr) -> dict:
+    from razertux.razer.commands import BUILDERS
+
+    drv, hw = clone / "driver", clone / "daemon/openrazer_daemon/hardware"
+    builders = builder_names((drv / "razerchromacommon.c").read_text())
+    consts = parse_constants((drv / "razercommon.h").read_text() + (drv / "razerchromacommon.h").read_text())
+    drivers: dict[str, tuple[str, dict, dict, set]] = {}
+    for name in sorted(set(OTHER_SOURCES.values())):
+        src = (drv / f"{name}.c").read_text()
+        header = parse_header((drv / f"{name}.h").read_text())
+        probe = parse_probe(src, header, PROBES[name], PROBE_EXPR) if name in PROBES else {}
+        blades = blade_laptop_pids(src, header) if name == "razerkbd_driver" else set()
+        drivers[name] = (src, header, probe, blades)
+    pid_driver = {pid: name for name, (_s, header, _p, _b) in drivers.items() for pid in header.values()}
+    cmds: dict[tuple[str, str], dict] = {}
+    skipped: Counter = Counter()
+
+    devices, kinds, fn_counts = [], Counter(), Counter()
+    seen_slugs: dict[str, str] = {}
+    for module, dname in OTHER_SOURCES.items():
+        classes = parse_daemon_classes((hw / f"{module}.py").read_text(), kinds=True)
+        for slug in sorted(classes):
+            ci = classes[slug]
+            # the driver that owns the PIDs (the Kraken Kitty Edition is a headset on the accessory driver)
+            owners = {pid_driver.get(p) for p in ci.pids}
+            if len(owners) != 1 or None in owners:
+                print(f"warning: {slug}: PIDs not found in one driver header", file=stderr)
+            dname = owners.pop() if len(owners) == 1 and None not in owners else dname
+            src, header, probe, blades = drivers[dname]
+            if slug in seen_slugs:
+                raise ValueError(f"model slug {slug} in {module} and {seen_slugs[slug]}")
+            seen_slugs[slug] = module
+            order = {"wired": 0, "wireless": 1, "receiver": 2, "bluetooth": 3}
+            pids = sorted(ci.pids, key=lambda p: (order[ci.pids[p]], p))
+            pid_files = {p: probe.get(p, set()) for p in pids}
+            pid_feats = {p: {OTHER_FEATURES[f] for f in pid_files[p] if f in OTHER_FEATURES} for p in pids}
+            per_pid: dict[int, dict[str, Command]] = {p: {} for p in pids}
+            if dname in PROBES:
+                for key, func, fname in OTHER_COMMANDS:
+                    for variant in (True, False):  # is_blade_laptop() branch taken
+                        if (dname, func, variant) not in cmds:
+                            vsrc = resolve_blade(src, variant) if dname == "razerkbd_driver" else src
+                            cmds[(dname, func, variant)] = parse_switch(vsrc, func, header, builders, consts=consts)
+                    for p in pids:
+                        if fname not in pid_files[p] or (key == "get_serial" and p in blades):
+                            continue
+                        m = cmds[(dname, func, p in blades)]
+                        c = m.get(p, m.get("default"))
+                        if not c:
+                            continue
+                        missing = [st for st in c.steps if st not in BUILDERS]
+                        if missing or len(c.steps) != 1:
+                            skipped[(key, ",".join(c.steps))] += 1
+                            continue
+                        per_pid[p][key] = c
+            common_feats = set.intersection(*pid_feats.values())
+            common_proto = {k: c for k, c in per_pid[pids[0]].items() if all(per_pid[p].get(k) == c for p in pids)}
+
+            def enc(c: Command) -> dict:
+                params = list(inspect.signature(BUILDERS[c.fn]).parameters)
+                si = params.index("variable_storage") if "variable_storage" in params else None
+                return {"fn": c.fn, "txn": c.txn, "steps": list(c.steps), "args": list(c.args),
+                        "storage_index": si}
+
+            pid_protocol, pid_features = {}, {}
+            for p in pids:
+                extra = {k: enc(c) for k, c in sorted(per_pid[p].items()) if k not in common_proto}
+                if extra:
+                    pid_protocol[f"0x{p:04X}"] = extra
+                if pid_feats[p] - common_feats:
+                    pid_features[f"0x{p:04X}"] = sorted(pid_feats[p] - common_feats)
+            for p in pids:
+                for c in per_pid[p].values():
+                    fn_counts[(ci.kind, c.fn)] += 1
+            has_static = any("set_effect:matrix:static" in per_pid[p] for p in pids)
+            has_bright = any(f == "matrix_brightness" for p in pids for f in pid_files[p])
+            zones = {"matrix": ["static"] if has_static else []} if has_static or has_bright else {}
+            kinds[ci.kind] += 1
+            devices.append({
+                "model": slug, "name": ci.name, "kind": ci.kind,
+                "pids": {f"0x{p:04X}": ci.pids[p] for p in pids},
+                "dpi_max": 0, "poll_rates": [],
+                "features": sorted(common_feats), "pid_features": pid_features,
+                "zones": zones,
+                "protocol": {k: enc(c) for k, c in sorted(common_proto.items())},
+                "pid_protocol": pid_protocol,
+                "interface": 0, "verified": False,
+            })
+
+    print("models per kind: " + ", ".join(f"{k} {n}" for k, n in sorted(kinds.items())), file=stderr)
+    print("commands per kind/builder (device PIDs):", file=stderr)
+    for (kind, fn), n in sorted(fn_counts.items()):
+        print(f"  {kind} {fn} x{n}", file=stderr)
+    for (key, missing), n in sorted(skipped.items()):
+        print(f"skipped {key} (steps not a single ported builder: {missing}) x{n} PIDs", file=stderr)
+    print(f"{len(devices)} models, {sum(len(d['pids']) for d in devices)} PIDs", file=stderr)
+
+    commit = subprocess.run(["git", "-C", str(clone), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    return {
+        "_source": {"repo": REPO_URL, "commit": commit, "license": "GPL-2.0-only (OpenRazer)"},
+        "devices": sorted(devices, key=lambda d: d["model"]),
+    }
+
+
 UDEV_UINPUT = 'KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"'
 
 
@@ -535,6 +764,9 @@ def main(argv=None) -> int:
     if argv == ["--udev"]:
         db_path = Path(__file__).resolve().parent.parent / "razertux" / "devices" / "openrazer_mice.json"
         sys.stdout.write(udev_rules(json.loads(db_path.read_text())))
+        return 0
+    if len(argv) == 2 and argv[1] == "--others":
+        sys.stdout.write(json.dumps(build_other_db(Path(argv[0])), indent=1, sort_keys=True) + "\n")
         return 0
     if len(argv) != 1:
         print(__doc__, file=sys.stderr)

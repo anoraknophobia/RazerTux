@@ -1457,3 +1457,16 @@ async def test_router_close_survives_a_node_added_meanwhile():
     await r.close()
     await late
     assert a.closed and b.closed and a.ungrabbed and b.ungrabbed and r.paths == set()
+
+
+async def test_battery_poll_is_suspended_while_paused(tmp_path):
+    d, t = await connected(tmp_path, product=0x00A8)
+    session = naga(d)
+    await session.pause()
+    before = len(t.requests)
+    session._battery.poll()
+    assert t.requests[before:] == []  # the device recorder owns the control node
+    await session.resume()
+    session._battery.poll()
+    assert (0x07, 0x80) in [(r.cmd_class, r.cmd_id) for r in t.requests[before:]]
+    await d.shutdown()

@@ -2,13 +2,13 @@
 # RazerTux – not an official Razer product; not affiliated with Razer Inc.
 # Builds from the local git checkout (one directory above packaging/); no network needed.
 pkgname=razertux
-pkgver=0.3.0
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro and other Razer mice)'
 arch=('any')
 url='https://github.com/anoraknophobia/RazerTux'
 license=('GPL-2.0-or-later')
-depends=(python python-evdev pyside6 python-pyudev python-dbus-next)
+depends=(python python-evdev pyside6 python-pyudev python-dbus-next polkit)
 makedepends=(python-build python-installer python-wheel python-setuptools)
 replaces=(naga-config)
 conflicts=(naga-config openrazer-daemon openrazer-driver-dkms)
@@ -38,6 +38,8 @@ package() {
   install -Dm644 "$p/70-razertux.rules" "$pkgdir/usr/lib/udev/rules.d/70-razertux.rules"
   install -Dm644 "$p/razertuxd.service" "$pkgdir/usr/lib/systemd/user/razertuxd.service"
   install -Dm644 "$p/io.github.razertux.service" "$pkgdir/usr/share/dbus-1/services/io.github.razertux.service"
+  install -Dm755 "$p/razertux-record-helper" "$pkgdir/usr/lib/razertux/razertux-record-helper"
+  install -Dm644 "$p/io.github.razertux.record.policy" "$pkgdir/usr/share/polkit-1/actions/io.github.razertux.record.policy"
   install -Dm644 "$p/razertux.desktop" "$pkgdir/usr/share/applications/razertux.desktop"
   install -Dm644 "$p/razertux-tray.desktop" "$pkgdir/etc/xdg/autostart/razertux-tray.desktop"
   install -Dm644 "$p/razertux.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/razertux.svg"

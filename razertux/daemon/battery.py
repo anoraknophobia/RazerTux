@@ -27,7 +27,8 @@ class BatteryMonitor:
     notify(level) runs once when the level drops below threshold() (0 = off) while
     not charging; it re-arms when the level is back at threshold + 5 or more.
     on_poll(ok) runs after every wireless reading attempt (False: no answer, e.g. the
-    mouse is asleep), before on_change/notify."""
+    mouse is asleep), before on_change/notify. While suspended() is true (the device recorder
+    reads the device over the same control node) no query is sent at all."""
 
     def __init__(self, dev: Any, interval_s: float = 60,
                  on_change: Callable[[int, bool], None] | None = None, *,
@@ -35,8 +36,10 @@ class BatteryMonitor:
                  threshold: Callable[[], int] = lambda: 15,
                  notify: Callable[[int], None] | None = None,
                  state: WarnState | None = None,
-                 on_poll: Callable[[bool], None] | None = None) -> None:
+                 on_poll: Callable[[bool], None] | None = None,
+                 suspended: Callable[[], bool] = lambda: False) -> None:
         self.dev = dev
+        self._suspended = suspended
         self._on_poll = on_poll or (lambda ok: None)
         self.interval_s = interval_s
         self._on_change = on_change or (lambda b, c: None)
@@ -49,7 +52,7 @@ class BatteryMonitor:
 
     def poll(self) -> None:
         """Take one reading (no-op when wired); never raises on device errors."""
-        if self._connection() != "wireless":
+        if self._connection() != "wireless" or self._suspended():
             return
         try:
             level, charging = int(self.dev.battery()), bool(self.dev.charging())

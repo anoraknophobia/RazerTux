@@ -113,6 +113,8 @@ CASES = [
     ("razer_chroma_misc_set_polling_rate2", (3, 0x00), (0x00, 0x40, b"\x00\x10", 2)),  # default 500 Hz
     ("razer_chroma_misc_get_dock_brightness", (), (0x07, 0x82, b"\x00", 1)),
     ("razer_chroma_misc_set_dock_brightness", (0x40,), (0x07, 0x02, b"\x40", 1)),
+    # razerchromacommon.c l.1008: get_razer_report(0x0E, 0x84, 0x02), arguments[0] = 0x01
+    ("razer_chroma_misc_get_blade_brightness", (), (0x0E, 0x84, b"\x01\x00", 2)),
     # storage argument of set_dpi_xy is ignored by OpenRazer: always VARSTORE (l.1211)
     ("razer_chroma_misc_set_dpi_xy", (0x00, 1800, 1800), (0x04, 0x05, b"\x01\x07\x08\x07\x08\x00\x00", 7)),
     ("razer_chroma_misc_set_dpi_xy", (0x00, 50, 60000), (0x04, 0x05, b"\x01\x00\x64\xaf\xc8\x00\x00", 7)),  # clamp 100..45000
@@ -203,7 +205,8 @@ def test_parser_keys_are_builder_keys():
         "razer_chroma_misc_get_battery_level", "razer_chroma_misc_get_charging_status",
         "razer_chroma_misc_get_idle_time", "razer_chroma_misc_get_low_battery_threshold",
         "razer_chroma_extended_matrix_get_brightness", "razer_chroma_standard_get_led_brightness",
-        "razer_chroma_misc_get_dock_brightness", "razer_chroma_misc_get_scroll_mode",
+        "razer_chroma_misc_get_dock_brightness", "razer_chroma_misc_get_blade_brightness",
+        "razer_chroma_misc_get_scroll_mode",
         "razer_chroma_misc_get_scroll_acceleration", "razer_chroma_misc_get_scroll_smart_reel",
         "razer_chroma_standard_get_device_mode", "razer_chroma_standard_get_firmware_version",
         "razer_chroma_standard_get_serial",
@@ -251,6 +254,8 @@ def test_parse_brightness():
     assert PARSERS["razer_chroma_extended_matrix_get_brightness"](bytes([1, 4, 0x80])) == 0x80
     assert PARSERS["razer_chroma_standard_get_led_brightness"](bytes([1, 5, 0x40])) == 0x40
     assert PARSERS["razer_chroma_misc_get_dock_brightness"](bytes([0x33])) == 0x33
+    # razerkbd_driver.c razer_attr_read_matrix_brightness: arguments[1] for blade laptops
+    assert PARSERS["razer_chroma_misc_get_blade_brightness"](bytes([1, 0x77])) == 0x77
 
 
 def test_parse_scroll():

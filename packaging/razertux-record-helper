@@ -1,0 +1,3 @@
+#!/bin/sh
+# Root-owned wrapper for pkexec: isolated mode (-I) keeps cwd and PYTHON* variables off sys.path.
+exec /usr/bin/python3 -I -m razertux.recorder.helper "$@"

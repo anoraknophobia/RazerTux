@@ -134,7 +134,7 @@ async def test_get_status_disconnected(tmp_path):
     assert plain == {
         "connected": False, "connection": "", "battery": -1, "charging": False,
         "scroll_stage": -1, "dpi": -1, "openrazer_loaded": False, "config_errors": [],
-        "writable": False, "experimental": False, "model": NAGA,
+        "writable": False, "paused": False, "experimental": False, "model": NAGA,
         "name": load_devices()[NAGA].name,
     }
     assert st["battery"].signature == "i" and st["config_errors"].signature == "as"
@@ -256,3 +256,119 @@ async def test_activate_keeps_settings_saved_by_gui(tmp_path):
     await call(svc, "ActivateProfile", NAGA, "game")
     s = store.load_settings()
     assert (s.active_profile, s.theme, s.low_battery_notify) == ("game", "system", 30)
+
+
+# -- PauseDevice / ResumeDevice -----------------------------------------------------------
+
+def grabbed(d, model=NAGA):
+    return d.sessions[model].router.grabbed
+
+
+async def test_pause_resume_methods_toggle_grab_and_are_idempotent(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    assert grabbed(d)
+    await call(svc, "PauseDevice", NAGA)
+    await call(svc, "PauseDevice", NAGA)
+    assert not grabbed(d) and (await call(svc, "GetStatus", NAGA))["paused"].value is True
+    await call(svc, "ResumeDevice", NAGA)
+    await call(svc, "ResumeDevice", NAGA)
+    assert grabbed(d)
+
+
+async def test_pause_unknown_model_raises(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    for member in ("PauseDevice", "ResumeDevice"):
+        with pytest.raises(DBusError) as e:
+            await call(svc, member, "nope")
+        assert e.value.type.endswith("UnknownDevice")
+
+
+async def test_pause_only_affects_that_model(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    before = grabbed(d, DA)
+    await call(svc, "PauseDevice", NAGA)
+    assert grabbed(d, DA) == before
+    await call(svc, "ResumeDevice", NAGA)
+
+
+async def test_caller_vanishing_resumes(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await svc.pause_device(NAGA, ":1.42")
+    await svc.name_owner_changed(":1.99", ":1.99", "")  # somebody else: still paused
+    assert not grabbed(d)
+    await svc.name_owner_changed(":1.42", ":1.42", "")
+    assert grabbed(d)
+
+
+async def test_caller_vanishing_after_explicit_resume_is_harmless(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await svc.pause_device(NAGA, ":1.42")
+    await call(svc, "ResumeDevice", NAGA)
+    await svc.name_owner_changed(":1.42", ":1.42", "")
+    assert grabbed(d)
+
+
+async def test_pause_times_out_and_regrabs(tmp_path):
+    import asyncio
+    d, svc, *_ = make(tmp_path)
+    svc.pause_timeout = 0.05
+    await call(svc, "PauseDevice", NAGA)
+    assert not grabbed(d)
+    await asyncio.sleep(0.2)
+    assert grabbed(d)
+
+
+async def test_resume_cancels_timeout(tmp_path):
+    import asyncio
+    d, svc, *_ = make(tmp_path)
+    svc.pause_timeout = 0.05
+    await call(svc, "PauseDevice", NAGA)
+    await call(svc, "ResumeDevice", NAGA)
+    await call(svc, "PauseDevice", DA)  # unrelated pause must not be touched by NAGA's timer
+    await asyncio.sleep(0.2)
+    assert grabbed(d)
+
+
+async def test_shutdown_while_paused_is_clean(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    svc.pause_timeout = 0.05
+    await call(svc, "PauseDevice", NAGA)
+    await d.shutdown()
+    assert not svc._pauses  # timers cancelled
+    import asyncio
+    await asyncio.sleep(0.1)  # no timer fires on closed sessions
+
+
+async def test_profile_switch_while_paused_stays_released(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await call(svc, "PauseDevice", NAGA)
+    await call(svc, "ActivateProfile", NAGA, "game")
+    await call(svc, "Reload")
+    assert not grabbed(d)
+    await call(svc, "ResumeDevice", NAGA)
+    assert grabbed(d)
+
+
+async def test_unknown_or_missing_sender_never_resumes_on_other_exits(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await call(svc, "PauseDevice", NAGA)  # no sender known
+    await svc.name_owner_changed(":1.7", ":1.7", "")
+    assert not grabbed(d)
+    await call(svc, "ResumeDevice", NAGA)
+
+
+async def test_failed_resume_keeps_pause_state(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    await svc.pause_device(NAGA, ":1.1")
+    s = d.sessions[NAGA]
+    real = s.resume
+
+    async def boom():
+        raise OSError("x")
+    s.resume = boom
+    with pytest.raises(OSError):
+        await svc.resume_device(NAGA)
+    assert NAGA in svc._pauses
+    s.resume = real
+    await svc.resume_device(NAGA)
+    assert grabbed(d) and NAGA not in svc._pauses

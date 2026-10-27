@@ -38,6 +38,7 @@ class FakeTransport:
             "GetDiagnostics": lambda: ["probe ok"],
             "Reload": lambda: [], "ActivateProfile": lambda: [],
             "StartLearning": lambda: [], "StopLearning": lambda: [],
+            "PauseDevice": lambda: [], "ResumeDevice": lambda: [],
         }[member]()
 
     def start(self):

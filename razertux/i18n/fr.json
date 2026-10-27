@@ -183,7 +183,8 @@
     "CUSTOMIZE": "PERSONNALISER",
     "Discard": "Annuler les modifications",
     "Help": "Aide",
-    "About RazerTux": "À propos de RazerTux"
+    "About RazerTux": "À propos de RazerTux",
+    "Record device…": "Enregistrer un appareil…"
   },
   "MouseView": {
     "Assignable when “Assign top buttons freely” is on": "Affectable si « Affecter librement les boutons supérieurs » est activé"
@@ -274,7 +275,8 @@
     "Restored": "Restauré",
     "Restore failed": "Échec de la restauration",
     "Cannot restore": "Restauration impossible",
-    "On-screen display": "Affichage à l'écran"
+    "On-screen display": "Affichage à l'écran",
+    "Record device…": "Enregistrer un appareil…"
   },
   "app": {
     "Configuration for the Razer Naga V2 Pro": "Configuration de la Razer Naga V2 Pro",
@@ -438,5 +440,129 @@
     "Restored.": "Restauré.",
     "Error: No readable backup at {path}: {error}": "Erreur : aucune sauvegarde lisible à {path} : {error}",
     "The mouse returns no core values (firmware, DPI, polling rate); nothing backed up": "La souris ne renvoie aucune valeur de base (firmware, DPI, fréquence d'interrogation) ; rien n'a été sauvegardé"
+  },
+  "RecorderWizard": {
+    "Back": "Retour",
+    "Cancel": "Annuler",
+    "Close": "Fermer",
+    "Next": "Suivant",
+    "RECORD DEVICE": "ENREGISTRER UN APPAREIL",
+    "Record device – %1": "Enregistrer un appareil – %1",
+    "Saved: %1": "Enregistré : %1",
+    "Saving failed: %1": "Échec de l’enregistrement : %1",
+    "The browser could not be opened. Please save the report as a file and attach it to a new issue.": "Impossible d’ouvrir le navigateur. Enregistrez le rapport dans un fichier et joignez-le à un nouveau ticket.",
+    "The issue form is open in your browser, but the full data was too long for the link. Please press “Save as file” and attach the file to the issue (drag it into the text field).": "Le formulaire du ticket est ouvert dans le navigateur, mais les données complètes étaient trop longues pour le lien. Cliquez sur « Enregistrer dans un fichier » et joignez le fichier au ticket (glissez-le dans le champ de texte).",
+    "The issue form is open in your browser. Check it and press “Create”.": "Le formulaire du ticket est ouvert dans le navigateur. Vérifiez-le puis cliquez sur « Create »."
+  },
+  "ChoosePage": {
+    "Choose device": "Choisir l’appareil",
+    "Experimental": "Expérimental",
+    "Known": "Connu",
+    "Unknown": "Inconnu",
+    "Razer device": "Appareil Razer",
+    "Search again": "Rechercher à nouveau",
+    "No Razer device found. Connect it and press “Search again”.": "Aucun appareil Razer trouvé. Branchez-le puis cliquez sur « Rechercher à nouveau ».",
+    "Pick the Razer device you want to record. The recording helps to add it to RazerTux: its buttons, a few read-only values and – if you agree – a short light test. Nothing is sent anywhere until you decide so at the end.": "Choisissez l’appareil Razer à enregistrer. L’enregistrement aide à l’ajouter à RazerTux : ses boutons, quelques valeurs en lecture seule et – si vous êtes d’accord – un court test d’éclairage. Rien n’est envoyé tant que vous ne le décidez pas à la fin."
+  },
+  "PermissionPage": {
+    "Permissions": "Autorisations",
+    "Continue with password": "Continuer avec mot de passe",
+    "Continue without password": "Continuer sans mot de passe",
+    "Could not open the device: %1": "Impossible d’ouvrir l’appareil : %1",
+    "Opening the device …": "Ouverture de l’appareil…",
+    "Waiting for the password …": "En attente du mot de passe…",
+    "You can try again or continue without password.": "Vous pouvez réessayer ou continuer sans mot de passe.",
+    "Linux protects input devices: normally only the system may read them directly. To record every button and read values from the device, RazerTux starts a small helper with your password (polkit). The helper can only read this one device and switch its light on and off for the light test; it never stores anything on the device and quits when the wizard closes.": "Linux protège les périphériques d’entrée : normalement, seul le système peut les lire directement. Pour enregistrer tous les boutons et lire des valeurs de l’appareil, RazerTux lance un petit programme d’aide avec votre mot de passe (polkit). Il ne peut lire que cet appareil et allumer puis éteindre son éclairage pour le test ; il n’enregistre jamais rien sur l’appareil et se termine à la fermeture de l’assistant.",
+    "Without the password the wizard records what your user may already read – often the device data and some buttons, but no values and no light test.": "Sans mot de passe, l’assistant enregistre ce que votre utilisateur peut déjà lire – souvent les données de l’appareil et certains boutons, mais aucune valeur et pas de test d’éclairage."
+  },
+  "DevicePage": {
+    "Device data": "Données de l’appareil",
+    "Mode: with password": "Mode : avec mot de passe",
+    "Mode: without password": "Mode : sans mot de passe",
+    "No control access – values and the light test are skipped.": "Pas d’accès de contrôle – les valeurs et le test d’éclairage sont ignorés.",
+    "No input node of this device is readable – buttons cannot be recorded.": "Aucun nœud d’entrée de cet appareil n’est lisible – les boutons ne peuvent pas être enregistrés.",
+    "Collected from the system without sending anything to the device. This is part of the report; serial numbers, user names and paths are never included.": "Collecté auprès du système sans rien envoyer à l’appareil. Cela fait partie du rapport ; les numéros de série, noms d’utilisateur et chemins n’y figurent jamais."
+  },
+  "KindPage": {
+    "Kind of device": "Type d’appareil",
+    "What kind of device is this?": "De quel type d’appareil s’agit-il ?",
+    "Mouse": "Souris",
+    "Keyboard": "Clavier",
+    "Keypad": "Keypad",
+    "Headset": "Casque",
+    "Other": "Autre",
+    "I don't know": "Je ne sais pas",
+    "RazerTux does not know this device yet. The answer decides how buttons are recorded: on keyboards and keypads ordinary typing keys are never stored.": "RazerTux ne connaît pas encore cet appareil. La réponse détermine comment les boutons sont enregistrés : sur les claviers et keypads, les touches de frappe ordinaires ne sont jamais enregistrées."
+  },
+  "TemplatePage": {
+    "Mouse shape": "Forme de la souris",
+    "Which picture looks most like your mouse?": "Quelle image ressemble le plus à votre souris ?",
+    "Ergonomic (right hand)": "Ergonomique (main droite)",
+    "Symmetric": "Symétrique",
+    "Compact": "Compacte",
+    "Vertical": "Verticale",
+    "MMO (many side buttons)": "MMO (nombreux boutons latéraux)",
+    "I don't know": "Je ne sais pas",
+    "The wizard then asks for the buttons of that shape one by one; buttons it does not know come afterwards.": "L’assistant demande ensuite les boutons de cette forme un par un ; les boutons qu’il ne connaît pas viennent après."
+  },
+  "ButtonsPage": {
+    "Buttons": "Boutons",
+    "Button %1 of %2": "Bouton %1 sur %2",
+    "Done": "Terminé",
+    "Not on this device (N)": "Absent sur cet appareil (N)",
+    "Pressed, nothing happened (Enter)": "Appuyé, rien ne s’est passé (Entrée)",
+    "Record again": "Enregistrer à nouveau",
+    "Recording failed: %1": "Échec de l’enregistrement : %1",
+    "Recording finished.": "Enregistrement terminé.",
+    "Recording… %1": "Enregistrement… %1",
+    "Received: %1": "Reçu : %1",
+    "Scroll the wheel down": "Faites tourner la molette vers le bas",
+    "Scroll the wheel up": "Faites tourner la molette vers le haut",
+    "Tilt the wheel left": "Inclinez la molette vers la gauche",
+    "Tilt the wheel right": "Inclinez la molette vers la droite",
+    "Start recording": "Démarrer l’enregistrement",
+    "Stop recording": "Arrêter l’enregistrement",
+    "Stopping …": "Arrêt…",
+    "Press the special buttons now": "Appuyez maintenant sur les touches spéciales",
+    "Press “Start recording” when you are ready.": "Cliquez sur « Démarrer l’enregistrement » quand vous êtes prêt.",
+    "Press the button “%1” (lit up on the picture)": "Appuyez sur le bouton « %1 » (en surbrillance sur l’image)",
+    "Now press every other button once (extra buttons, DPI, profile …)": "Appuyez maintenant une fois sur chaque autre bouton (boutons supplémentaires, DPI, profil…)",
+    "not on this device": "absent",
+    "no signal": "aucun signal",
+    "First the buttons of the picture one by one: press the lit-up button once. The wizard moves on by itself. Then press every other button the device has. Only which signals arrive is stored – no order, no timing, no typed text.": "D’abord les boutons de l’image un par un : appuyez une fois sur le bouton en surbrillance. L’assistant passe tout seul au suivant. Ensuite, appuyez sur chaque autre bouton de l’appareil. Seuls les signaux reçus sont enregistrés – pas d’ordre, pas de durée, pas de texte tapé.",
+    "Press every special button of the device once: macro keys, media keys, profile and mode buttons, wheels. Ordinary typing keys (letters, digits, Enter …) are never stored, only counted. Only which signals arrive is stored – no order, no timing.": "Appuyez une fois sur chaque touche spéciale de l’appareil : touches macro, multimédia, de profil et de mode, molettes. Les touches de frappe ordinaires (lettres, chiffres, Entrée…) ne sont jamais enregistrées, seulement comptées. Seuls les signaux reçus sont enregistrés – pas d’ordre, pas de durée.",
+    "Clicks on this window's own buttons are ignored.": "Les clics sur les boutons de cette fenêtre sont ignorés.",
+    "The RazerTux service has taken the device back (its pause ended), so its buttons would be remapped. Please start the recording again.": "Le service RazerTux a repris l’appareil (sa pause a expiré), ses boutons seraient donc réaffectés. Veuillez relancer l’enregistrement."
+  },
+  "ReadsPage": {
+    "Values": "Valeurs",
+    "Value": "Valeur",
+    "Result": "Résultat",
+    "Status": "Statut",
+    "All values read.": "Toutes les valeurs ont été lues.",
+    "Reading … %1 left": "Lecture… %1 restante(s)",
+    "Reading a few values from the device (firmware, DPI, battery …). These are read-only commands: nothing on the device is changed. The serial number is never read.": "Lecture de quelques valeurs de l’appareil (firmware, DPI, batterie…). Ce sont des commandes en lecture seule : rien n’est modifié sur l’appareil. Le numéro de série n’est jamais lu."
+  },
+  "LightPage": {
+    "Light test": "Test d’éclairage",
+    "Light up green": "Allumer en vert",
+    "It lit up": "Il s’est allumé",
+    "It did not": "Il ne s’est pas allumé",
+    "Not sure": "Pas sûr",
+    "Yes, run the light test on this device": "Oui, lancer le test d’éclairage sur cet appareil",
+    "Optional: each lighting zone is switched to green for a moment and then off, with the “do not store” flag – nothing is saved on the device. A tested zone stays off until you unplug and plug in the device again or restart it; if the RazerTux service manages the device, it re-applies your lighting when you leave this page.": "Facultatif : chaque zone lumineuse passe au vert un instant puis s’éteint, avec l’indicateur « ne pas enregistrer » – rien n’est enregistré sur l’appareil. Une zone testée reste éteinte jusqu’à ce que vous débranchiez et rebranchiez l’appareil ou le redémarriez ; si le service RazerTux gère l’appareil, il réapplique votre éclairage quand vous quittez cette page."
+  },
+  "ReviewPage": {
+    "Review": "Vérification",
+    "Your notes": "Vos remarques",
+    "e.g. Razer Basilisk V3 X HyperSpeed, the DPI button gave no signal": "p. ex. Razer Basilisk V3 X HyperSpeed, the DPI button gave no signal",
+    "This is exactly what will be sent. The report is in English so that everybody can read it. You can add a note below (in English if you can): the device name, what did not work, anything unusual.": "Voici exactement ce qui sera envoyé. Le rapport est en anglais pour que tout le monde puisse le lire. Vous pouvez ajouter une remarque ci-dessous (en anglais si possible) : le nom de l’appareil, ce qui n’a pas fonctionné, toute particularité."
+  },
+  "SendPage": {
+    "Send": "Envoyer",
+    "Submit on GitHub": "Soumettre sur GitHub",
+    "Save as file": "Enregistrer dans un fichier",
+    "Thank you for helping RazerTux support more devices!": "Merci d’aider RazerTux à prendre en charge plus d’appareils !",
+    "“Submit on GitHub” opens a prefilled issue in your browser; you need a GitHub account. Nothing is published before you press “Create” there. You can also save the report as a file and attach it to an issue yourself.": "« Soumettre sur GitHub » ouvre un ticket prérempli dans votre navigateur ; un compte GitHub est nécessaire. Rien n’est publié avant que vous cliquiez sur « Create ». Vous pouvez aussi enregistrer le rapport dans un fichier et le joindre vous-même à un ticket."
   }
 }

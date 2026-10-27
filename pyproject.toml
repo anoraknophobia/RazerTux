@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "razertux"
-version = "0.3.0"
+version = "0.4.0"
 description = "Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro and other Razer mice); not affiliated with Razer Inc."
 requires-python = ">=3.11"
 license = "GPL-2.0-or-later"
@@ -18,6 +18,7 @@ test = ["pytest", "pytest-asyncio"]
 razertux = "razertux.cli:main"
 razertuxd = "razertux.daemon.main:main"
 razertux-gui = "razertux.gui.app:main"
+razertux-record = "razertux.gui.recorder_wizard:main"
 
 [tool.setuptools.packages.find]
 include = ["razertux*"]
@@ -28,5 +29,5 @@ asyncio_mode = "auto"
 
 [tool.setuptools.package-data]
 "razertux.gui" = ["assets/*.svg", "assets/layouts/*.json"]
-"razertux.devices" = ["openrazer_mice.json"]
+"razertux.devices" = ["openrazer_mice.json", "openrazer_other.json"]
 "razertux.i18n" = ["*.json"]

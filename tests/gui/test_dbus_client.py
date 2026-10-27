@@ -208,3 +208,12 @@ def test_real_transport_other_errors_stay_daemon_errors():
         assert e.name.endswith("UnknownDevice")
     else:
         raise AssertionError
+
+
+def test_pause_and_resume_device(qapp):
+    t = FakeTransport()
+    c = DaemonClient(t)
+    assert c.pause_device(DA) is True and c.resume_device(DA) is True
+    assert ("PauseDevice", (DA,)) in t.calls and ("ResumeDevice", (DA,)) in t.calls
+    t.up = False
+    assert c.pause_device(DA) is False

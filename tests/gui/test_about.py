@@ -54,10 +54,10 @@ def test_app_icon_is_the_razertux_svg(qapp):
 def test_help_menu_opens_about(window, monkeypatch):
     menus = {a.text(): a.menu() for a in window.menuBar().actions()}
     assert list(menus) == ["View", "Help"]
-    assert [a.text() for a in menus["Help"].actions()] == ["About RazerTux"]
+    assert [a.text() for a in menus["Help"].actions()] == ["Record device…", "About RazerTux"]
     shown = []
     monkeypatch.setattr(AboutDialog, "exec", lambda self: shown.append(_text(self)) or 0)
-    menus["Help"].actions()[0].trigger()
+    menus["Help"].actions()[-1].trigger()
     assert len(shown) == 1 and __version__ in shown[0]
 
 

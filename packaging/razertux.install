@@ -21,7 +21,7 @@ post_upgrade() {
   # $1 = new version, $2 = old version
   if [ "$(vercmp "$2" 0.2.0)" -lt 0 ]; then
     _razertux_switch_hint  # naga-config era: switch services (enable --now starts the new one)
-  elif [ "$(vercmp "$2" 0.3.0)" -lt 0 ]; then
-    _razertux_restart_hint  # 0.2.x daemon/tray keep running the old code (new D-Bus API)
+  elif [ "$(vercmp "$2" 0.4.0)" -lt 0 ]; then
+    _razertux_restart_hint  # old daemon/tray keep running old code (0.3.0: new D-Bus API; 0.4.0: PauseDevice/ResumeDevice)
   fi
 }

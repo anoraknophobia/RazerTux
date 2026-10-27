@@ -45,6 +45,7 @@ class TrayIcon(QSystemTrayIcon):
     themeRequested = Signal(str)  # "synapse" | "system"
     languageRequested = Signal(str)  # Settings.language
     osdRequested = Signal(bool)  # Settings.osd
+    recordRequested = Signal()  # "Record device…" (the device recorder wizard)
 
     def __init__(self, client: DaemonClient, parent: QObject | None = None,
                  dialog_parent: QWidget | None = None):
@@ -133,6 +134,7 @@ class TrayIcon(QSystemTrayIcon):
         osd.setChecked(self._osd)
         osd.triggered.connect(lambda on: self.osdRequested.emit(on))
         self._language_menu = add_language_menu(m, self._language, self.languageRequested.emit)
+        m.addAction(self.tr("Record device…")).triggered.connect(lambda _=False: self.recordRequested.emit())
         m.addAction(self.tr("Open window")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
         if flat:  # with several devices every submenu restores its own mouse
             m.addAction(self.tr("Restore original state")).triggered.connect(

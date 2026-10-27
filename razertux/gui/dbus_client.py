@@ -270,3 +270,11 @@ class DaemonClient(QObject):
 
     def stop_learning(self, model: str = NAGA_MODEL) -> bool:
         return self._call("StopLearning", "s", (model,)) is not None
+
+    def pause_device(self, model: str = NAGA_MODEL) -> bool:
+        """Release the device's grabs so a recorder can read it raw. The daemon resumes
+        by itself after 300 s or when this process leaves the bus."""
+        return self._call("PauseDevice", "s", (model,)) is not None
+
+    def resume_device(self, model: str = NAGA_MODEL) -> bool:
+        return self._call("ResumeDevice", "s", (model,)) is not None

@@ -265,7 +265,8 @@ class InputRouter:
         if not on:
             self._swallow.clear()  # their releases now go to the system, not to us
             await self._release()
-        for path, (dev, _task) in self._devs.items():
+        on = self._grab  # re-read: a newer set_grab may have run while we awaited
+        for path, (dev, _task) in list(self._devs.items()):
             if on and path not in self._grabbed:
                 try:
                     dev.grab()

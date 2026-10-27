@@ -27,6 +27,7 @@ from razertux.gui.macro_tab import MacroTab
 from razertux.gui.performance_tab import PerformanceTab
 from razertux.gui.power_tab import PowerTab
 from razertux.gui.profile_actions import ProfileActions
+from razertux.gui.recorder_wizard import open_recorder
 from razertux.gui.scroll_tab import ScrollTab
 from razertux.hw.buttons import ButtonId
 
@@ -117,6 +118,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
             lambda on: self.themeRequested.emit("system" if on else "synapse"))
         self.language_menu = add_language_menu(view, self.settings.language, self.languageRequested.emit)
         help_menu = self.menuBar().addMenu(self.tr("Help"))
+        help_menu.addAction(self.tr("Record device…")).triggered.connect(
+            lambda _=False: open_recorder(self, self.client))
         self.about_action = help_menu.addAction(self.tr("About RazerTux"))
         self.about_action.triggered.connect(lambda _=False: self.show_about())
 

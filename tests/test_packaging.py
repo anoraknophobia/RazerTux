@@ -118,11 +118,11 @@ def test_hardware_notes_list_unverified_assumptions():
 def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
-    for line in ("pkgname=razertux", "pkgver=0.3.0", "pkgrel=1", "replaces=(naga-config)",
+    for line in ("pkgname=razertux", "pkgver=0.4.0", "pkgrel=1", "replaces=(naga-config)",
                  "conflicts=(naga-config openrazer-daemon openrazer-driver-dkms)",
                  "provides=()", "install=razertux.install"):
         assert line in lines, line
-    assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next)" in p
+    assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next polkit)" in p
     assert "license=('GPL-2.0-or-later')" in p and "arch=('any')" in p
     assert [l for l in lines if l.startswith("url=")] == ["url='https://github.com/anoraknophobia/RazerTux'"]
     rest = "\n".join(l for l in lines if not l.startswith(("replaces=", "conflicts=")))
@@ -165,7 +165,10 @@ def test_install_script_only_prints_the_switch_commands():
         assert SWITCH_CMD not in out
     both = run("post_upgrade 0.3.0-1 0.1.0-1")  # naga-config era: switch hint, then enable
     assert both.count(SWITCH_CMD) == 1 and "restart razertuxd.service" not in both
-    assert run("post_upgrade 0.3.1-1 0.3.0-1") == ""                    # later upgrades stay quiet
+    # 0.3.x -> 0.4.0: the daemon gained PauseDevice/ResumeDevice -> restart hint
+    out = run("post_upgrade 0.4.0-1 0.3.0-1")
+    assert "systemctl --user restart razertuxd.service" in out and SWITCH_CMD not in out
+    assert run("post_upgrade 0.4.1-1 0.4.0-1") == ""                    # later upgrades stay quiet
 
 
 def test_pkgbuild_is_valid_bash():
@@ -185,10 +188,11 @@ def test_icon_is_a_scalable_svg_with_the_green_accent():
 def test_entry_points_match_packaging():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert data["project"]["name"] == "razertux"
-    assert data["project"]["version"] == "0.3.0"
+    assert data["project"]["version"] == "0.4.0"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
-                       "razertux-gui": "razertux.gui.app:main"}
+                       "razertux-gui": "razertux.gui.app:main",
+                       "razertux-record": "razertux.gui.recorder_wizard:main"}
     assert "ExecStart=/usr/bin/razertuxd" in _read("razertuxd.service")
     assert "Exec=/usr/bin/razertuxd" in _read("io.github.razertux.service")
     for f in ("razertux.desktop", "razertux-tray.desktop"):
@@ -198,7 +202,7 @@ def test_entry_points_match_packaging():
 
 def test_package_version_matches():
     import razertux
-    assert razertux.__version__ == "0.3.0"
+    assert razertux.__version__ == "0.4.0"
 
 
 def test_pyproject_license_is_spdx_expression():
@@ -258,3 +262,35 @@ def test_readme_wording_and_line_width():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "no guarantee" in readme
     assert all(len(line) <= 100 for line in readme.splitlines())
+
+
+def test_record_helper_wrapper_and_policy():
+    w = _read("razertux-record-helper").splitlines()
+    assert w[0] == "#!/bin/sh"
+    assert 'exec /usr/bin/python3 -I -m razertux.recorder.helper "$@"' in w
+    p = _read("PKGBUILD")
+    assert ('install -Dm755 "$p/razertux-record-helper" '
+            '"$pkgdir/usr/lib/razertux/razertux-record-helper"') in p
+    assert ('install -Dm644 "$p/io.github.razertux.record.policy" '
+            '"$pkgdir/usr/share/polkit-1/actions/io.github.razertux.record.policy"') in p
+    from razertux.recorder.backend import HELPER_PATH
+    assert HELPER_PATH == "/usr/lib/razertux/razertux-record-helper"
+    root = ET.fromstring(_read("io.github.razertux.record.policy"))
+    ann = root.find("action/annotate[@key='org.freedesktop.policykit.exec.path']")
+    assert ann.text == HELPER_PATH
+
+
+def test_readme_help_add_your_device():
+    r = (ROOT / "README.md").read_text(encoding="utf-8")
+    sec = r.split("## Help add your device")[1].split("\n## ")[0]
+    assert len(re.findall(r"^\d\. ", sec, re.M)) == 6
+    for needle in ("Record device", "razertux-record", "GitHub account", "NOSTORE",
+                   "serial", "tools/import_device_report.py", "For maintainers"):
+        assert needle in sec, needle
+
+
+def test_readme_names_the_record_menu_entry_as_the_gui_does():
+    readme = (ROOT / "README.md").read_text()
+    gui = (ROOT / "razertux" / "gui" / "main_window.py").read_text()
+    assert 'self.tr("Record device…")' in gui
+    assert '"Record device…"' in readme and '"Record device..."' not in readme

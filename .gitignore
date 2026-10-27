@@ -8,3 +8,6 @@ packaging/pkg/
 
 # internal planning documents (kept locally in ~/REA/razertux-planning)
 docs/superpowers/
+
+# local probe logs
+tools/*.log

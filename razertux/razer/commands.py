@@ -296,6 +296,10 @@ def razer_chroma_misc_get_dock_brightness() -> Built:
     return _report(0x07, 0x82, 0x01)
 
 
+def razer_chroma_misc_get_blade_brightness() -> Built:
+    return _report(0x0E, 0x84, 0x02, fill={0: 0x01})
+
+
 def razer_chroma_misc_set_dock_brightness(brightness: int) -> Built:
     return _report(0x07, 0x02, 0x01, fill={0: brightness})
 
@@ -461,6 +465,7 @@ PARSERS: dict[str, Callable[[bytes], Any]] = {
     "razer_chroma_extended_matrix_get_brightness": lambda a: a[2],
     "razer_chroma_standard_get_led_brightness": lambda a: a[2],
     "razer_chroma_misc_get_dock_brightness": lambda a: a[0],
+    "razer_chroma_misc_get_blade_brightness": lambda a: a[1],                 # blade laptops: arguments[1]
     "razer_chroma_misc_get_scroll_mode": lambda a: a[1],
     "razer_chroma_misc_get_scroll_acceleration": lambda a: a[1],
     "razer_chroma_misc_get_scroll_smart_reel": lambda a: a[1],
