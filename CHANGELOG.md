@@ -11,6 +11,9 @@ All notable changes to RazerTux. Each version below becomes a GitHub release wit
   `./install.sh --uninstall` removes RazerTux again and offers to restore the mouse first.
 - README: step-by-step install, update and uninstall guide for each distribution.
 
+### Changed
+- README: notes that RazerTux is a work in progress and was vibe coded with an AI assistant.
+
 ### Removed
 - README: upgrade notes for old versions.
 

@@ -5,10 +5,16 @@
 >
 > Project: <https://github.com/anoraknophobia/RazerTux>
 
+> **Work in progress – vibe coded.** RazerTux is a hobby project and still under
+> development; expect bugs and changes. It was written almost entirely by an AI coding
+> assistant (Claude Code) under the direction of its maintainer, not by an experienced
+> developer ("vibe coding"). It has an automated test suite, but the code has not been
+> reviewed line by line by a human. Use it at your own risk.
+
 RazerTux is an unofficial Linux replacement for Razer Synapse. It
 supports the Razer Naga V2 Pro and, experimentally, other Razer mice (tested on CachyOS/Arch,
 KDE Plasma Wayland). It consists of a background service (`razertuxd`), a command line tool
-(`razertux`) and a Qt GUI with a tray icon (`razertux-gui`). The current version is 0.3.0.
+(`razertux`) and a Qt GUI with a tray icon (`razertux-gui`).
 The GUI is available in English, German, Spanish and French (see "Language" below).
 
 ## Features
