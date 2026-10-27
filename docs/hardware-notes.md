@@ -119,3 +119,29 @@ the last slot in `~/.config/razertux/state.json`.
   Adaptive 4, Smooth 5, Custom 6.
 - `0x02/0x18` (OpenRazer PR #2741) -> status 0x05 (not supported). No read command returns
   tension/steps. Next step: USB capture under Windows.
+
+## OpenRazer coexistence (2026-10-27, OpenRazer 3.12.4, kernel 7.3.0-cachyos, Naga V2 Pro wired)
+
+- `openrazer-driver-dkms` builds; on Arch the group is `openrazer` (not `plugdev`), the
+  daemon refuses to start until the user is in it (re-login/reboot needed).
+- With `razermouse` bound to all three interfaces, RazerTux still works over hidraw:
+  probe, backup, driver mode (`getDeviceMode` -> `"3:0"` afterwards), profile apply.
+  120 parallel OpenRazer D-Bus reads during three RazerTux profile reloads: no errors on
+  either side.
+- Side buttons keep working. **Top buttons in driver mode:** the driver's `raw_event`
+  rewrites the 16-byte `04 <code>` report into a keyboard report `01 00 <code> ...`
+  (codes 0x20-0x23 become 0x68-0x6B; 0x52/0x57 stay). Recorded: TOP_2 press
+  `01 00 52 00 ...`, release `01 00 00 ...`. `identify_vendor` reads that form back.
+- D-Bus objects: `/org/razer` (`razer.devices.getDevices`, `razer.daemon.version`),
+  `/org/razer/device/<serial>` with interfaces `razer.device.dpi` (`getDPI ai`,
+  `setDPI qq`, `getDPIStages (ya(qq))`, `setDPIStages ya(qq)`, `maxDPI i`),
+  `razer.device.misc` (`getVidPid ai`, `getSerial s`, `getFirmware s`, `getPollRate i`,
+  `setPollRate q`, `getDeviceMode s`, `setDeviceMode yy`, …), `razer.device.power`
+  (`getBattery d`, `isCharging b`, `get/setIdleTime q`, `get/setLowBatteryThreshold y`),
+  `razer.device.lighting.logo` (`setLogoNone/Static yyy/BreathSingle yyy/BreathDual/
+  BreathRandom/Reactive yyyy/Spectrum/Wave i/Brightness d`, `getLogoBrightness d`,
+  `getLogoEffect s`), `razer.device.lighting.chroma` (all LEDs: `setNone/Static/
+  BreathSingle/Reactive/Spectrum…`, no wave) and `razer.device.lighting.brightness`
+  (global `get/setBrightness d`). No scroll-wheel interface, no zone for the thumb grid.
+- `getDPIStages` returns all five stages and the active id (`3 5 800 800 1600 1600 …`),
+  unlike the 0x86 read noted above.

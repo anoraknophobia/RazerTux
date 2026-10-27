@@ -112,6 +112,17 @@ def test_vendor_reports_from_driver_mode_recording():
     assert identify_vendor(reports[b"\x05\x0e"]) is None
 
 
+def test_vendor_reports_rewritten_by_openrazer_driver():
+    """With razermouse bound, OpenRazer turns `04 <code>` into `01 00 <code>` (16 bytes,
+    recorded on the Naga V2 Pro, OpenRazer 3.12.4)."""
+    press = bytes.fromhex("01 00 52" + " 00" * 13)
+    release = bytes.fromhex("01" + " 00" * 15)
+    assert identify_vendor(press) == (ButtonId.TOP_2, True)
+    assert identify_vendor(bytes.fromhex("01 00 57" + " 00" * 13)) == (ButtonId.TOP_1, True)
+    assert identify_vendor(release) == (None, False)
+    assert identify_vendor(bytes.fromhex("01 00 52 00")) is None  # not the 16-byte form
+
+
 def test_vendor_unknown_or_empty():
     assert identify_vendor(bytes([0x04, 0x99] + [0] * 14)) is None
     assert identify_vendor(b"\x04") is None

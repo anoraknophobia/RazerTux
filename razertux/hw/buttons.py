@@ -114,7 +114,11 @@ def identify_vendor(report: bytes) -> tuple[ButtonId | None, bool] | None:
 
     Returns (button, True) for a top-button press, (None, False) for the
     release of whichever top button is down, and None for anything else.
+    With OpenRazer's razermouse driver bound, the report arrives rewritten as
+    `01 00 <code> ...` (16 bytes); it is read back as `04 <code>`.
     """
+    if len(report) == 16 and report[0] == 0x01 and report[1] == 0x00:
+        report = b"\x04" + report[2:]
     if len(report) < 2 or report[0] != 0x04:
         return None
     if report[1] == 0x00:
