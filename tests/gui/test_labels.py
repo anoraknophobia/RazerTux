@@ -29,9 +29,12 @@ def test_macro_label_and_missing():
     assert L(MacroAction("zz", "once"), macros=macros) == "Macro: ? (missing)"
 
 
-def test_top_default_shows_dpi():
-    assert L(DefaultAction(), ButtonId.TOP_1) == "DPI up"
-    assert L(DefaultAction(), ButtonId.TOP_2) == "Sensitivity stage cycle"  # = default_profile
+def test_top_defaults_show_what_the_buttons_do():
+    from razertux.config.model import ScrollStageAction
+    assert L(DefaultAction(), ButtonId.TOP_1) == "Scroll wheel stage cycle"  # as under Synapse
+    assert L(DefaultAction(), ButtonId.TOP_2) == "Sensitivity stage cycle"
+    assert L(ScrollStageAction("up"), ButtonId.SIDE_1) == "Scroll wheel stage up"
+    assert L(ScrollStageAction("down"), ButtonId.SIDE_1) == "Scroll wheel stage down"
 
 
 def test_every_button_has_a_human_name():

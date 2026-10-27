@@ -29,7 +29,7 @@ from razertux.config.model import (
 )
 from razertux.config.store import ModelStore
 from razertux.devices.db import DeviceInfo
-from razertux.engine.mapper import NAGA_DEFAULT_DPI, Mapper
+from razertux.engine.mapper import NAGA_DEFAULT_ACTIONS, Mapper
 from razertux.hw.button_maps import InputSignal, map_for
 from razertux.hw.buttons import DRIVER_MODE, NORMAL_MODE, parse_notification
 from razertux.i18n import tr
@@ -79,9 +79,10 @@ def save_scroll_stage(path: Path, stage: int) -> None:
 
 
 def device_mode_for(profile: Profile | None) -> int:
-    """Driver mode only when the profile remaps the top buttons; otherwise the
-    firmware keeps them (front: scroll stage, back: DPI stage)."""
-    return DRIVER_MODE if profile is not None and profile.remap_top_buttons else NORMAL_MODE
+    """Naga: driver mode whenever a profile is active. RazerTux handles the top buttons
+    itself, as Synapse does (front: next scroll stage, back: next DPI stage by default):
+    since Synapse ran, the firmware no longer steps the scroll stage in normal mode."""
+    return DRIVER_MODE if profile is not None else NORMAL_MODE
 
 
 def _stage_index(profile: Profile) -> int:
@@ -225,7 +226,8 @@ class DeviceSession:
         self._macros: dict = {}
         self.validation: list[str] = []  # problems of the active profile (macros, ...)
         self.mapper = Mapper(store.default_profile(), {}, out, on_dpi_stage=self._on_dpi_stage,
-                             default_dpi=NAGA_DEFAULT_DPI if self._is_naga_model else {})
+                             on_scroll_stage=self._on_scroll_stage,
+                             default_actions=NAGA_DEFAULT_ACTIONS if self._is_naga_model else {})
         self.router = InputRouter(self.mapper, out, grab=needs_grab(None, self.device_settings, info))
         self._refresh_map()
         self._learning = False
@@ -557,8 +559,7 @@ class DeviceSession:
         self._written.clear()
 
     def _sync_mode(self, profile: Profile | None) -> None:
-        """Naga: device mode follows the profile's remap_top_buttons (connect, switch,
-        Reload)."""
+        """Naga: driver mode while a profile is active (connect, switch, Reload)."""
         naga = self._naga
         mode = device_mode_for(profile)
         if naga is None or mode == self._mode:
@@ -692,6 +693,28 @@ class DeviceSession:
         self._hw["dpi"] = x
         self._on_status()
         logger.info("DPI stage %d: %dx%d", idx + 1, x, y)
+
+    def _on_scroll_stage(self, direction: str) -> None:
+        """Top button bound to the scroll wheel stage: up/down clamp to 1-6, cycle wraps."""
+        naga = self._naga
+        if naga is None or not self._writes_allowed():
+            return
+        current = _safe(naga.scroll_stage, None)
+        if not isinstance(current, int) or not 1 <= current <= 6:
+            current = self._scroll_stage if 1 <= self._scroll_stage <= 6 else 1
+        if direction == "cycle":
+            slot = current % 6 + 1
+        else:
+            slot = min(max(current + (1 if direction == "up" else -1), 1), 6)
+        if slot == current:
+            return
+        try:
+            naga.set_scroll_stage(slot)
+        except _HW_ERRORS as e:
+            logger.warning("Scroll wheel stage %d not set: %s", slot, e)
+            return
+        self._set_scroll_stage(slot)
+        logger.info("Scroll wheel stage %d", slot)
 
     def restore_backup(self, backup: dict) -> list[str]:
         if self._mouse is None:

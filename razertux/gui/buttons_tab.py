@@ -12,14 +12,13 @@ from razertux.config.store import ModelStore
 from razertux.devices.db import DeviceInfo, load_devices
 from razertux.gui.layouts import Layout, layout_for
 from razertux.gui.mouse_view import DEFAULT_MODEL, MouseView
-from razertux.gui.widgets import PillToggle, ToggleSwitch
+from razertux.gui.widgets import PillToggle
 from razertux.hw.buttons import ButtonId
 
 
 class ButtonsTab(QWidget):
     bindingClicked = Signal(object)  # ButtonId
     layerChanged = Signal(str)
-    remapToggled = Signal(bool)  # "Assign top buttons freely" (per profile)
     learnRequested = Signal(object)  # ButtonId: the free learn slot "Learn button …" fills
 
     def __init__(self, model_store: ModelStore | None = None,
@@ -39,11 +38,6 @@ class ButtonsTab(QWidget):
                          if key == "hypershift" else self.tr("Standard assignments"))
             b.clicked.connect(lambda _=False, k=key: self.layerChanged.emit(k))
             self.layer_buttons[key] = b
-        self.remap_toggle = ToggleSwitch(self.tr("Assign top buttons freely"))
-        self.remap_toggle.setToolTip(self.tr(
-            "Off: the front top button cycles the scroll wheel stage and the rear one the "
-            "sensitivity stage. On: both buttons can be assigned freely."))
-        self.remap_toggle.toggled.connect(self.remapToggled)
         self.plate_combo = QComboBox()
         for plate, text in ((12, self.tr("Side plate: 12 buttons")), (6, self.tr("Side plate: 6 buttons")),
                             (2, self.tr("Side plate: 2 buttons"))):
@@ -58,7 +52,6 @@ class ButtonsTab(QWidget):
         top.addWidget(self.plate_hint)
         top.addWidget(self.learn_btn)
         top.addStretch(1)
-        top.addWidget(self.remap_toggle)
         pill_row = QHBoxLayout()
         pill_row.addStretch(1)
         pill_row.addWidget(self.layer_pill)
@@ -104,7 +97,6 @@ class ButtonsTab(QWidget):
         shown = {b: s for b, s in self.layout_full.buttons.items()
                  if not b.startswith("learn_") or b in self.learned}
         self.learn_btn.setVisible(self._free_slot() is not None)
-        self.remap_toggle.setVisible(ButtonId.TOP_1 in shown)  # the Naga's firmware-owned top buttons
         self.mouse_view.set_layout(replace(self.layout_full, buttons=shown))
 
     def _free_slot(self) -> ButtonId | None:
@@ -129,7 +121,3 @@ class ButtonsTab(QWidget):
     def set_layer(self, layer: str) -> None:
         self.layer_buttons[layer].setChecked(True)
 
-    def set_remap(self, on: bool) -> None:
-        self.remap_toggle.blockSignals(True)
-        self.remap_toggle.setChecked(on)
-        self.remap_toggle.blockSignals(False)

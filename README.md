@@ -20,8 +20,8 @@ The GUI is available in English, German, Spanish and French (see "Language" belo
 ## Features
 
 - **Buttons**: assignments, key combinations, macros, Hypershift, several profiles per model.
-- **Free top buttons**: off = the firmware steps the scroll-wheel stage or DPI stage
-  (normal mode). On = driver mode, the two top buttons can be assigned freely.
+- **Top buttons** (Naga V2 Pro): freely assignable. By default the front one steps the
+  scroll wheel stage and the rear one the DPI stage, as under Synapse.
 - **Learn button**: teach RazerTux the signal of a button it does not recognise (press it on the
   mouse) and assign it to a button slot. Needs the running service.
 - **Performance**: DPI and DPI stages. A DPI value written permanently is restored to the
@@ -225,11 +225,11 @@ The display can be switched on and off in the tray menu.
 ## Known limits
 
 - Bluetooth: normal input only, no configuration. Use the wireless dongle or USB.
-- Scroll-wheel stage values (haptics) cannot be changed, only the active stage is shown.
-- `kill -9` on the service skips the cleanup. systemd restarts the service; this only
-  affects "Free top buttons" (driver mode): until the restart the top buttons do not react,
-  afterwards the service sets the mode to match the profile again. Without a running
-  service, unplugging and replugging the mouse helps.
+- Scroll-wheel stage values (haptics, the "Custom" stage) cannot be changed yet; choosing
+  the active stage works.
+- `kill -9` on the service skips the cleanup. systemd restarts the service; until then
+  the Naga's top buttons do not react. Without a running service, unplugging and
+  replugging the mouse helps.
 - `dbus-next` is deprecated as of Python 3.15; a replacement will be needed then.
 - Running an OpenRazer service in parallel is not supported (package conflict).
 - More hardware details: `docs/hardware-notes.md`.

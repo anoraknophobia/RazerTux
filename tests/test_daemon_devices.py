@@ -557,20 +557,20 @@ def modes(t):
     return [r.args[0] for r in t.requests if (r.cmd_class, r.cmd_id) == (0x00, 0x04)]
 
 
-async def test_daemon_connect_sets_normal_mode_and_status(tmp_path):
+async def test_daemon_connect_sets_driver_mode_and_status(tmp_path):
     d, t = make_daemon(tmp_path)
     await d.start()
     mouse = FakeDev("/dev/input/event18")
     d.on_added("mouse", mouse)
     await d.settle()
     assert mouse.grabbed
-    assert modes(t) == [NORMAL_MODE]  # default profile: firmware keeps the top buttons
+    assert modes(t) == [DRIVER_MODE]  # RazerTux handles the top buttons, as Synapse does
     assert d.hw_status() == {"connected": True, "connection": "wired",
                              "battery": 100, "charging": True, "dpi": 800,
                              "scroll_stage": -1}
     assert all(c != 0x02 for c, _ in t.sent)  # never probes 0x02/0x98
     await d.shutdown()
-    assert modes(t) == [NORMAL_MODE, NORMAL_MODE]
+    assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # clean shutdown: normal mode
     assert mouse.ungrabbed and mouse.closed and d.out.closed
 
 
@@ -616,7 +616,7 @@ async def test_daemon_unplug_releases_and_disconnects(tmp_path):
                              "battery": -1, "charging": False, "dpi": -1,
                              "scroll_stage": -1}
     await d.shutdown()
-    assert modes(t) == [NORMAL_MODE]  # no mode reset on an unplugged mouse
+    assert modes(t) == [DRIVER_MODE]  # no mode reset on an unplugged mouse
 
 
 class TwoNodes:
@@ -736,7 +736,7 @@ async def test_daemon_hotplug_readd(tmp_path):
     d.on_added("mouse", second)
     await d.settle()
     assert second.grabbed
-    assert modes(t) == [NORMAL_MODE, NORMAL_MODE]
+    assert modes(t) == [DRIVER_MODE, DRIVER_MODE]
     assert d.hw_status()["connected"] is True
     assert [p.id for p in applied] == ["default", "default"]
     await d.shutdown()
@@ -1230,7 +1230,7 @@ def _remap_profile(pid="remap", on=True):
     return Profile(id=pid, name=pid, remap_top_buttons=on)
 
 
-async def test_mode_follows_active_profile_on_connect_switch_and_reload(tmp_path):
+async def test_driver_mode_on_connect_switch_and_reload(tmp_path):
     from razertux.config.model import Settings
     store = ConfigStore(tmp_path)
     store.save_profile(_remap_profile())
@@ -1241,17 +1241,13 @@ async def test_mode_follows_active_profile_on_connect_switch_and_reload(tmp_path
     await d.settle()
     assert modes(t) == [DRIVER_MODE]  # connect
     await d.service.activate("naga_v2_pro", "default")
-    assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # switch
     await d.service.reload()
-    assert modes(t) == [DRIVER_MODE, NORMAL_MODE]  # unchanged: nothing written
-    store.save_profile(_remap_profile("default"))
-    await d.service.reload()
-    assert modes(t) == [DRIVER_MODE, NORMAL_MODE, DRIVER_MODE]  # Reload
+    assert modes(t) == [DRIVER_MODE]  # every profile keeps driver mode: nothing written
     await d.shutdown()
     assert modes(t)[-1] == NORMAL_MODE  # clean shutdown always ends in normal mode
 
 
-async def test_top_buttons_ignored_in_normal_mode(tmp_path):
+async def test_top_buttons_reach_the_mapper(tmp_path):
     readers = []
     d, t = make_daemon(tmp_path, readers=readers)
     calls = []
@@ -1266,12 +1262,29 @@ async def test_top_buttons_ignored_in_normal_mode(tmp_path):
     assert reader.started and reader.path == "/dev/hidraw4"
     await reader.report([0x04, 0x57] + [0] * 14)
     await reader.report([0x04, 0x00] + [0] * 14)
-    assert calls == []  # firmware handles the top buttons in normal mode
-    d.store.save_profile(_remap_profile("default"))
-    await d.service.reload()
-    await reader.report([0x04, 0x57] + [0] * 14)
-    await reader.report([0x04, 0x00] + [0] * 14)
     assert calls == [(ButtonId.TOP_1, 1), (ButtonId.TOP_1, 0)]
+    await d.shutdown()
+
+
+async def test_front_top_button_steps_the_scroll_stage(tmp_path):
+    readers = []
+    t = naga_transport()
+    stage = [6]
+    t.responses[(0x15, 0x80)] = lambda a: bytes([1, stage[0]])
+
+    def put(a):
+        stage[0] = a[1]
+        return a[:2]
+    t.responses[(0x15, 0x00)] = put
+    d, _ = make_daemon(tmp_path, transport=t, readers=readers)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    for _ in range(2):
+        await readers[-1].report([0x04, 0x57] + [0] * 14)
+        await readers[-1].report([0x04, 0x00] + [0] * 14)
+    assert stage == [2]  # 6 -> 1 -> 2: wraps like Synapse
+    assert d.hw_status()["scroll_stage"] == 2
     await d.shutdown()
 
 

@@ -10,14 +10,13 @@ from PySide6.QtWidgets import QPushButton, QWidget
 
 from razertux.config.model import Action, DefaultAction, Macro
 from razertux.devices.db import load_devices
-from razertux.gui.labels import action_label, button_name, firmware_top_label
+from razertux.gui.labels import action_label, button_name
 from razertux.gui.layouts import Layout, layout_for
 from razertux.gui.mouse_scene import Drawing, themed_svg
 from razertux.hw.buttons import ButtonId
 
 __all__ = ["MouseView", "themed_svg"]
 
-TOP_BUTTONS = (ButtonId.TOP_1, ButtonId.TOP_2)  # owned by the firmware unless remapped
 DEFAULT_MODEL = "naga_v2_pro"  # until the window picks the connected device
 ANCHOR = {"left": (0.16, 0.5), "right": (0.84, 0.5)}  # leader line end inside a key by label side
 RIGHT_ENTRY = 0.92  # right column: x (fraction of the drawing) where the lines turn horizontal
@@ -82,23 +81,19 @@ class MouseView(QWidget):
         return self._texts[b]
 
     def set_bindings(self, actions: dict[ButtonId, Action], macros: dict[str, Macro],
-                     layout: str | None = None, top_locked: bool = False) -> None:
-        """top_locked: the firmware owns the top buttons (normal device mode); their
-        labels show what the mouse does and are greyed out, not clickable."""
-        self._bindings = (actions, macros, {"layout": layout, "top_locked": top_locked})
+                     layout: str | None = None) -> None:
+        self._bindings = (actions, macros, {"layout": layout})
         for b, btn in self._buttons.items():
             a = actions.get(b, DefaultAction())
-            locked = top_locked and b in TOP_BUTTONS
-            label = firmware_top_label(b) if locked else action_label(a, b, macros, layout)
-            btn.setEnabled(not locked)
-            self._tips[b] = (self.tr("Assignable when “Assign top buttons freely” is on")
-                             if locked else "")
+            label = action_label(a, b, macros, layout)
+            btn.setEnabled(True)
+            self._tips[b] = ""
             if self.device_layout.buttons[b].side == "left":
                 self._texts[b] = f"{button_name(b)}  →  {label}"
             else:
                 self._texts[b] = f"{button_name(b)}:  {label}"
             font = btn.font()
-            font.setBold(not locked and not isinstance(a, DefaultAction))
+            font.setBold(not isinstance(a, DefaultAction))
             btn.setFont(font)
         if self._hot is not None and not self._buttons[self._hot].isEnabled():
             self.set_hot(None)

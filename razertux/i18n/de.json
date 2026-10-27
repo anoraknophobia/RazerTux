@@ -33,15 +33,16 @@
     "Repeat n times": "n-mal wiederholen",
     "Apply": "Übernehmen",
     "Show RazerTux which signal this button sends": "RazerTux zeigen, welches Signal diese Taste sendet",
-    "Learn button …": "Taste anlernen …"
+    "Learn button …": "Taste anlernen …",
+    "Scroll wheel stage up": "Mausrad-Stufe hoch",
+    "Scroll wheel stage down": "Mausrad-Stufe runter",
+    "Scroll wheel stage cycle": "Mausrad-Stufe durchschalten"
   },
   "ButtonsTab": {
-    "Off: the front top button cycles the scroll wheel stage and the rear one the sensitivity stage. On: both buttons can be assigned freely.": "Aus: Die Maus schaltet mit der oberen Taste vorne die Mausrad-Stufe und mit der hinteren die DPI-Stufe um. An: Beide Tasten lassen sich frei belegen.",
     "Assignment unverified – if a button is wrong: learn the button": "Belegung ungeprüft – falls eine Taste nicht stimmt: Taste anlernen",
     "Hypershift": "Hypershift",
     "Hypershift layer: active while the Hypershift key is held": "Hypershift-Ebene: gilt, solange die Hypershift-Taste gehalten wird",
     "Standard assignments": "Normale Belegung",
-    "Assign top buttons freely": "Obere Tasten frei belegen",
     "Side plate: 12 buttons": "Seitenplatte: 12 Tasten",
     "Side plate: 2 buttons": "Seitenplatte: 2 Tasten",
     "Side plate: 6 buttons": "Seitenplatte: 6 Tasten",
@@ -186,9 +187,7 @@
     "About RazerTux": "Über RazerTux",
     "Record device…": "Gerät aufzeichnen …"
   },
-  "MouseView": {
-    "Assignable when “Assign top buttons freely” is on": "Belegbar, wenn „Obere Tasten frei belegen“ an ist"
-  },
+  "MouseView": {},
   "PerformanceTab": {
     "%1 – %2, steps of %3": "%1 – %2, Schritte von %3",
     "Polling Rate": "Abfragerate",
@@ -346,7 +345,6 @@
     "DPI up": "DPI hoch",
     "DPI down": "DPI runter",
     "Sensitivity stage cycle": "DPI-Stufe weiter",
-    "Sensitivity stage cycle (mouse)": "DPI-Stufe weiter (Maus)",
     "Hypershift": "Hypershift",
     "Wired": "Kabel",
     "Left Click": "Linksklick",
@@ -354,7 +352,6 @@
     "Macro: ? (missing)": "Makro: ? (fehlt)",
     "Mouse not connected": "Maus nicht verbunden",
     "Scroll Click": "Mausrad-Klick",
-    "Scroll wheel stage cycle (mouse)": "Mausrad-Stufe weiter (Maus)",
     "Top button rear": "Obere Taste hinten",
     "Top button front": "Obere Taste vorn",
     "Scroll Up": "Rad hoch",
@@ -369,7 +366,10 @@
     "Side button front": "Seitentaste vorn",
     "Sniper button": "Sniper-Taste",
     "Profile button": "Profiltaste",
-    "Learned button %1": "Angelernte Taste %1"
+    "Learned button %1": "Angelernte Taste %1",
+    "Scroll wheel stage up": "Mausrad-Stufe hoch",
+    "Scroll wheel stage down": "Mausrad-Stufe runter",
+    "Scroll wheel stage cycle": "Mausrad-Stufe durchschalten"
   },
   "store": {
     "Profile {profile} not readable: {error}": "Profil {profile} nicht lesbar: {error}",
@@ -385,7 +385,6 @@
     "DPI must be between {min} and {max}": "DPI muss zwischen {min} und {max} liegen",
     "Color values ({zone}) must be between 0 and 255": "Farbwerte ({zone}) müssen zwischen 0 und 255 liegen",
     "Brightness ({zone}) must be between 0 and 255": "Helligkeit ({zone}) muss zwischen 0 und 255 liegen",
-    "Hypershift key on a top button only with “Assign top buttons freely”": "Hypershift-Taste auf oberer Taste nur mit „Obere Tasten frei belegen“",
     "Hypershift key not allowed in the Hypershift layer": "Hypershift-Taste in der Hypershift-Ebene nicht erlaubt",
     "Left click unreachable": "Linksklick nicht erreichbar",
     "Macro missing: {macro}": "Makro fehlt: {macro}",

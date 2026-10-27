@@ -4,7 +4,7 @@ from __future__ import annotations
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 from razertux.config.model import (
-    Action, ComboAction, DefaultAction, DisabledAction, DpiStageAction,
+    Action, ComboAction, DefaultAction, DisabledAction, DpiStageAction, ScrollStageAction,
     HypershiftAction, KeyAction, Macro, MacroAction,
 )
 from razertux.gui.keynames import combo_label, key_label
@@ -55,17 +55,6 @@ def battery_text(status: dict) -> str:
     return text + " ⚡ " + _tr("charging") if status.get("charging") else text
 
 
-# Top buttons while "Assign top buttons freely" is off: the firmware handles them.
-_FIRMWARE_TOP = {
-    ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Scroll wheel stage cycle (mouse)"),
-    ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Sensitivity stage cycle (mouse)"),
-}
-
-
-def firmware_top_label(button: ButtonId) -> str:
-    return _tr(_FIRMWARE_TOP[button])
-
-
 WHEEL_BUTTONS = (ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT)
 
 
@@ -73,8 +62,8 @@ def action_label(action: Action, button: ButtonId, macros: dict[str, Macro],
                  layout: str | None = None) -> str:
     match action:
         case DefaultAction():
-            if button == ButtonId.TOP_1:
-                return _tr("DPI up")
+            if button == ButtonId.TOP_1:  # Naga: as under Synapse (TOP_BUTTON_DEFAULTS)
+                return _tr("Scroll wheel stage cycle")
             if button == ButtonId.TOP_2:
                 return _tr("Sensitivity stage cycle")
             return _tr("Default")
@@ -95,4 +84,8 @@ def action_label(action: Action, button: ButtonId, macros: dict[str, Macro],
             if direction == "cycle":
                 return _tr("Sensitivity stage cycle")
             return _tr("DPI up") if direction == "up" else _tr("DPI down")
+        case ScrollStageAction(direction):
+            if direction == "cycle":
+                return _tr("Scroll wheel stage cycle")
+            return _tr("Scroll wheel stage up") if direction == "up" else _tr("Scroll wheel stage down")
     return "?"

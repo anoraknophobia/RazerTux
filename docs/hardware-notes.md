@@ -73,6 +73,11 @@ the value via `razertux status` or by visual inspection. Record the result here.
   `0x00` with args `01 <slot>` (size 2). The mouse answers each with the usual `05 3a`
   notification. Slot numbers match the notifications; the preset ids per slot are
   1=`83`, 2=`81`, 3=`82`, 4=`84`, 5=`85`, 6=`86`.
+- In the same capture the front top button sent `04 57` / `04 00` (driver-mode reports):
+  Synapse runs the mouse in driver mode and steps the stage itself (read, then set).
+  Afterwards the front button no longer stepped the stage in normal mode on Linux. Since
+  0.5.0 RazerTux does the same as Synapse: driver mode whenever a profile is active, top
+  buttons handled in software (defaults: front = next scroll stage, back = next DPI stage).
 - Also seen in that capture, not used yet: `0x15/0x09` and `0x15/0x03` (80 bytes) when
   the Custom stage was edited, `0x15/0x04` (80 bytes, float values, per slot) and, sent to
   the wireless dongle only, `0x15/0x07` with args `01 <slot> 06 83 81 82 84 85 86`.

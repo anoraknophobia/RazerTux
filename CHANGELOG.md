@@ -2,6 +2,21 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.5.0] - 2026-10-27
+
+### Changed
+- Naga V2 Pro top buttons: RazerTux now handles them itself, as Synapse does. Both are
+  always freely assignable; the switch "Assign top buttons freely" is gone. By default the
+  front button steps the scroll wheel stage and the rear one the DPI stage.
+- Profiles from older versions with the switch off get these defaults for the two top
+  buttons (their old assignments had no effect).
+
+### Added
+- New actions for any button: scroll wheel stage up, down and cycle (Naga V2 Pro).
+
+### Fixed
+- The front top button did nothing after the mouse had been used with Synapse.
+
 ## [0.4.4] - 2026-10-27
 
 ### Added

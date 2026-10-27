@@ -212,7 +212,13 @@ def test_schema2_migrates_real_user_config(v1):
     for name, raw in originals.items():
         pid = name[:-5]
         assert (v1 / "profiles" / "naga_v2_pro" / name).read_bytes() == raw
-        assert ms.load_profile(pid).to_dict() == json.loads(raw)
+        expected = json.loads(raw)
+        if not expected["remap_top_buttons"]:  # 0.5.0: the top buttons go back to "default"
+            expected["remap_top_buttons"] = True
+            for b in ("top_1", "top_2"):
+                expected["standard"][b] = {"type": "default"}
+                expected["hypershift"].pop(b, None)
+        assert ms.load_profile(pid).to_dict() == expected
     assert {p.id for p in ms.list_profiles()} == {"test", "test2-73cb63"}
     settings = ConfigStore(v1).load_settings()
     assert settings.active_profile == "test2-73cb63"

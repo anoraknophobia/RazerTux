@@ -62,7 +62,7 @@ def test_svg_colours_dark_and_system(qapp):
 @pytest.fixture
 def view(qapp):
     v = MouseView()
-    v.set_bindings({}, {}, top_locked=False)
+    v.set_bindings({}, {})
     v.resize(1000, 560)
     v.show()
     qapp.processEvents()
@@ -140,15 +140,12 @@ def test_click_on_wheel_opens_scroll_click(view):
     assert view.button_at(_centre(view, ButtonId.WHEEL_UP)) == ButtonId.MIDDLE
 
 
-def test_locked_top_buttons_neither_hover_nor_click(view):
-    view.set_bindings({}, {}, top_locked=True)
+def test_top_buttons_are_always_assignable(view):
+    view.set_bindings({}, {})
     pos = _centre(view, ButtonId.TOP_1)
-    assert view.button_at(pos) is None
-    got = []
-    view.bindingClicked.connect(got.append)
-    _mouse(view, QEvent.Type.MouseButtonRelease, pos)
-    QApplication.sendEvent(view._buttons[ButtonId.TOP_1], QEvent(QEvent.Type.Enter))
-    assert got == [] and view.hot is None
+    assert view.button_at(pos) == ButtonId.TOP_1
+    assert view._buttons[ButtonId.TOP_1].isEnabled() and view._buttons[ButtonId.TOP_2].isEnabled()
+    assert view.button_text(ButtonId.TOP_1).endswith("Scroll wheel stage cycle")
 
 
 def test_click_outside_keys_does_nothing(view):
@@ -181,7 +178,8 @@ def test_click_on_key_opens_the_action_dialog(window, monkeypatch):
     from razertux.gui import main_window
     seen = []
     monkeypatch.setattr(main_window.ActionDialog, "pick",
-                        staticmethod(lambda parent, action, macros, button, layer: seen.append(button)))
+                        staticmethod(lambda parent, action, macros, button, layer, scroll_stages:
+                                     seen.append(button)))
     view = window.mouse_view
     pos = view.key_rect(ButtonId.SIDE_4).center()
     _mouse(view, QEvent.Type.MouseButtonPress, pos)

@@ -62,13 +62,20 @@ class DpiStageAction:
     direction: Literal["up", "down", "cycle"]
 
 
+@dataclass(frozen=True)
+class ScrollStageAction:
+    """Naga scroll wheel stage (1-6): up/down clamped, cycle wraps (Synapse's front top
+    button)."""
+    direction: Literal["up", "down", "cycle"]
+
+
 Action = (DefaultAction | DisabledAction | KeyAction | ComboAction
-          | MacroAction | HypershiftAction | DpiStageAction)
+          | MacroAction | HypershiftAction | DpiStageAction | ScrollStageAction)
 
 _ACTION_TYPES: dict[str, type] = {
     "default": DefaultAction, "disabled": DisabledAction, "key": KeyAction,
     "combo": ComboAction, "macro": MacroAction, "hypershift": HypershiftAction,
-    "dpi_stage": DpiStageAction,
+    "dpi_stage": DpiStageAction, "scroll_stage": ScrollStageAction,
 }
 _ACTION_NAMES = {cls: name for name, cls in _ACTION_TYPES.items()}
 
@@ -157,8 +164,11 @@ class Profile:
     (active while the Hypershift button is held); a button missing from it
     behaves like DefaultAction. Empty/None hardware fields (`dpi_stages`,
     `poll_rate`, `lighting`) mean "leave the mouse as is".
-    `remap_top_buttons` False: the device stays in normal mode, the firmware handles
-    the top buttons (scroll stage / DPI stage) and their bindings are ignored.
+    `remap_top_buttons` is always True since 0.5.0: RazerTux handles the Naga's top
+    buttons itself (as Synapse does), their bindings always apply. A profile saved by an
+    older version with False (the firmware handled the top buttons, their bindings were
+    ignored) gets "default" on both on load, which is the factory behaviour (front = next
+    scroll stage, back = next DPI stage, see TOP_BUTTON_DEFAULTS).
     """
     id: str
     name: str
@@ -168,7 +178,7 @@ class Profile:
     active_stage: int = 0  # 1-based when dpi_stages is non-empty
     poll_rate: int | None = None
     lighting: dict[Zone, LightingZone] = field(default_factory=dict)
-    remap_top_buttons: bool = False
+    remap_top_buttons: bool = True
     # scroll wheel options of mice that have them: "mode" (0 tactile, 1 free spinning),
     # "acceleration", "smart_reel" (bool); a missing key = leave the mouse as is
     scroll: dict[str, int | bool] = field(default_factory=dict)
@@ -190,6 +200,17 @@ class Profile:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Profile:
+        p = cls._from_dict(d)
+        if not p.remap_top_buttons:  # saved before 0.5.0 with the firmware owning them
+            for b in TOP_BUTTON_DEFAULTS:
+                if b in p.standard:
+                    p.standard[b] = DefaultAction()
+                p.hypershift.pop(b, None)
+            p.remap_top_buttons = True
+        return p
+
+    @classmethod
+    def _from_dict(cls, d: dict[str, Any]) -> Profile:
         return cls(
             id=d["id"], name=d["name"],
             standard={ButtonId(b): action_from_dict(a) for b, a in d["standard"].items()},
@@ -335,10 +356,15 @@ def _dpi_limit(value: Any) -> int:
     return value if value in DPI_LIMIT_CHOICES and isinstance(value, int) else DEFAULT_DPI_LIMIT
 
 
+# What the Naga's top buttons do out of the box (and under Synapse): front = next scroll
+# wheel stage, back = next DPI stage; both wrap around.
+TOP_BUTTON_DEFAULTS: dict[ButtonId, Action] = {ButtonId.TOP_1: ScrollStageAction("cycle"),
+                                               ButtonId.TOP_2: DpiStageAction("cycle")}
+
+
 def default_profile() -> Profile:
     standard: dict[ButtonId, Action] = {b: DefaultAction() for b in ButtonId}
-    standard[ButtonId.TOP_1] = DpiStageAction("up")
-    standard[ButtonId.TOP_2] = DpiStageAction("cycle")
+    standard.update(TOP_BUTTON_DEFAULTS)
     return Profile(id="default", name="Standard", standard=standard)
 
 
@@ -364,11 +390,6 @@ def validate(profile: Profile, macros: dict[str, Macro] | None = None) -> list[s
         errors.append(tr("validate", "More than one Hypershift key"))
     if any(isinstance(a, HypershiftAction) for a in profile.hypershift.values()):
         errors.append(tr("validate", "Hypershift key not allowed in the Hypershift layer"))
-    if not profile.remap_top_buttons and any(
-            isinstance(profile.standard.get(b), HypershiftAction)
-            for b in (ButtonId.TOP_1, ButtonId.TOP_2)):
-        # normal mode: the firmware owns the top buttons, the key would never be seen
-        errors.append(tr("validate", "Hypershift key on a top button only with “Assign top buttons freely”"))
     if macros is not None:
         for layer in (profile.standard, profile.hypershift):
             for a in layer.values():

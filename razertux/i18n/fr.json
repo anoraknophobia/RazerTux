@@ -33,15 +33,16 @@
     "Repeat n times": "Répéter n fois",
     "Apply": "Appliquer",
     "Show RazerTux which signal this button sends": "Montrer à RazerTux quel signal ce bouton envoie",
-    "Learn button …": "Apprendre le bouton …"
+    "Learn button …": "Apprendre le bouton …",
+    "Scroll wheel stage up": "Niveau de molette suivant",
+    "Scroll wheel stage down": "Niveau de molette précédent",
+    "Scroll wheel stage cycle": "Faire défiler les niveaux de molette"
   },
   "ButtonsTab": {
-    "Off: the front top button cycles the scroll wheel stage and the rear one the sensitivity stage. On: both buttons can be assigned freely.": "Désactivé : le bouton supérieur avant change le niveau de la molette et le bouton arrière le niveau de sensibilité. Activé : les deux boutons sont librement affectables.",
     "Assignment unverified – if a button is wrong: learn the button": "Attribution non vérifiée : si un bouton ne correspond pas, apprenez le bouton",
     "Hypershift": "Hypershift",
     "Hypershift layer: active while the Hypershift key is held": "Couche Hypershift : active tant que la touche Hypershift est maintenue",
     "Standard assignments": "Affectations standard",
-    "Assign top buttons freely": "Affecter librement les boutons supérieurs",
     "Side plate: 12 buttons": "Plaque latérale : 12 boutons",
     "Side plate: 2 buttons": "Plaque latérale : 2 boutons",
     "Side plate: 6 buttons": "Plaque latérale : 6 boutons",
@@ -186,9 +187,7 @@
     "About RazerTux": "À propos de RazerTux",
     "Record device…": "Enregistrer un appareil…"
   },
-  "MouseView": {
-    "Assignable when “Assign top buttons freely” is on": "Affectable si « Affecter librement les boutons supérieurs » est activé"
-  },
+  "MouseView": {},
   "PerformanceTab": {
     "%1 – %2, steps of %3": "%1 – %2, par pas de %3",
     "Polling Rate": "Taux d’interrogation",
@@ -346,7 +345,6 @@
     "DPI up": "DPI plus",
     "DPI down": "DPI moins",
     "Sensitivity stage cycle": "Cycle des niveaux de sensibilité",
-    "Sensitivity stage cycle (mouse)": "Cycle des niveaux de sensibilité (souris)",
     "Hypershift": "Hypershift",
     "Wired": "Filaire",
     "Left Click": "Clic gauche",
@@ -354,7 +352,6 @@
     "Macro: ? (missing)": "Macro : ? (manquante)",
     "Mouse not connected": "Souris non connectée",
     "Scroll Click": "Clic molette",
-    "Scroll wheel stage cycle (mouse)": "Niveau de molette suivant (souris)",
     "Top button rear": "Bouton supérieur arrière",
     "Top button front": "Bouton supérieur avant",
     "Scroll Up": "Molette vers le haut",
@@ -369,7 +366,10 @@
     "Side button front": "Bouton latéral avant",
     "Sniper button": "Bouton sniper",
     "Profile button": "Bouton de profil",
-    "Learned button %1": "Bouton appris %1"
+    "Learned button %1": "Bouton appris %1",
+    "Scroll wheel stage up": "Niveau de molette suivant",
+    "Scroll wheel stage down": "Niveau de molette précédent",
+    "Scroll wheel stage cycle": "Faire défiler les niveaux de molette"
   },
   "store": {
     "Profile {profile} not readable: {error}": "Profil {profile} illisible : {error}",
@@ -385,7 +385,6 @@
     "DPI must be between {min} and {max}": "Les DPI doivent être compris entre {min} et {max}",
     "Color values ({zone}) must be between 0 and 255": "Les valeurs de couleur ({zone}) doivent être comprises entre 0 et 255",
     "Brightness ({zone}) must be between 0 and 255": "La luminosité ({zone}) doit être comprise entre 0 et 255",
-    "Hypershift key on a top button only with “Assign top buttons freely”": "Touche Hypershift sur un bouton supérieur uniquement avec « Affecter librement les boutons supérieurs »",
     "Hypershift key not allowed in the Hypershift layer": "Touche Hypershift interdite dans la couche Hypershift",
     "Left click unreachable": "Clic gauche inaccessible",
     "Macro missing: {macro}": "Macro manquante : {macro}",

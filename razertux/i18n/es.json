@@ -33,15 +33,16 @@
     "Repeat n times": "Repetir n veces",
     "Apply": "Aplicar",
     "Show RazerTux which signal this button sends": "Mostrar a RazerTux qué señal envía este botón",
-    "Learn button …": "Aprender botón …"
+    "Learn button …": "Aprender botón …",
+    "Scroll wheel stage up": "Nivel de rueda arriba",
+    "Scroll wheel stage down": "Nivel de rueda abajo",
+    "Scroll wheel stage cycle": "Recorrer niveles de rueda"
   },
   "ButtonsTab": {
-    "Off: the front top button cycles the scroll wheel stage and the rear one the sensitivity stage. On: both buttons can be assigned freely.": "Desactivado: el botón superior delantero cambia el nivel de la rueda y el trasero el nivel de sensibilidad. Activado: ambos botones se pueden asignar libremente.",
     "Assignment unverified – if a button is wrong: learn the button": "Asignación sin verificar: si un botón no coincide, aprende el botón",
     "Hypershift": "Hypershift",
     "Hypershift layer: active while the Hypershift key is held": "Capa Hypershift: activa mientras se mantiene pulsada la tecla Hypershift",
     "Standard assignments": "Asignación normal",
-    "Assign top buttons freely": "Asignar libremente los botones superiores",
     "Side plate: 12 buttons": "Placa lateral: 12 botones",
     "Side plate: 2 buttons": "Placa lateral: 2 botones",
     "Side plate: 6 buttons": "Placa lateral: 6 botones",
@@ -186,9 +187,7 @@
     "About RazerTux": "Acerca de RazerTux",
     "Record device…": "Grabar dispositivo…"
   },
-  "MouseView": {
-    "Assignable when “Assign top buttons freely” is on": "Asignable si «Asignar libremente los botones superiores» está activado"
-  },
+  "MouseView": {},
   "PerformanceTab": {
     "%1 – %2, steps of %3": "%1 – %2, en pasos de %3",
     "Polling Rate": "Tasa de sondeo",
@@ -346,7 +345,6 @@
     "DPI up": "DPI más",
     "DPI down": "DPI menos",
     "Sensitivity stage cycle": "Siguiente nivel de sensibilidad",
-    "Sensitivity stage cycle (mouse)": "Siguiente nivel de sensibilidad (ratón)",
     "Hypershift": "Hypershift",
     "Wired": "Con cable",
     "Left Click": "Clic izquierdo",
@@ -354,7 +352,6 @@
     "Macro: ? (missing)": "Macro: ? (falta)",
     "Mouse not connected": "Ratón no conectado",
     "Scroll Click": "Clic de rueda",
-    "Scroll wheel stage cycle (mouse)": "Siguiente nivel de rueda (ratón)",
     "Top button rear": "Botón superior trasero",
     "Top button front": "Botón superior delantero",
     "Scroll Up": "Rueda arriba",
@@ -369,7 +366,10 @@
     "Side button front": "Botón lateral delantero",
     "Sniper button": "Botón sniper",
     "Profile button": "Botón de perfil",
-    "Learned button %1": "Botón aprendido %1"
+    "Learned button %1": "Botón aprendido %1",
+    "Scroll wheel stage up": "Nivel de rueda arriba",
+    "Scroll wheel stage down": "Nivel de rueda abajo",
+    "Scroll wheel stage cycle": "Recorrer niveles de rueda"
   },
   "store": {
     "Profile {profile} not readable: {error}": "No se puede leer el perfil {profile}: {error}",
@@ -385,7 +385,6 @@
     "DPI must be between {min} and {max}": "Los DPI deben estar entre {min} y {max}",
     "Color values ({zone}) must be between 0 and 255": "Los valores de color ({zone}) deben estar entre 0 y 255",
     "Brightness ({zone}) must be between 0 and 255": "El brillo ({zone}) debe estar entre 0 y 255",
-    "Hypershift key on a top button only with “Assign top buttons freely”": "Tecla Hypershift en un botón superior solo con «Asignar libremente los botones superiores»",
     "Hypershift key not allowed in the Hypershift layer": "La tecla Hypershift no está permitida en la capa Hypershift",
     "Left click unreachable": "Clic izquierdo inaccesible",
     "Macro missing: {macro}": "Falta la macro: {macro}",

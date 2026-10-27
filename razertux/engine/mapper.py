@@ -19,6 +19,8 @@ from razertux.config.model import (
     MacroAction,
     MacroMode,
     Profile,
+    ScrollStageAction,
+    TOP_BUTTON_DEFAULTS,
 )
 from razertux.engine.macro import MacroPlayer
 from razertux.engine.output import Output
@@ -43,23 +45,26 @@ DEFAULT_OUTPUT: dict[ButtonId, int | tuple[int, int, int]] = {
     ButtonId.WHEEL_RIGHT: (E.REL_HWHEEL, E.REL_HWHEEL_HI_RES, 1),
 }
 _WHEEL = {ButtonId.WHEEL_UP, ButtonId.WHEEL_DOWN, ButtonId.WHEEL_LEFT, ButtonId.WHEEL_RIGHT}
-# Naga V2 Pro only, same as default_profile(): front top button = DPI up,
-# back = cycle through the stages. Other mice pass default_dpi={}.
-NAGA_DEFAULT_DPI: Mapping[ButtonId, str] = {ButtonId.TOP_1: "up", ButtonId.TOP_2: "cycle"}
+# Naga V2 Pro only: what its top buttons do when left at DefaultAction (front = next
+# scroll wheel stage, back = next DPI stage). Other mice pass default_actions={}.
+NAGA_DEFAULT_ACTIONS: Mapping[ButtonId, Action] = TOP_BUTTON_DEFAULTS
 
 
 class Mapper:
     def __init__(self, profile: Profile, macros: dict[str, Macro], out: Output,
                  on_dpi_stage: Callable[[str], None] = lambda d: None,
+                 on_scroll_stage: Callable[[str], None] = lambda d: None,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep, *,
-                 default_dpi: Mapping[ButtonId, str] = NAGA_DEFAULT_DPI) -> None:
-        """default_dpi: DPI steps of buttons left at DefaultAction (Naga top buttons)."""
+                 default_actions: Mapping[ButtonId, Action] = NAGA_DEFAULT_ACTIONS) -> None:
+        """default_actions: what buttons left at DefaultAction do instead of their key
+        (the Naga's top buttons: scroll wheel stage / DPI stage)."""
         self._profile = profile
-        self._default_dpi = dict(default_dpi)
+        self._default_actions = dict(default_actions)
         self._defaults: dict[ButtonId, int] = {}  # learned buttons: their own key code
         self._macros = macros
         self._out = out
         self._on_dpi = on_dpi_stage
+        self._on_scroll = on_scroll_stage
         self._player = MacroPlayer(out, sleep)
         self._active: dict[ButtonId, Action] = {}  # action chosen at press time
         self._held: list[int] = []                 # output codes currently down, press order
@@ -131,14 +136,16 @@ class Mapper:
         return []
 
     def _press(self, button: ButtonId, action: Action) -> None:
+        if isinstance(action, DefaultAction) and button in self._default_actions:
+            action = self._default_actions[button]
         if isinstance(action, HypershiftAction):
             self._hs_buttons.add(button)
         elif isinstance(action, DpiStageAction):
             self._on_dpi(action.direction)
+        elif isinstance(action, ScrollStageAction):
+            self._on_scroll(action.direction)
         elif isinstance(action, MacroAction):
             self._start_macro(button, action, action.mode)
-        elif isinstance(action, DefaultAction) and button in self._default_dpi:
-            self._on_dpi(self._default_dpi[button])
         else:
             self._key_batch(self._codes(button, action), 1)
 
@@ -192,6 +199,8 @@ class Mapper:
                 self._out.sync()
             elif isinstance(action, DpiStageAction):
                 self._on_dpi(action.direction)
+            elif isinstance(action, ScrollStageAction):
+                self._on_scroll(action.direction)
             elif isinstance(action, MacroAction):
                 self._start_macro(button, action,
                                   "toggle" if action.mode == "toggle" else "once")

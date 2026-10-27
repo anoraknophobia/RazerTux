@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from razertux.config.model import (
-    Action, ComboAction, DefaultAction, DisabledAction, DpiStageAction,
+    Action, ComboAction, DefaultAction, DisabledAction, DpiStageAction, ScrollStageAction,
     HypershiftAction, KeyAction, Macro, MacroAction,
 )
 from razertux.gui.keynames import MODIFIER_CODES, combo_label, key_label, keycode_from_qt
@@ -28,6 +28,9 @@ _TYPES = [
     ("dpi_up", QT_TRANSLATE_NOOP("ActionDialog", "Sensitivity stage up")),
     ("dpi_down", QT_TRANSLATE_NOOP("ActionDialog", "Sensitivity stage down")),
     ("dpi_cycle", QT_TRANSLATE_NOOP("ActionDialog", "Sensitivity stage cycle")),
+    ("scroll_up", QT_TRANSLATE_NOOP("ActionDialog", "Scroll wheel stage up")),
+    ("scroll_down", QT_TRANSLATE_NOOP("ActionDialog", "Scroll wheel stage down")),
+    ("scroll_cycle", QT_TRANSLATE_NOOP("ActionDialog", "Scroll wheel stage cycle")),
 ]
 _MODES = [
     ("once", QT_TRANSLATE_NOOP("ActionDialog", "Play once")),
@@ -121,8 +124,9 @@ class KeyCapture(QPushButton):
 class ActionDialog(QDialog):
     def __init__(self, parent: QWidget | None, current: Action, macros: dict[str, Macro],
                  *, button: ButtonId | None = None, layer: str = "standard",
-                 on_learn: Callable[[], object] | None = None):
-        """on_learn: offer "Learn button …" (an unchecked or experimental key)."""
+                 on_learn: Callable[[], object] | None = None, scroll_stages: bool = False):
+        """on_learn: offer "Learn button …" (an unchecked or experimental key).
+        scroll_stages: offer the scroll wheel stage actions (mice with stages: Naga V2 Pro)."""
         super().__init__(parent)
         self.setWindowTitle(self.tr("Assignment: %1").replace("%1", button_name(button))
                             if button else self.tr("Assignment"))
@@ -131,8 +135,11 @@ class ActionDialog(QDialog):
 
         self.type_combo = QComboBox()
         for key, text in _TYPES:
-            if key != "hypershift" or allow_hypershift:
-                self.type_combo.addItem(self.tr(text), key)
+            if key == "hypershift" and not allow_hypershift:
+                continue
+            if key.startswith("scroll_") and not (scroll_stages or isinstance(current, ScrollStageAction)):
+                continue
+            self.type_combo.addItem(self.tr(text), key)
         self.capture = KeyCapture()
         self.capture.changed.connect(self._update)
         self.macro_combo = QComboBox()
@@ -212,6 +219,8 @@ class ActionDialog(QDialog):
                 self.select_type("hypershift")
             case DpiStageAction(direction):
                 self.select_type(f"dpi_{direction}")
+            case ScrollStageAction(direction):
+                self.select_type(f"scroll_{direction}")
             case _:
                 self.select_type("default")
 
@@ -245,6 +254,8 @@ class ActionDialog(QDialog):
                 return DpiStageAction("down")
             case "dpi_cycle":
                 return DpiStageAction("cycle")
+            case "scroll_up" | "scroll_down" | "scroll_cycle":
+                return ScrollStageAction(self._type().removeprefix("scroll_"))
             case "key":
                 return KeyAction(self.capture.codes[0]) if self.capture.codes else None
             case "combo":
@@ -263,6 +274,8 @@ class ActionDialog(QDialog):
     @classmethod
     def pick(cls, parent: QWidget | None, current: Action, macros: dict[str, Macro],
              *, button: ButtonId | None = None, layer: str = "standard",
-             on_learn: Callable[[], object] | None = None) -> Action | None:
-        d = cls(parent, current, macros, button=button, layer=layer, on_learn=on_learn)
+             on_learn: Callable[[], object] | None = None,
+             scroll_stages: bool = False) -> Action | None:
+        d = cls(parent, current, macros, button=button, layer=layer, on_learn=on_learn,
+                scroll_stages=scroll_stages)
         return d.result_action() if d.exec() == QDialog.DialogCode.Accepted else None

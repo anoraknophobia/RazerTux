@@ -141,14 +141,35 @@ async def test_default_wheel(b, axis, v, hi):
     assert out.events[-1] == ("sync",)
 
 
-async def test_default_top_buttons_call_dpi_callback_on_press_only():
-    m, out, dpi = mk()
+async def test_default_top_buttons_step_scroll_stage_and_dpi_on_press_only():
+    out, dpi, scroll = RecordingOutput(), [], []
+    m = Mapper(Profile("p", "p"), {}, out, on_dpi_stage=dpi.append,
+               on_scroll_stage=scroll.append, sleep=FakeSleep())
     await m.handle(B.TOP_1, 1)
     await m.handle(B.TOP_1, 0)
     await m.handle(B.TOP_2, 1)
     await m.handle(B.TOP_2, 0)
-    assert dpi == ["up", "cycle"]  # same as default_profile()
+    assert scroll == ["cycle"] and dpi == ["cycle"]  # front: scroll stage, back: DPI stage
     assert out.events == []
+
+
+async def test_scroll_stage_action_on_any_button():
+    from razertux.config.model import ScrollStageAction
+    out, scroll = RecordingOutput(), []
+    m = Mapper(Profile("p", "p", standard={B.SIDE_1: ScrollStageAction("down")}), {}, out,
+               on_scroll_stage=scroll.append, sleep=FakeSleep())
+    await m.handle(B.SIDE_1, 1)
+    await m.handle(B.SIDE_1, 0)
+    assert scroll == ["down"] and out.events == []
+
+
+async def test_other_mice_have_no_top_button_defaults():
+    out, dpi, scroll = RecordingOutput(), [], []
+    m = Mapper(Profile("p", "p"), {}, out, on_dpi_stage=dpi.append,
+               on_scroll_stage=scroll.append, sleep=FakeSleep(), default_actions={})
+    await m.handle(B.TOP_1, 1)
+    await m.handle(B.TOP_1, 0)
+    assert dpi == [] and scroll == []
 
 
 async def test_dpi_stage_action():

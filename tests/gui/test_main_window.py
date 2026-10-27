@@ -267,25 +267,19 @@ def test_main_window_stays_small():
     assert len(Path(mw.__file__).read_text().splitlines()) <= 400
 
 
-def test_top_buttons_locked_unless_remap(env):
+def test_top_buttons_are_assignable_without_a_switch(env, monkeypatch):
+    from razertux.config.model import ScrollStageAction
+    from razertux.gui import main_window
     w, store, _ = env
     view = w.mouse_view
-    assert w.profile.remap_top_buttons is False
-    assert not w.buttons_tab.remap_toggle.isChecked()
-    assert view.button_text(ButtonId.TOP_1).endswith("Scroll wheel stage cycle (mouse)")
-    assert view.button_text(ButtonId.TOP_2).endswith("Sensitivity stage cycle (mouse)")
-    assert not view._buttons[ButtonId.TOP_1].isEnabled()
-    assert not view._buttons[ButtonId.TOP_2].isEnabled()
-    assert view._buttons[ButtonId.SIDE_1].isEnabled()
-    w.buttons_tab.remap_toggle.click()
-    assert w.profile.remap_top_buttons is True and w.is_dirty
-    assert view._buttons[ButtonId.TOP_1].isEnabled()
-    assert "(mouse)" not in view.button_text(ButtonId.TOP_1)
-    assert w.save() is True
-    assert store.load_profile("p2").remap_top_buttons is True
-    w.select_profile("default")
-    assert not w.buttons_tab.remap_toggle.isChecked()
-    assert not view._buttons[ButtonId.TOP_1].isEnabled()
+    assert not hasattr(w.buttons_tab, "remap_toggle")
+    assert view._buttons[ButtonId.TOP_1].isEnabled() and view._buttons[ButtonId.TOP_2].isEnabled()
+    asked = []
+    monkeypatch.setattr(main_window.ActionDialog, "pick", staticmethod(
+        lambda *a, **kw: asked.append(kw["scroll_stages"]) or ScrollStageAction("down")))
+    w.edit_binding(ButtonId.TOP_2)
+    assert asked == [True]  # the Naga offers the scroll wheel stage actions
+    assert w.profile.standard[ButtonId.TOP_2] == ScrollStageAction("down") and w.is_dirty
 
 
 def test_click_on_a_scroll_stage_asks_the_daemon(env):

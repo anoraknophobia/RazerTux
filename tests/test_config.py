@@ -6,7 +6,7 @@ from evdev import ecodes as E
 from razertux.config import (
     ComboAction, ConfigStore, DefaultAction, DisabledAction, DpiStageAction,
     HypershiftAction, KeyAction, LightingZone, Macro, MacroAction, Profile,
-    Settings, DelayStep, KeyStep, ButtonStep, default_profile, new_profile_id,
+    ScrollStageAction, Settings, DelayStep, KeyStep, ButtonStep, default_profile, new_profile_id,
     validate,
 )
 from razertux.hw.buttons import ButtonId
@@ -33,9 +33,9 @@ def test_default_profile_leaves_device_untouched():
     p = default_profile()
     assert (p.id, p.name) == ("default", "Standard")
     assert p.dpi_stages == [] and p.active_stage == 0
-    assert p.poll_rate is None and p.lighting == {} and p.remap_top_buttons is False
+    assert p.poll_rate is None and p.lighting == {} and p.remap_top_buttons is True
     assert p.hypershift == {}
-    assert p.standard[ButtonId.TOP_1] == DpiStageAction("up")
+    assert p.standard[ButtonId.TOP_1] == ScrollStageAction("cycle")  # as under Synapse
     assert p.standard[ButtonId.TOP_2] == DpiStageAction("cycle")
     assert set(p.standard) == set(ButtonId)
     assert p.standard[ButtonId.LEFT] == DefaultAction()
@@ -179,13 +179,30 @@ def test_new_profile_id_is_filesystem_safe():
 
 
 @pytest.mark.parametrize("button", [ButtonId.TOP_1, ButtonId.TOP_2])
-def test_hypershift_on_top_button_needs_remap(button):
-    msg = "Hypershift key on a top button only with “Assign top buttons freely”"
+def test_hypershift_on_a_top_button_is_fine(button):
     p = default_profile()
     p.standard[button] = HypershiftAction()
-    assert msg in validate(p)
-    p.remap_top_buttons = True
     assert validate(p) == []
+
+
+def test_profile_from_before_0_5_gets_default_top_buttons(tmp_path):
+    # the firmware owned the top buttons then: their bindings were ignored
+    d = default_profile().to_dict()
+    d["remap_top_buttons"] = False
+    d["standard"]["top_1"] = {"type": "dpi_stage", "direction": "up"}
+    d["hypershift"]["top_2"] = {"type": "key", "code": 30}
+    p = Profile.from_dict(d)
+    assert p.remap_top_buttons is True
+    assert p.standard[ButtonId.TOP_1] == DefaultAction() == p.standard[ButtonId.TOP_2]
+    assert ButtonId.TOP_2 not in p.hypershift
+    assert Profile.from_dict(p.to_dict()) == p  # saved with True: migrated once
+
+
+def test_profile_with_free_top_buttons_keeps_them():
+    d = default_profile().to_dict()
+    d["remap_top_buttons"] = True
+    d["standard"]["top_1"] = {"type": "key", "code": 30}
+    assert Profile.from_dict(d).standard[ButtonId.TOP_1] == KeyAction(30)
 
 
 def test_hypershift_key_in_hypershift_layer_rejected():
@@ -248,18 +265,18 @@ def test_dpi_cycle_action_roundtrip():
 
 def test_old_profile_with_scroll_profile_loads_and_is_not_written(tmp_path):
     d = default_profile().to_dict()
-    assert "scroll_profile" not in d and d["remap_top_buttons"] is False
+    assert "scroll_profile" not in d and d["remap_top_buttons"] is True
     d.pop("remap_top_buttons")
     d["scroll_profile"] = 3  # written by older versions
     store = ConfigStore(tmp_path)
     (tmp_path / "profiles" / "naga_v2_pro").mkdir(parents=True)
     (tmp_path / "profiles" / "naga_v2_pro" / "default.json").write_text(json.dumps(d))
     p = store.load_profile("default")
-    assert store.errors == [] and p.remap_top_buttons is False
+    assert store.errors == [] and p.remap_top_buttons is True  # migrated (key missing = old)
     assert not hasattr(p, "scroll_profile")
     store.save_profile(p)
     on_disk = json.loads((tmp_path / "profiles" / "naga_v2_pro" / "default.json").read_text())
-    assert "scroll_profile" not in on_disk and on_disk["remap_top_buttons"] is False
+    assert "scroll_profile" not in on_disk and on_disk["remap_top_buttons"] is True
 
 
 SYNAPSE_ORDER = {1: "Ultra-fine", 2: "Standard", 3: "Distinct", 4: "Adaptive", 5: "Smooth Scroll", 6: "Custom"}

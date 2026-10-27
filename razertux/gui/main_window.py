@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from razertux import APP_NAME
-from razertux.config.model import DefaultAction, Profile, default_profile, validate
+from razertux.config.model import NAGA_MODEL, DefaultAction, Profile, default_profile, validate
 from razertux.config.store import ConfigStore
 from razertux.gui.about import AboutDialog
 from razertux.gui.action_dialog import ActionDialog
@@ -92,7 +92,6 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.buttons_tab = ButtonsTab(self.profiles, self.client.reload)
         self.buttons_tab.bindingClicked.connect(self.edit_binding)
         self.buttons_tab.layerChanged.connect(self.set_layer)
-        self.buttons_tab.remapToggled.connect(self.set_remap)
         self.buttons_tab.learnRequested.connect(self.learn_button)
         self.mouse_view = self.buttons_tab.mouse_view
         self.performance_tab, self.lighting_tab, self.power_tab = PerformanceTab(), LightingTab(), PowerTab()
@@ -246,7 +245,6 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.performance_tab.load(profile)
         self.lighting_tab.load(profile)
         self.scroll_tab.load_profile(profile)
-        self.buttons_tab.set_remap(profile.remap_top_buttons)
         self._refresh()
 
     def revert(self) -> None:
@@ -256,7 +254,7 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
 
     def _refresh(self) -> None:
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
-        self.mouse_view.set_bindings(layer, self.macros, top_locked=not self.profile.remap_top_buttons)
+        self.mouse_view.set_bindings(layer, self.macros)
         self._update_warnings()
         self._update_dirty()
 
@@ -264,10 +262,6 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
     def set_layer(self, layer: str) -> None:
         self.layer = layer
         self.buttons_tab.set_layer(layer)
-        self._refresh()
-
-    def set_remap(self, on: bool) -> None:
-        self.profile.remap_top_buttons = on
         self._refresh()
 
     def set_action(self, button: ButtonId, action) -> None:
@@ -283,7 +277,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         layer = self.profile.standard if self.layer == "standard" else self.profile.hypershift
         learn = {"on_learn": lambda: self.learn_button(button)} if self.learnable(button) else {}
         action = ActionDialog.pick(self, layer.get(button, DefaultAction()), self.macros,
-                                   button=button, layer=self.layer, **learn)
+                                   button=button, layer=self.layer,
+                                   scroll_stages=self.model == NAGA_MODEL, **learn)
         if action is not None:
             self.set_action(button, action)
 
