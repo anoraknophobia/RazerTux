@@ -287,3 +287,10 @@ def test_readme_help_add_your_device():
     for needle in ("Record device", "razertux-record", "GitHub account", "NOSTORE",
                    "serial", "tools/import_device_report.py", "For maintainers"):
         assert needle in sec, needle
+
+
+def test_readme_names_the_record_menu_entry_as_the_gui_does():
+    readme = (ROOT / "README.md").read_text()
+    gui = (ROOT / "razertux" / "gui" / "main_window.py").read_text()
+    assert 'self.tr("Record device…")' in gui
+    assert '"Record device…"' in readme and '"Record device..."' not in readme
