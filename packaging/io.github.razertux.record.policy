@@ -3,7 +3,7 @@
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <vendor>RazerTux</vendor>
-  <vendor_url>https://github.com/razertux</vendor_url>
+  <vendor_url>https://github.com/anoraknophobia/RazerTux</vendor_url>
   <action id="io.github.razertux.record">
     <description>Record a Razer device for a device report</description>
     <message>Authentication is required to read a Razer device for a device report (read-only commands, a temporary light test and button presses of that device only)</message>

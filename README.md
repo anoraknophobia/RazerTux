@@ -31,6 +31,52 @@ The GUI is available in English, German, Spanish and French (see "Language" belo
 
 ## Installation
 
+RazerTux needs Linux with systemd, Python 3.11 or newer and a desktop session (KDE Plasma,
+GNOME, … on Wayland or X11). Uninstall OpenRazer first if you use it: both access the same
+devices and interfere with each other.
+
+### Quick install (all distributions)
+
+1. Download the source: either `git clone https://github.com/anoraknophobia/RazerTux.git`, or
+   the `Source code (tar.gz)` of the newest version under
+   [Releases](https://github.com/anoraknophobia/RazerTux/releases), then unpack it.
+2. Open a terminal in that folder and run, as your normal user (not with `sudo`):
+
+   ```
+   ./install.sh
+   ```
+
+   The script asks for your password when it needs administrator rights.
+3. Unplug the mouse and plug it in again, then open RazerTux from the application menu. The
+   tray icon starts automatically from your next login on.
+
+What `install.sh` does depends on the distribution:
+
+- **Arch Linux, CachyOS, EndeavourOS, Manjaro:** builds the pacman package from
+  `packaging/PKGBUILD` and installs it with pacman.
+- **Debian 13+, Ubuntu 24.04+, Linux Mint 22+:** installs the dependencies with `apt` and
+  RazerTux into `/opt/razertux`.
+- **Fedora:** installs the dependencies with `dnf` and RazerTux into `/opt/razertux`.
+- **openSUSE Tumbleweed:** installs the dependencies with `zypper` and RazerTux into
+  `/opt/razertux`.
+- **Other distributions:** installs RazerTux into `/opt/razertux`. Install Python 3.11+ with
+  `venv`, polkit and, where packaged, python-evdev, pyudev, dbus-next and PySide6 first.
+
+Outside Arch, Python modules your distribution does not package (for example PySide6 on older
+releases) are downloaded from PyPI into `/opt/razertux`; nothing is installed into the system
+Python. Besides `/opt/razertux` the script installs the same files as the Arch package: the
+udev rule (`/etc/udev/rules.d/70-razertux.rules`), the user service
+(`/etc/systemd/user/razertuxd.service`), the D-Bus service file, the menu entry, the tray
+autostart (`/etc/xdg/autostart/razertux-tray.desktop`), the icon, the commands in
+`/usr/local/bin` and the recorder's polkit helper. The list is kept in
+`/opt/razertux/installed-files`.
+
+Older releases (Debian 12, Ubuntu 22.04, openSUSE Leap 15) ship Python older than 3.11 and
+are not supported. Distributions without systemd are not supported either (you can still start
+`razertuxd` yourself).
+
+### Manual install on Arch
+
 ```
 cd packaging
 makepkg -si
@@ -41,22 +87,22 @@ Build dependencies (`makedepends`): `python-build`, `python-installer`, `python-
 `python-setuptools`.
 
 The service starts with the graphical session (`graphical-session.target`) and is also
-started on demand via D-Bus (`io.github.razertux`). The tray icon starts automatically at
-login (`/etc/xdg/autostart/razertux-tray.desktop`). If you copied a udev rule to
+started on demand via D-Bus (`io.github.razertux`). If you copied a udev rule to
 `/etc/udev/rules.d/` by hand earlier, please remove it; the package installs
 `70-razertux.rules` to `/usr/lib/udev/rules.d/`.
 
-The package conflicts with `openrazer-daemon` and `openrazer-driver-dkms`: both access the
-same device and interfere with each other.
-
 ## Upgrading
 
-After upgrading the package, restart the service as a normal user and restart the tray
-(or log out and back in):
+Download the new version and run `./install.sh` again (on Arch you can also run
+`makepkg -si` in `packaging/`). The script restarts the service and the tray. If you
+upgraded another way, restart them yourself or log out and back in:
 
 ```
 systemctl --user restart razertuxd.service
 ```
+
+What changed in each version: see [Releases](https://github.com/anoraknophobia/RazerTux/releases)
+or `CHANGELOG.md`.
 
 ## Getting started
 
@@ -118,15 +164,30 @@ in `~/.config/razertux/mouse-backup.json`.
 
 ## Uninstalling
 
+In the RazerTux source folder:
+
+```
+./install.sh --uninstall
+```
+
+It first offers to restore the mouse's original settings from the backup, then stops the
+service and removes RazerTux (on Arch with `pacman -Rns razertux`, elsewhere everything the
+installer put on the system). Your profiles and the mouse backup stay in
+`~/.config/razertux`; delete that folder to remove them too:
+
+```
+rm -r ~/.config/razertux
+```
+
+By hand on Arch:
+
 ```
 razertux restore
 systemctl --user disable --now razertuxd.service
 sudo pacman -Rns razertux
-rm -r ~/.config/razertux
 ```
 
-Run `restore` before uninstalling, while the service is still there. Removing
-`~/.config/razertux` also deletes the backup and the profiles.
+Run `razertux restore` before uninstalling, while RazerTux is still installed.
 
 ## Supported mice
 

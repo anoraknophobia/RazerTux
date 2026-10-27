@@ -320,3 +320,22 @@ def test_release_notes_join_wrapped_lines():
     spec.loader.exec_module(rn)
     notes = rn.sections("## [1.0.0] - 2026-01-01\n\n### Fixed\n- one\n  two\n- three\n")
     assert notes == {"1.0.0": "### Fixed\n- one two\n- three\n"}
+
+
+def test_install_script_is_valid_bash_and_matches_the_pkgbuild():
+    root = Path(__file__).resolve().parent.parent
+    script = root / "install.sh"
+    subprocess.run(["bash", "-n", str(script)], check=True)
+    assert script.stat().st_mode & 0o111  # executable
+    out = subprocess.run([str(script), "--print-files"], check=True, capture_output=True, text=True).stdout
+    names = {Path(line).name for line in out.split()}
+    pkgbuild = (root / "packaging/PKGBUILD").read_text()
+    system = set(re.findall(r'install -Dm\d+ "\$p/([^"]+)"', pkgbuild)) - {"OPENRAZER-NOTICE"}
+    assert system <= names  # every system file of the package is installed by the script too
+    assert {"razertux", "razertuxd", "razertux-gui", "razertux-record"} <= names
+
+
+def test_install_script_rejects_unknown_options():
+    root = Path(__file__).resolve().parent.parent
+    r = subprocess.run([str(root / "install.sh"), "--bogus"], capture_output=True, text=True)
+    assert r.returncode == 2 and "--uninstall" in r.stdout
