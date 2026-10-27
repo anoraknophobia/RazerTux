@@ -163,3 +163,16 @@ def test_on_poll_reports_each_reading_ok_or_failed():
     assert seen == [True, False, True]
     BatteryMonitor(dev, on_poll=seen.append, connection=lambda: "wired").poll()
     assert len(seen) == 3  # wired: no reading, no callback
+
+
+def test_no_query_while_suspended():
+    dev = FakeDev(10)
+    suspended = [True]
+    polls, notes = [], []
+    mon = BatteryMonitor(dev, interval_s=60, notify=notes.append, on_poll=polls.append,
+                         suspended=lambda: suspended[0])
+    mon.poll()
+    assert dev.reads == 0 and polls == [] and notes == []  # the recorder owns the control node
+    suspended[0] = False
+    mon.poll()
+    assert dev.reads == 1 and polls == [True] and notes == [10]

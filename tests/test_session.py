@@ -669,3 +669,56 @@ async def test_pause_resume_race_ends_consistent(tmp_path):
     await asyncio.gather(s.resume(), s.pause())
     assert not dev.grabbed and not s.router.grabbed
     await s.close()
+
+
+async def test_resume_keeps_the_pause_when_the_grab_fails(tmp_path):
+    s, store, _ = make_session(tmp_path, model=NAGA, transport=naga_transport())
+    dev = QueueDev("/dev/input/event43", product=NAGA_PID)
+    s.add_input(NAGA_PID, "mouse", dev)
+    await s.settle()
+    await s.pause()
+    real = s.router.set_grab
+
+    async def broken(want):
+        raise OSError("device busy")
+    s.router.set_grab = broken
+    try:
+        await s.resume()
+    except OSError:
+        pass
+    else:
+        raise AssertionError("the grab failure must reach the caller (it retries)")
+    assert s.paused is True and s.status()["paused"] is True
+    s.router.set_grab = real
+    await s.resume()  # the retry really resumes
+    assert s.paused is False and dev.grabbed
+    await s.close()
+
+
+async def test_pause_suspends_control_channel_writes_until_resume(tmp_path):
+    t = da_transport()
+    s, store, _ = make_session(tmp_path, transport=t)
+    store.for_model(DA).save_profile(da_profile())
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event30", product=DA_PID))
+    await s.settle()
+    await s.pause()
+    before = len(t.requests)
+    await s.activate("dpi")  # profile switch while the recorder reads the device
+    await s.reload()
+    s._on_dpi_stage("up")
+    assert t.requests[before:] == []  # nothing on the shared control node while paused
+    await s.resume()
+    assert any(not r.cmd_id & 0x80 for r in t.requests[before:])  # the profile is applied now
+    await s.close()
+
+
+async def test_resume_without_skipped_writes_sends_nothing(tmp_path):
+    t = da_transport()
+    s, store, _ = make_session(tmp_path, transport=t)
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event30", product=DA_PID))
+    await s.settle()
+    before = len(t.requests)
+    await s.pause()
+    await s.resume()
+    assert t.requests[before:] == []
+    await s.close()

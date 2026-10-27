@@ -231,6 +231,10 @@ class DeviceSession:
         self._learning = False
         self._grab_lock = asyncio.Lock()  # serialises grab changes (pause/resume/learning)
         self._paused = False  # device recorder: grabs released, mapping stopped
+        # device recorder: the helper shares the control node, so while paused nothing is sent
+        # on it (writes, mode, onboard stage reads, battery polls); True when something was
+        # skipped and resume() must apply the active profile
+        self._skipped_while_paused = False
 
         self._paths: set[str] = set()  # every input node of this model we were given
         self._mouse_path: str | None = None  # mouse node whose control channel we use
@@ -399,11 +403,22 @@ class DeviceSession:
         self._on_status()
 
     async def resume(self) -> None:
-        """Back to the grab state the active profile asks for. Idempotent."""
+        """Back to the grab state the active profile asks for, then apply what was held back
+        while paused. Idempotent. If re-grabbing fails the session stays paused (the caller
+        retries)."""
         if not self._paused:
             return
         self._paused = False
-        await self._update_grab()
+        try:
+            await self._update_grab()
+        except BaseException:
+            self._paused = True
+            raise
+        if self._skipped_while_paused and self._mouse is not None:
+            self._skipped_while_paused = False
+            self._sync_mode(self.profile)
+            self._apply_active()
+            self.apply_power(self._settings())
         self._on_status()
 
     @property
@@ -474,9 +489,13 @@ class DeviceSession:
         return m is not None and (isinstance(m, NagaV2Pro) or m.supports(feature))
 
     def _writes_allowed(self) -> bool:
-        """False (nothing is written) when not connected or read-only after a failed
-        probe; that case was logged once at connect."""
+        """False (nothing is written) when not connected, paused for the device recorder
+        (applied on resume) or read-only after a failed probe; that case was logged once
+        at connect."""
         if self._mouse is None:
+            return False
+        if self._paused:
+            self._skipped_while_paused = True
             return False
         if not self._write_ok:
             logger.debug("%s write-protected: setting discarded", self.info.name)
@@ -543,6 +562,9 @@ class DeviceSession:
         naga = self._naga
         mode = device_mode_for(profile)
         if naga is None or mode == self._mode:
+            return
+        if self._paused:
+            self._skipped_while_paused = True
             return
         try:
             naga.set_device_mode(mode)
@@ -622,6 +644,9 @@ class DeviceSession:
             return
         self._stages, self._stage_idx = [], 0
         if self._mouse is None or not self._can("dpi_stages"):
+            return
+        if self._paused:
+            self._skipped_while_paused = True
             return
         onboard = _safe(self._mouse.dpi_stages, None)
         if onboard and onboard[1]:
@@ -785,7 +810,7 @@ class DeviceSession:
                 else self._hw["connection"],
                 threshold=lambda: self._settings().low_battery_notify,
                 notify=self._low_battery, state=self._battery_warn,
-                on_poll=self._after_poll)
+                on_poll=self._after_poll, suspended=lambda: self._paused)
             self._battery.poll()
             self._battery.start()
         self._on_status()
