@@ -187,7 +187,7 @@ uninstall_generic() {
 install_arch() {
   command -v makepkg >/dev/null || die "makepkg not found (install base-devel)"
   say "Building and installing the pacman package"
-  (cd "$PKG" && makepkg -sif --needed)
+  (cd "$PKG" && makepkg -sif)  # no --needed: a rebuilt package of the same version is installed too
 }
 
 # -- user service ---------------------------------------------------------------------------
