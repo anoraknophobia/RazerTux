@@ -310,3 +310,13 @@ def test_changelog_has_notes_for_the_current_version():
     assert rn.main(["v" + razertux.__version__]) == 0 and rn.main(["9.9.9"]) == 1
     wf = (root / ".github/workflows/release.yml").read_text()
     assert "tools/release_notes.py" in wf and "tags:" in wf
+
+
+def test_release_notes_join_wrapped_lines():
+    import importlib.util
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location("release_notes", root / "tools/release_notes.py")
+    rn = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rn)
+    notes = rn.sections("## [1.0.0] - 2026-01-01\n\n### Fixed\n- one\n  two\n- three\n")
+    assert notes == {"1.0.0": "### Fixed\n- one two\n- three\n"}

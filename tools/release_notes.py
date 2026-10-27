@@ -14,6 +14,17 @@ CHANGELOG = Path(__file__).resolve().parent.parent / "CHANGELOG.md"
 _HEAD = re.compile(r"^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}\s*$")
 
 
+def _unwrap(lines: list[str]) -> str:
+    """Join wrapped list items: GitHub release notes keep single line breaks."""
+    out: list[str] = []
+    for line in lines:
+        if line.startswith("  ") and line.strip() and out and out[-1].strip():
+            out[-1] = out[-1].rstrip() + " " + line.strip()
+        else:
+            out.append(line)
+    return "\n".join(out).strip() + "\n"
+
+
 def sections(text: str) -> dict[str, str]:
     """{version: notes} in file order (newest first)."""
     out: dict[str, str] = {}
@@ -22,12 +33,12 @@ def sections(text: str) -> dict[str, str]:
         m = _HEAD.match(line)
         if m or line.startswith("## "):
             if current is not None:
-                out[current] = "\n".join(lines).strip() + "\n"
+                out[current] = _unwrap(lines)
             current, lines = (m.group(1) if m else None), []
         elif current is not None:
             lines.append(line)
     if current is not None:
-        out[current] = "\n".join(lines).strip() + "\n"
+        out[current] = _unwrap(lines)
     return out
 
 
