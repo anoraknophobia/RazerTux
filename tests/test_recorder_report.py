@@ -97,7 +97,7 @@ def test_url_too_long_drops_json_keeps_summary():
     url, full = issue_url(r)
     assert not full and len(url) <= 8000
     q = parse_qs(urlparse(url).query)
-    assert "report" not in q and q["summary"][0]
+    assert not q.get("report", [""])[0].lstrip().startswith("{") and q["summary"][0]
 
 
 def test_url_length_bound_always():
@@ -230,3 +230,26 @@ def test_sanitize_sorts_every_signal_list():
     assert b["signals"] == ["if1:keyboard:KEY_1", "if1:keyboard:KEY_3"]
     assert b["results"] == {"side_1": ["if1:keyboard:KEY_2", "if1:keyboard:KEY_9"], "side_2": "absent"}
     assert b["duplicates"] == ["if1:keyboard:KEY_2", "if1:keyboard:KEY_9"]
+
+
+def test_dpi_stages_value_survives_sanitize():
+    r = make(reads={"dpi_stages": {"status": "ok", "value": {"active": 2, "stages": [[800, 800], [1600, 1600]]}}})
+    v = sanitize(r)["reads"]["dpi_stages"]["value"]
+    assert v == {"active": 2, "stages": [[800, 800], [1600, 1600]]}
+    assert "active 2" in summary_text(r) and "800x800" in summary_text(r)
+
+
+def test_dpi_stages_bad_shapes_are_dropped():
+    for bad in ({"active": "x", "stages": []}, {"active": 1, "stages": [["/home/bob", 1]]},
+                {"active": 1, "stages": [[1, 1]] * 17}, {"other": 1}):
+        r = make(reads={"dpi_stages": {"status": "ok", "value": bad}})
+        assert "value" not in sanitize(r)["reads"]["dpi_stages"]
+
+
+def test_url_too_long_puts_attach_hint_in_report_field():
+    r = make(interfaces=[{"number": i, "class": 3, "hid_descriptor_hex": "ab" * 2000} for i in range(3)])
+    url, full = issue_url(r, file_name="razertux-report-naga_trinity.json")
+    q = parse_qs(urlparse(url).query)
+    assert not full and len(url) <= 8000
+    assert "razertux-report-naga_trinity.json" in q["report"][0]
+    assert not q["report"][0].lstrip().startswith("{")

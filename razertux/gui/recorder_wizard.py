@@ -206,31 +206,44 @@ class RecorderWizard(QWidget):
 
     @guarded
     def submit(self) -> None:
-        url, complete = issue_url(self._snapshot())
+        url, complete = issue_url(self._snapshot(), file_name=self.session.file_name())
         page = self.pages["send"]
+        saved = None if complete else self._write_file()  # the link has no room for the data
         if not self.open_url(url):
             page.status.setText(self.tr("The browser could not be opened. Please save the report as "
                                         "a file and attach it to a new issue."))
         elif complete:
             page.status.setText(self.tr("The issue form is open in your browser. Check it and press "
                                         "“Create”."))
+        elif isinstance(saved, Path):
+            page.status.setText(self.tr(
+                "The issue form is open in your browser, but the full data was too long for the "
+                "link. It was saved as %1 – please attach this file to the issue (drag it into "
+                "the “Report (JSON)” field) before you press “Create”.").replace("%1", str(saved)))
         else:
             page.status.setText(self.tr(
                 "The issue form is open in your browser, but the full data was too long for the "
                 "link. Please press “Save as file” and attach the file to the issue (drag it into "
                 "the text field)."))
 
-    @guarded
-    def save(self) -> None:
+    def _write_file(self) -> Path | str:
+        """Save the reviewed report to the home folder; the path, or the error text."""
         path = Path.home() / self.session.file_name()
         text = json.dumps(self._snapshot(), indent=2, sort_keys=True, ensure_ascii=False)
-        page = self.pages["send"]
         try:
             path.write_text(text + "\n", encoding="utf-8")
         except OSError as e:
-            page.status.setText(self.tr("Saving failed: %1").replace("%1", str(e)))
+            return str(e)
+        return path
+
+    @guarded
+    def save(self) -> None:
+        result = self._write_file()
+        page = self.pages["send"]
+        if not isinstance(result, Path):
+            page.status.setText(self.tr("Saving failed: %1").replace("%1", result))
             return
-        page.status.setText(self.tr("Saved: %1").replace("%1", str(path)))
+        page.status.setText(self.tr("Saved: %1").replace("%1", str(result)))
 
     # -- closing -------------------------------------------------------------------------
     def closeEvent(self, e: QCloseEvent) -> None:

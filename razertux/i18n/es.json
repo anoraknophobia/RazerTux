@@ -452,7 +452,8 @@
     "Saving failed: %1": "Error al guardar: %1",
     "The browser could not be opened. Please save the report as a file and attach it to a new issue.": "No se pudo abrir el navegador. Guarda el informe como archivo y adjúntalo a una nueva incidencia.",
     "The issue form is open in your browser, but the full data was too long for the link. Please press “Save as file” and attach the file to the issue (drag it into the text field).": "El formulario de la incidencia está abierto en el navegador, pero los datos completos eran demasiado largos para el enlace. Pulsa «Guardar como archivo» y adjunta el archivo a la incidencia (arrástralo al campo de texto).",
-    "The issue form is open in your browser. Check it and press “Create”.": "El formulario de la incidencia está abierto en el navegador. Revísalo y pulsa «Create»."
+    "The issue form is open in your browser. Check it and press “Create”.": "El formulario de la incidencia está abierto en el navegador. Revísalo y pulsa «Create».",
+    "The issue form is open in your browser, but the full data was too long for the link. It was saved as %1 – please attach this file to the issue (drag it into the “Report (JSON)” field) before you press “Create”.": "El formulario del issue está abierto en tu navegador, pero los datos completos eran demasiado largos para el enlace. Se guardaron como %1: adjunta este archivo al issue (arrástralo al campo “Report (JSON)”) antes de pulsar “Create”."
   },
   "ChoosePage": {
     "Choose device": "Elegir dispositivo",

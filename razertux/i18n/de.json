@@ -452,7 +452,8 @@
     "Saving failed: %1": "Speichern fehlgeschlagen: %1",
     "The browser could not be opened. Please save the report as a file and attach it to a new issue.": "Der Browser konnte nicht geöffnet werden. Bitte den Bericht als Datei speichern und an ein neues Issue anhängen.",
     "The issue form is open in your browser, but the full data was too long for the link. Please press “Save as file” and attach the file to the issue (drag it into the text field).": "Das Issue-Formular ist im Browser geöffnet, aber die vollständigen Daten waren zu lang für den Link. Bitte „Als Datei speichern“ drücken und die Datei an das Issue anhängen (ins Textfeld ziehen).",
-    "The issue form is open in your browser. Check it and press “Create”.": "Das Issue-Formular ist im Browser geöffnet. Bitte prüfen und „Create“ drücken."
+    "The issue form is open in your browser. Check it and press “Create”.": "Das Issue-Formular ist im Browser geöffnet. Bitte prüfen und „Create“ drücken.",
+    "The issue form is open in your browser, but the full data was too long for the link. It was saved as %1 – please attach this file to the issue (drag it into the “Report (JSON)” field) before you press “Create”.": "Das Issue-Formular ist im Browser geöffnet, aber die vollständigen Daten waren zu lang für den Link. Sie wurden als %1 gespeichert – bitte hänge diese Datei an das Issue an (in das Feld „Report (JSON)“ ziehen), bevor du auf „Create“ klickst."
   },
   "ChoosePage": {
     "Choose device": "Gerät wählen",

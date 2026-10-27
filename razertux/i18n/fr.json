@@ -452,7 +452,8 @@
     "Saving failed: %1": "Échec de l’enregistrement : %1",
     "The browser could not be opened. Please save the report as a file and attach it to a new issue.": "Impossible d’ouvrir le navigateur. Enregistrez le rapport dans un fichier et joignez-le à un nouveau ticket.",
     "The issue form is open in your browser, but the full data was too long for the link. Please press “Save as file” and attach the file to the issue (drag it into the text field).": "Le formulaire du ticket est ouvert dans le navigateur, mais les données complètes étaient trop longues pour le lien. Cliquez sur « Enregistrer dans un fichier » et joignez le fichier au ticket (glissez-le dans le champ de texte).",
-    "The issue form is open in your browser. Check it and press “Create”.": "Le formulaire du ticket est ouvert dans le navigateur. Vérifiez-le puis cliquez sur « Create »."
+    "The issue form is open in your browser. Check it and press “Create”.": "Le formulaire du ticket est ouvert dans le navigateur. Vérifiez-le puis cliquez sur « Create ».",
+    "The issue form is open in your browser, but the full data was too long for the link. It was saved as %1 – please attach this file to the issue (drag it into the “Report (JSON)” field) before you press “Create”.": "Le formulaire de l’issue est ouvert dans votre navigateur, mais les données complètes étaient trop longues pour le lien. Elles ont été enregistrées sous %1 – veuillez joindre ce fichier à l’issue (glissez-le dans le champ « Report (JSON) ») avant de cliquer sur « Create »."
   },
   "ChoosePage": {
     "Choose device": "Choisir l’appareil",

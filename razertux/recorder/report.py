@@ -116,7 +116,23 @@ _DROP = object()
 _VALUE_STR = re.compile(r"^(?:[vV]?\d+(?:\.\d+){0,3}|[a-z_]{1,24})$")
 
 
+def _int(v) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def _stages(v):
+    """dpi_stages: {"active": int, "stages": [[x, y], ...]} with at most 16 integer pairs."""
+    st = v.get("stages")
+    if set(v) != {"active", "stages"} or not _int(v.get("active")) or not isinstance(st, (list, tuple)):
+        return _DROP
+    if len(st) > 16 or not all(isinstance(p, (list, tuple)) and len(p) == 2 and all(map(_int, p)) for p in st):
+        return _DROP
+    return {"active": v["active"], "stages": [list(p) for p in st]}
+
+
 def _value(v):
+    if isinstance(v, dict):
+        return _stages(v)
     if isinstance(v, str):
         return v if _VALUE_STR.match(v) else _DROP
     if isinstance(v, (list, tuple)):
@@ -317,7 +333,10 @@ def summary_text(report: Report) -> str:
     if b["standard_keys_seen"]:
         lines.append(f"Standard keys seen on {b['standard_keys_seen']} input source(s)")
     for k, v in sorted(d["reads"].items()):
-        lines.append(f"Read {k}: value {v.get('value', '-')} status {v.get('status', '?')}")
+        val = v.get("value", "-")
+        if isinstance(val, dict):  # dpi_stages
+            val = f"active {val['active']}: " + ", ".join(f"{x}x{y}" for x, y in val["stages"])
+        lines.append(f"Read {k}: value {val} status {v.get('status', '?')}")
     light = d["light"]
     if light:
         lines.append("Light: " + (light if isinstance(light, str) else ", ".join(f"{k}={v}" for k, v in sorted(light.items()))))
@@ -328,8 +347,10 @@ def _hex4(v) -> str:
     return f"{v:04x}" if isinstance(v, int) and not isinstance(v, bool) else str(v or "?")[:8]
 
 
-def issue_url(report: Report, repo: str = "anoraknophobia/RazerTux") -> tuple[str, bool]:
-    """Prefilled new-issue URL; second value is False when the JSON had to be left out to stay <= 8000 chars."""
+def issue_url(report: Report, repo: str = "anoraknophobia/RazerTux",
+              file_name: str = "razertux-report.json") -> tuple[str, bool]:
+    """Prefilled new-issue URL; second value is False when the JSON had to be left out to stay <= 8000 chars.
+    Then the report field says which saved file to attach instead."""
     d = sanitize(report)
     dev = d["device"]
     name = f"{str(dev.get('usb_product', 'unknown'))[:56]} {_hex4(dev.get('vid'))}:{_hex4(dev.get('pid'))}"[:80]
@@ -346,12 +367,14 @@ def issue_url(report: Report, repo: str = "anoraknophobia/RazerTux") -> tuple[st
     full = build(summary, notes, to_json(report))
     if len(full) <= URL_MAX:
         return full, True
-    url = build(summary, notes, None)
+    hint = (f"Too long for the link. Please drag the saved file {file_name[:60]} "
+            "(in your home folder) into this field.")
+    url = build(summary, notes, hint)
     while len(url) > URL_MAX and (notes or summary):
         cut = (len(url) - URL_MAX) // 3 + 1  # encoded chars expand at most 3x per char... bytes up to 9; loop continues
         if notes:
             notes = notes[:-cut]
         else:
             summary = summary[:-cut]
-        url = build(summary, notes, None)
+        url = build(summary, notes, hint)
     return url, False

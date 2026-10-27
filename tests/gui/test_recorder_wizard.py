@@ -379,13 +379,18 @@ def test_submit_uses_qdesktopservices(make, monkeypatch):
     assert opened and opened[0].startswith("https://github.com/")
 
 
-def test_too_long_report_asks_to_attach_the_file(make, monkeypatch):
+def test_too_long_report_saves_the_file_and_asks_to_attach_it(make, monkeypatch, fake_home):
     be = FakeBackend(kind="unknown")
     w = make(device(UNKNOWN_PID, "Razer Mystery"), be)
     _to_send(w, be)
-    monkeypatch.setattr(rw, "issue_url", lambda report: ("https://github.com/x", False))
+    names = []
+    monkeypatch.setattr(rw, "issue_url",
+                        lambda report, **kw: names.append(kw.get("file_name")) or ("https://github.com/x", False))
     w.pages["send"].submit_btn.click()
-    assert "attach" in w.pages["send"].status.text().lower()
+    assert names == ["razertux-report-0fff.json"]
+    assert (fake_home / "razertux-report-0fff.json").exists()
+    status = w.pages["send"].status.text()
+    assert "attach" in status.lower() and "razertux-report-0fff.json" in status
 
 
 def test_save_as_file_writes_to_home(make, fake_home):
@@ -613,7 +618,7 @@ def test_submit_and_save_use_the_reviewed_snapshot(make, fake_home, monkeypatch)
     w.next_btn.click()
     monkeypatch.setattr(w.session, "report", lambda: (_ for _ in ()).throw(AssertionError("rebuilt")))
     sent = []
-    monkeypatch.setattr(rw, "issue_url", lambda report: sent.append(report) or ("https://github.com/x", True))
+    monkeypatch.setattr(rw, "issue_url", lambda report, **kw: sent.append(report) or ("https://github.com/x", True))
     w.pages["send"].submit_btn.click()
     w.pages["send"].save_btn.click()
     assert sent == [shown]
