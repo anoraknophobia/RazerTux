@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.6.0] - 2026-10-27
+
+### Added
+- Scroll wheel tab (Naga V2 Pro): set tension (0–100) and steps (8–96) of the "Custom"
+  stage with two sliders and "Apply to the mouse". Experimental: rebuilt from USB captures
+  of Synapse. If the wheel feels wrong, choose other values or select "Custom" in Synapse
+  again.
+
 ## [0.5.1] - 2026-10-27
 
 ### Fixed

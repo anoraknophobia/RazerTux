@@ -282,6 +282,12 @@ def test_top_buttons_are_assignable_without_a_switch(env, monkeypatch):
     assert w.profile.standard[ButtonId.TOP_2] == ScrollStageAction("down") and w.is_dirty
 
 
+def test_apply_custom_scroll_asks_the_daemon(env):
+    w, store, transport = env
+    w.scroll_tab.customRequested.emit(30, 60)
+    assert ("SetCustomScroll", ("naga_v2_pro", 30, 60)) in transport.calls
+
+
 def test_click_on_a_scroll_stage_asks_the_daemon(env):
     w, store, transport = env
     w.scroll_tab.stageRequested.emit(4)

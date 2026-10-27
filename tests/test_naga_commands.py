@@ -372,3 +372,37 @@ def test_scroll_stage_rejects_bad_slots(slot):
     with pytest.raises(ValueError):
         NagaV2Pro(t).set_scroll_stage(slot)
     assert t.sent == []
+
+
+def _custom_capture():
+    import json
+    from pathlib import Path
+    return json.loads((Path(__file__).parent / "data" / "custom_scroll_capture.json").read_text())
+
+
+@pytest.mark.parametrize("tension,steps", [(25, 90), (50, 8)])
+def test_custom_scroll_matches_the_synapse_capture(tension, steps):
+    import struct
+    t = FakeTransport({(0x15, i): (lambda a: a) for i in (0x09, 0x03, 0x04)})
+    NagaV2Pro(t).set_custom_scroll(tension, steps)
+    want = _custom_capture()[f"{tension}_{steps}"]
+    assert [(r.cmd_class, r.cmd_id, r.size) for r in t.requests] == \
+        [(0x15, w["id"], w["size"]) for w in want]
+    for req, w in zip(t.requests, want):
+        got, exp = bytes(req.args), bytes.fromhex(w["args"])
+        if w["id"] != 0x04:
+            assert got == exp  # header and settings byte for byte
+            continue
+        assert got[:7] == exp[:7]  # segment, offset, count
+        n = got[6]
+        g = struct.unpack_from(f"<{2 * n}f", got, 7)
+        e = struct.unpack_from(f"<{2 * n}f", exp, 7)
+        assert g == pytest.approx(e, rel=1e-5, abs=1e-6)  # float rounding only
+
+
+@pytest.mark.parametrize("tension,steps", [(-1, 90), (101, 90), (50, 7), (50, 97), ("50", 90), (True, 90)])
+def test_custom_scroll_rejects_values_out_of_range(tension, steps):
+    t = FakeTransport()
+    with pytest.raises(ValueError):
+        NagaV2Pro(t).set_custom_scroll(tension, steps)
+    assert t.sent == []

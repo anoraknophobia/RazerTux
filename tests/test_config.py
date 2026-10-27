@@ -374,3 +374,14 @@ def test_profile_scroll_roundtrip_and_old_files():
     assert "scroll" not in Profile(id="p", name="P").to_dict()
     assert validate(p) == []
     assert validate(Profile(id="p", name="P", scroll={"mode": 2})) != []
+
+
+def test_settings_custom_scroll_roundtrip_and_fallback(tmp_path):
+    s = Settings("default")
+    assert s.custom_scroll == {"tension": 50, "steps": 90}  # Synapse's default for Custom
+    s.custom_scroll = {"tension": 40, "steps": 8}
+    store = ConfigStore(tmp_path)
+    store.save_settings(s)
+    assert store.load_settings().custom_scroll == {"tension": 40, "steps": 8}
+    bad = Settings.from_dict({**s.to_dict(), "custom_scroll": {"tension": 101, "steps": "x"}})
+    assert bad.custom_scroll == {"tension": 50, "steps": 90}

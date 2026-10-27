@@ -277,9 +277,15 @@ class Daemon1Service(ServiceInterface):
             raise DBusError(_ERR + "ReadOnly", tr("daemon", "Mouse is read-only")) from None
 
     def set_scroll_stage(self, model: str, slot: int) -> None:
+        self._naga_write(model, lambda s: s.set_scroll_stage(slot))
+
+    def set_custom_scroll(self, model: str, tension: int, steps: int) -> None:
+        self._naga_write(model, lambda s: s.set_custom_scroll(tension, steps))
+
+    def _naga_write(self, model: str, write: Callable[[DeviceSession], None]) -> None:
         session = self.session(model)
         try:
-            session.set_scroll_stage(slot)
+            write(session)
         except NotConnected:
             raise DBusError(_ERR + "NotConnected", tr("daemon", "Mouse not connected")) from None
         except ReadOnly:
@@ -328,6 +334,10 @@ class Daemon1Service(ServiceInterface):
     @method()
     def SetScrollStage(self, model: 's', stage: 'i'):
         self.set_scroll_stage(model, stage)
+
+    @method()
+    def SetCustomScroll(self, model: 's', tension: 'i', steps: 'i'):
+        self.set_custom_scroll(model, tension, steps)
 
     @method()
     async def StartLearning(self, model: 's'):

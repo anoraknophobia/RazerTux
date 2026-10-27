@@ -4,14 +4,15 @@ The active stage comes from the daemon status ("scroll_stage", reported by the
 mouse when the front top button cycles it or the daemon reads it at connect;
 -1 = unknown). The stage names are fixed: Synapse's list order (user-verified).
 A click on a stage emits `stageRequested(slot)` (the window asks the daemon to
-switch). "Custom" uses the values stored in the mouse (set in Synapse). Tension/steps cannot be read or set on
-Linux, the Synapse presets are shown for reference only."""
+switch). The "Custom" card writes that stage's tension and steps to the mouse
+(experimental, `customRequested`); the values are kept in Settings.custom_scroll. The
+other presets are fixed in the mouse and shown for reference only."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView, QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
-    QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QPushButton, QSlider, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
 from razertux.config.model import (
@@ -49,7 +50,7 @@ class StageRow(QFrame):
         self.title.setObjectName("stageSlot")
         self.title.setMinimumWidth(64)
         self.name = QLabel(STAGE_NAMES[slot])
-        self.wip = QLabel(self.tr("values only in Synapse (WIP)"))
+        self.wip = QLabel(self.tr("adjustable below (WIP)"))
         self.wip.setObjectName("mutedText")
         self.wip.setVisible(slot in WIP_SLOTS)
         self.marker = QLabel("● " + self.tr("active"))
@@ -97,17 +98,19 @@ def _tile(caption: str) -> tuple[QFrame, QLabel]:
 class ScrollTab(QWidget):
     changed = Signal()
     stageRequested = Signal(int)  # a stage row was clicked (1-6)
+    customRequested = Signal(int, int)  # "Apply": write Custom (tension, steps) to the mouse
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.settings: Settings | None = None
         self._active = -1
+        self._loading = False
 
         stages = Card(self.tr("Scroll wheel stages"))
         stages.add(description(self.tr(
             "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to "
-            "switch to it, or use the front top button. “Custom” uses the values stored in the "
-            "mouse; they can only be changed in Synapse so far.")))
+            "switch to it, or use the front top button. The values of “Custom” can be set "
+            "below (experimental).")))
         self.rows: list[StageRow] = []
         for slot in range(1, SCROLL_STAGES + 1):
             row = StageRow(slot)
@@ -131,9 +134,8 @@ class ScrollTab(QWidget):
         tiles.addWidget(tension)
         tiles.addWidget(steps)
         self.hint = description(self.tr(
-            "Switch with the front top button (when “Assign top buttons freely” is off). "
-            "Tension and steps of the stages can currently only be changed in Razer Synapse on "
-            "Windows."))
+            "Switch with a click on a stage or with the front top button. Stages 1–5 are fixed "
+            "in the mouse (values as in Razer Synapse); “Custom” can be set below."))
         for item in (self.active_name, self.active_slot, tiles, self.hint):
             active.add(item)
 
@@ -170,6 +172,21 @@ class ScrollTab(QWidget):
             self.tr("Smart Reel"), "smart_reel", ((True, self.tr("On")), (False, self.tr("Off"))))
         self.options_card.hide()
 
+        self.custom_card = Card(self.tr("Custom stage (experimental)"))
+        self.custom_card.add(description(self.tr(
+            "Sets tension and steps of the “Custom” stage in the mouse, the way Synapse does it. "
+            "Work in progress: if the wheel feels wrong, choose other values here or select "
+            "“Custom” in Synapse again.")))
+        self.tension_slider, self.tension_label = self._slider(self.tr("Tension"), 0, 100)
+        self.steps_slider, self.steps_label = self._slider(self.tr("Steps"), 8, 96)
+        self.apply_custom = QPushButton(self.tr("Apply to the mouse"))
+        self.apply_custom.clicked.connect(lambda _=False: self.customRequested.emit(
+            self.tension_slider.value(), self.steps_slider.value()))
+        row = QHBoxLayout()
+        row.addStretch(1)
+        row.addWidget(self.apply_custom)
+        self.custom_card.add(row)
+
         self.naga_cards = QWidget()
         grid = QGridLayout(self.naga_cards)
         grid.setContentsMargins(0, 0, 0, 0)
@@ -177,6 +194,7 @@ class ScrollTab(QWidget):
         grid.addWidget(stages, 0, 0, 2, 1)
         grid.addWidget(active, 0, 1, Qt.AlignmentFlag.AlignTop)
         grid.addWidget(ref, 1, 1, Qt.AlignmentFlag.AlignTop)
+        grid.addWidget(self.custom_card, 2, 0, 1, 2, Qt.AlignmentFlag.AlignTop)
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         grid.setRowStretch(1, 1)
@@ -186,6 +204,30 @@ class ScrollTab(QWidget):
         outer.addWidget(self.options_card, 0, Qt.AlignmentFlag.AlignTop)
         outer.addWidget(self.naga_cards, 1)
         self._show_active()
+
+    # -- "Custom" stage values (Naga) --
+    def _slider(self, caption: str, lo: int, hi: int) -> tuple[QSlider, QLabel]:
+        label = QLabel(caption)
+        label.setMinimumWidth(120)
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(lo, hi)
+        value = QLabel(str(lo))
+        value.setMinimumWidth(32)
+        slider.valueChanged.connect(lambda v: (value.setText(str(v)), self._custom_changed()))
+        row = QHBoxLayout()
+        row.addWidget(label)
+        row.addWidget(slider, 1)
+        row.addWidget(value)
+        self.custom_card.add(row)
+        return slider, value
+
+    def _custom_changed(self) -> None:
+        if self.settings is None or self._loading:
+            return
+        self.settings.custom_scroll = {"tension": self.tension_slider.value(),
+                                       "steps": self.steps_slider.value()}
+        self._show_active()
+        self.changed.emit()
 
     # -- scroll options (mice with scroll_mode / scroll_acceleration / scroll_smart_reel) --
     def _option_row(self, caption: str, key: str, choices) -> tuple[QWidget, dict]:
@@ -236,6 +278,10 @@ class ScrollTab(QWidget):
 
     def load(self, settings: Settings) -> None:
         self.settings = settings
+        self._loading = True
+        self.tension_slider.setValue(settings.custom_scroll["tension"])
+        self.steps_slider.setValue(settings.custom_scroll["steps"])
+        self._loading = False
         self._show_active()
 
     def set_status(self, status: dict) -> None:
@@ -258,5 +304,7 @@ class ScrollTab(QWidget):
             self.active_name.setText(name)
             self.active_slot.setText(self.tr("Stage %1").replace("%1", str(self._active)))
             preset = next((p for p in SYNAPSE_PRESETS if p[0].casefold() == name.casefold()), None)
+            if self._active in WIP_SLOTS and self.settings is not None:  # Custom: our values
+                preset = (name, self.settings.custom_scroll["tension"], self.settings.custom_scroll["steps"])
         self.tension_value.setText(str(preset[1]) if preset else "–")
         self.steps_value.setText(str(preset[2]) if preset else "–")

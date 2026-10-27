@@ -389,3 +389,18 @@ async def test_set_scroll_stage_goes_to_the_session_and_maps_errors(tmp_path):
         with pytest.raises(DBusError) as ei:
             await call(svc, "SetScrollStage", NAGA, 7)
         assert ei.value.type == f"io.github.razertux.Error.{name}"
+
+
+async def test_set_custom_scroll_goes_to_the_session(tmp_path):
+    d, svc, *_ = make(tmp_path)
+    seen = []
+    d.sessions[NAGA].set_custom_scroll = lambda t, s: seen.append((t, s))
+    await call(svc, "SetCustomScroll", NAGA, 40, 90)
+    assert seen == [(40, 90)]
+
+    def fail(t, s):
+        raise ValueError("steps 7 outside 8-96")
+    d.sessions[NAGA].set_custom_scroll = fail
+    with pytest.raises(DBusError) as ei:
+        await call(svc, "SetCustomScroll", NAGA, 50, 7)
+    assert ei.value.type == "io.github.razertux.Error.InvalidArgs"

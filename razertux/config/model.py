@@ -262,6 +262,7 @@ class Settings:
     dpi_limit: int  # GUI slider maximum, one of DPI_LIMIT_CHOICES
     last_model: str  # device model the window showed last ("" = none yet)
     osd: bool  # on-screen display on profile / DPI changes
+    custom_scroll: dict[str, int]  # Naga "Custom" stage: {"tension": 0-100, "steps": 8-96}
 
     def __init__(self, active_profile: str | None = None, low_battery_notify: int = 15,
                  theme: str = "synapse", idle_time: int | None = None,
@@ -269,7 +270,7 @@ class Settings:
                  scroll_stage_names: dict[int, str] | None = None,
                  language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
                  active_profiles: dict[str, str] | None = None, last_model: str = "",
-                 osd: bool = True):
+                 osd: bool = True, custom_scroll: dict[str, int] | None = None):
         self.active_profiles = dict(active_profiles or {})
         if active_profile is not None:
             self.active_profiles[NAGA_MODEL] = active_profile
@@ -283,6 +284,7 @@ class Settings:
         self.dpi_limit = dpi_limit
         self.last_model = last_model
         self.osd = osd
+        self.custom_scroll = _custom_scroll(custom_scroll)
 
     @property
     def active_profile(self) -> str:
@@ -307,7 +309,8 @@ class Settings:
                 "language": self.language,
                 "dpi_limit": self.dpi_limit,
                 "last_model": self.last_model,
-                "osd": self.osd}
+                "osd": self.osd,
+                "custom_scroll": dict(self.custom_scroll)}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
@@ -325,7 +328,8 @@ class Settings:
                    d.get("low_battery_threshold"), stage_names,
                    str(d.get("language", "system")),
                    _dpi_limit(d.get("dpi_limit")), active_profiles=active,
-                   last_model=str(d.get("last_model", "")), osd=bool(d.get("osd", True)))
+                   last_model=str(d.get("last_model", "")), osd=bool(d.get("osd", True)),
+                   custom_scroll=d.get("custom_scroll"))
 
 
 @dataclass
@@ -350,6 +354,21 @@ class DeviceSettings:
         return cls(plate, bool(d.get("remap_enabled", remap_default)),
                    {ButtonId(k): InputSignal(str(v["source"]), int(v["type"]), int(v["code"]))
                     for k, v in d.get("learned", {}).items()})
+
+
+CUSTOM_SCROLL_DEFAULT = {"tension": 50, "steps": 90}  # Synapse's own default for "Custom"
+
+
+def _custom_scroll(value: Any) -> dict[str, int]:
+    """{"tension": 0-100, "steps": 8-96}; anything else falls back to the default."""
+    out = dict(CUSTOM_SCROLL_DEFAULT)
+    if isinstance(value, dict):
+        t, st = value.get("tension"), value.get("steps")
+        if type(t) is int and 0 <= t <= 100:
+            out["tension"] = t
+        if type(st) is int and 8 <= st <= 96:
+            out["steps"] = st
+    return out
 
 
 def _dpi_limit(value: Any) -> int:

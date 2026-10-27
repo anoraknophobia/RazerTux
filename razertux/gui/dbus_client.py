@@ -269,6 +269,10 @@ class DaemonClient(QObject):
         """Switch the mouse to scroll wheel stage 1-6 (the Naga's front top button stages)."""
         return self._call("SetScrollStage", "si", (model, int(stage))) is not None
 
+    def set_custom_scroll(self, tension: int, steps: int, model: str = NAGA_MODEL) -> bool:
+        """Write the Naga's "Custom" scroll wheel stage (experimental)."""
+        return self._call("SetCustomScroll", "sii", (model, int(tension), int(steps))) is not None
+
     def start_learning(self, model: str = NAGA_MODEL) -> bool:
         return self._call("StartLearning", "s", (model,)) is not None
 

@@ -25,7 +25,7 @@ def test_six_stages_with_fixed_names(tab):
 def test_custom_stage_is_marked_work_in_progress(tab):
     tab.load(Settings("default"))
     assert [not r.wip.isHidden() for r in tab.rows] == [False] * 5 + [True]
-    assert "WIP" in tab.rows[5].wip.text() and "Synapse" in tab.rows[5].wip.text()
+    assert "WIP" in tab.rows[5].wip.text()
 
 
 def test_click_on_a_stage_requests_it(tab, qapp):
@@ -116,3 +116,21 @@ def test_profile_options_roundtrip(tab):
     tab.load_profile(Profile(id="q", name="Q", scroll={"mode": 0, "acceleration": True}))
     assert tab.mode_buttons[0].isChecked() and tab.accel_buttons[True].isChecked()
     assert tab.reel_buttons[None].isChecked()
+
+
+def test_custom_sliders_edit_settings_and_apply_asks_for_the_write(tab):
+    s = Settings("default", custom_scroll={"tension": 40, "steps": 90})
+    tab.load(s)
+    assert (tab.tension_slider.value(), tab.steps_slider.value()) == (40, 90)
+    assert tab.changes == []  # loading is not an edit
+    assert (tab.tension_slider.minimum(), tab.tension_slider.maximum()) == (0, 100)
+    assert (tab.steps_slider.minimum(), tab.steps_slider.maximum()) == (8, 96)
+    tab.steps_slider.setValue(24)
+    assert s.custom_scroll == {"tension": 40, "steps": 24} and tab.changes == [1]
+    assert tab.steps_label.text() == "24"
+    tab.set_status({"scroll_stage": 6})
+    assert (tab.tension_value.text(), tab.steps_value.text()) == ("40", "24")  # our values
+    asked = []
+    tab.customRequested.connect(lambda t, st: asked.append((t, st)))
+    tab.apply_custom.click()
+    assert asked == [(40, 24)]

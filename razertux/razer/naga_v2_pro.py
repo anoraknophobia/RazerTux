@@ -7,9 +7,12 @@ RazerMouse and the device database; this class keeps what was verified on the
 hardware: onboard DPI stages via 0x04/0x83 with 1-based ids, repair_active_stage,
 device mode, the NOSTORE storage byte for set_dpi and per-LED lighting (0x0F/0x02).
 """
+import struct
+
 from ..config.model import LightingZone
 from ..devices.db import DeviceInfo, load_devices
 from . import commands as C
+from . import naga_scroll_curve as CURVE
 from .mouse import RazerMouse
 from .report import build_report
 from .transport import Transport
@@ -161,6 +164,29 @@ class NagaV2Pro(RazerMouse):
         if type(slot) is not int or not 1 <= slot <= 6:
             raise ValueError(f"scroll stage {slot!r} outside 1-6")
         self._raw(0x15, 0x00, bytes([VARSTORE, slot]), 2)
+
+    def set_custom_scroll(self, tension: int, steps: int) -> None:
+        """Write the "Custom" scroll wheel stage (slot 6) the way Synapse does: header
+        0x15/0x09 with steps and tension, settings 0x15/0x03 with 180/steps, then the haptic
+        curve in ten 0x15/0x04 packets (naga_scroll_curve). Tension 0-100, steps 8-96 (the
+        Synapse slider ranges). Stored in the mouse; the mouse switches to Custom.
+        EXPERIMENTAL: reproduced from captures, see docs/hardware-notes.md."""
+        if type(tension) is not int or not 0 <= tension <= 100:
+            raise ValueError(f"tension {tension!r} outside 0-100")
+        if type(steps) is not int or not 8 <= steps <= 96:
+            raise ValueError(f"steps {steps!r} outside 8-96")
+        self._raw(0x15, 0x09, bytes([VARSTORE, 0x28, 0x06, 0x01, 0x01, steps, tension, steps, tension])
+                  + bytes.fromhex("00000a5632645b566400ffff0000095632645a566400ffff"), 0x50)
+        angle = struct.pack("<f", 180 / steps)
+        self._raw(0x15, 0x03, bytes([VARSTORE, 0x06, 0x01, 0x01, 0, 0, 0, 0]) + angle + bytes(4)
+                  + angle + bytes.fromhex("002100200003"), 0x50)
+        width, height = 360 / steps, tension / 100
+        for seg, shape in ((1, CURVE.SEGMENT_1), (2, CURVE.SEGMENT_2), (3, CURVE.SEGMENT_3)):
+            points = shape if seg == 3 else [(x * width, y * height) for x, y in shape]
+            for off in range(0, len(points), 8):
+                chunk = points[off:off + 8]
+                data = b"".join(struct.pack("<ff", x, y) for x, y in chunk)
+                self._raw(0x15, 0x04, bytes([VARSTORE, 0x06, seg, 0, off, 0, len(chunk)]) + data, 0x50)
 
     def repair_active_stage(self) -> tuple[int, int] | None:
         """Onboard stage table (class 0x04 id 0x83 VARSTORE, the one the back top

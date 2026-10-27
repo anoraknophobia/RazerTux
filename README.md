@@ -225,7 +225,7 @@ The display can be switched on and off in the tray menu.
 ## Known limits
 
 - Bluetooth: normal input only, no configuration. Use the wireless dongle or USB.
-- Scroll-wheel stage values (haptics, the "Custom" stage) cannot be changed yet; choosing
+- Scroll-wheel stage values: only the "Custom" stage can be changed (experimental); choosing
   the active stage works.
 - `kill -9` on the service skips the cleanup. systemd restarts the service; until then
   the Naga's top buttons do not react. Without a running service, unplugging and

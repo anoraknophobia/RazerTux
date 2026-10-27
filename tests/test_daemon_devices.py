@@ -1527,3 +1527,22 @@ async def test_set_scroll_stage_needs_a_connected_writable_naga(tmp_path):
         naga(d).set_scroll_stage(2)
     assert (0x15, 0x00) not in t.sent
     await d.shutdown()
+
+
+async def test_set_custom_scroll_writes_the_curve_and_activates_custom(tmp_path):
+    from razertux.daemon.session import ReadOnly
+    t = naga_transport()
+    for cid in (0x09, 0x03, 0x04):
+        t.responses[(0x15, cid)] = lambda a: a
+    d, _ = make_daemon(tmp_path, transport=t)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    naga(d).set_custom_scroll(40, 90)
+    sent = [k for k in t.sent if k[0] == 0x15 and k[1] in (0x09, 0x03, 0x04)]
+    assert sent == [(0x15, 0x09), (0x15, 0x03)] + [(0x15, 0x04)] * 10
+    assert d.hw_status()["scroll_stage"] == 6
+    await naga(d).pause()
+    with pytest.raises(ReadOnly):
+        naga(d).set_custom_scroll(40, 90)
+    await d.shutdown()

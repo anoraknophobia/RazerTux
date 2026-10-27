@@ -641,6 +641,20 @@ class DeviceSession:
         naga.set_scroll_stage(slot)
         self._set_scroll_stage(slot)  # the mouse confirms with 05 3a as well
 
+    def set_custom_scroll(self, tension: int, steps: int) -> None:
+        """Write the Naga's "Custom" scroll wheel stage (experimental); the mouse then
+        uses it. Same errors as set_scroll_stage."""
+        if self._mouse is None:
+            raise NotConnected(self.model)
+        naga = self._naga
+        if naga is None:
+            raise ValueError(f"{self.info.name} has no scroll wheel stages")
+        if self._paused or not self._write_ok:
+            raise ReadOnly(self.model)
+        naga.set_custom_scroll(tension, steps)
+        logger.info("Custom scroll wheel stage written: tension %d, steps %d", tension, steps)
+        self._set_scroll_stage(6)  # the mouse switches to Custom (05 3a confirms it)
+
     def _apply_active(self) -> None:
         profile = self.profile
         if profile is None:

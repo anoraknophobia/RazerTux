@@ -97,6 +97,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.performance_tab, self.lighting_tab, self.power_tab = PerformanceTab(), LightingTab(), PowerTab()
         self.scroll_tab = ScrollTab()
         self.scroll_tab.stageRequested.connect(lambda slot: self.client.set_scroll_stage(slot, self.model))
+        self.scroll_tab.customRequested.connect(
+            lambda tension, steps: self.client.set_custom_scroll(tension, steps, self.model))
         for tab in (self.performance_tab, self.lighting_tab, self.power_tab, self.scroll_tab):
             tab.changed.connect(self._update_dirty)
         self.macro_tab = MacroTab(self.macros, self._all_profiles)

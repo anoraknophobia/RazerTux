@@ -78,9 +78,21 @@ the value via `razertux status` or by visual inspection. Record the result here.
   Afterwards the front button no longer stepped the stage in normal mode on Linux. Since
   0.5.0 RazerTux does the same as Synapse: driver mode whenever a profile is active, top
   buttons handled in software (defaults: front = next scroll stage, back = next DPI stage).
-- Also seen in that capture, not used yet: `0x15/0x09` and `0x15/0x03` (80 bytes) when
-  the Custom stage was edited, `0x15/0x04` (80 bytes, float values, per slot) and, sent to
-  the wireless dongle only, `0x15/0x07` with args `01 <slot> 06 83 81 82 84 85 86`.
+- **"Custom" stage (second capture, 2026-10-27, ten slider settings):** Synapse writes, all
+  with size 80 and VARSTORE:
+  1. `0x15/0x09`: `01 28 06 01 01 <steps> <tension> <steps> <tension>` followed by the
+     constant `00 00 0a 56 32 64 5b 56 64 00 ff ff 00 00 09 56 32 64 5a 56 64 00 ff ff`.
+  2. `0x15/0x03`: `01 06 01 01 00 00 00 00 <f> 00 00 00 00 <f> 00 21 00 20 00 03` with
+     `f` = float32 `180 / steps`.
+  3. Ten `0x15/0x04` packets `01 06 <segment> 00 <offset> 00 <count>` + `count` float32
+     pairs (x, y): segment 1 (33 points), segment 2 (32 points) in chunks of 8, segment 3
+     constant `(-720, 1) (0, 1) (720, 1)`.
+  One fixed curve shape: x = shape_x * 360 / steps, y = shape_y * tension / 100 (all ten
+  captures match to float rounding). Tension 0-100, steps 8-96. Afterwards the mouse is on
+  Custom (`05 3a 06 86`). Implemented in 0.6.0 as `NagaV2Pro.set_custom_scroll`
+  (experimental); the shape is in `razertux/razer/naga_scroll_curve.py`.
+- Not used: `0x15/0x07` with args `01 <slot> 06 83 81 82 84 85 86` (sent to the wireless
+  dongle only) and `0x15/0x0b` `01 07`.
 - Synapse reference values (resistance/detents): Ultra-fine 65/96, Standard 60/24,
   Distinct 58/15, Adaptive 75/24, Smooth Scroll 0/32, Custom 50/90.
 
