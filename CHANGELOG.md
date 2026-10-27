@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.4.4] - 2026-10-27
+
+### Added
+- Scroll wheel tab (Naga V2 Pro): click a stage to switch the mouse to it. The command was
+  found in a USB capture of Synapse. "Custom" cannot be chosen yet.
+- The active scroll wheel stage is read from the mouse when it connects, so it is no longer
+  "unknown" until the first switch.
+
 ## [0.4.3] - 2026-10-27
 
 ### Changed

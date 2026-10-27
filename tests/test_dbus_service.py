@@ -372,3 +372,20 @@ async def test_failed_resume_keeps_pause_state(tmp_path):
     s.resume = real
     await svc.resume_device(NAGA)
     assert grabbed(d) and NAGA not in svc._pauses
+
+
+async def test_set_scroll_stage_goes_to_the_session_and_maps_errors(tmp_path):
+    from razertux.daemon.session import NotConnected, ReadOnly
+    d, svc, *_ = make(tmp_path)
+    seen = []
+    d.sessions[NAGA].set_scroll_stage = seen.append
+    await call(svc, "SetScrollStage", NAGA, 3)
+    assert seen == [3]
+    for exc, name in ((NotConnected(NAGA), "NotConnected"), (ReadOnly(NAGA), "ReadOnly"),
+                      (ValueError("7"), "InvalidArgs")):
+        def fail(_slot, exc=exc):
+            raise exc
+        d.sessions[NAGA].set_scroll_stage = fail
+        with pytest.raises(DBusError) as ei:
+            await call(svc, "SetScrollStage", NAGA, 7)
+        assert ei.value.type == f"io.github.razertux.Error.{name}"

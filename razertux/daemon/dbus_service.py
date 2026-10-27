@@ -276,6 +276,17 @@ class Daemon1Service(ServiceInterface):
         except ReadOnly:
             raise DBusError(_ERR + "ReadOnly", tr("daemon", "Mouse is read-only")) from None
 
+    def set_scroll_stage(self, model: str, slot: int) -> None:
+        session = self.session(model)
+        try:
+            session.set_scroll_stage(slot)
+        except NotConnected:
+            raise DBusError(_ERR + "NotConnected", tr("daemon", "Mouse not connected")) from None
+        except ReadOnly:
+            raise DBusError(_ERR + "ReadOnly", tr("daemon", "Mouse is read-only")) from None
+        except ValueError as e:
+            raise DBusError(_ERR + "InvalidArgs", str(e)) from None
+
     # -- D-Bus ---------------------------------------------------------------
 
     @method()
@@ -313,6 +324,10 @@ class Daemon1Service(ServiceInterface):
     @method()
     def GetDiagnostics(self, model: 's') -> 's':
         return self.session(model).diagnostics()
+
+    @method()
+    def SetScrollStage(self, model: 's', stage: 'i'):
+        self.set_scroll_stage(model, stage)
 
     @method()
     async def StartLearning(self, model: 's'):

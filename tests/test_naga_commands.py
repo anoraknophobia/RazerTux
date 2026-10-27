@@ -352,3 +352,23 @@ def test_dpi_stages_reads_onboard_table_with_1_based_ids():
 def test_dpi_stages_unknown_active_id_reported_as_first():
     t = FakeTransport({(0x04, 0x83): _onboard(0x0B, [2500, 800])})
     assert NagaV2Pro(t).dpi_stages() == (1, [(2500, 2500), (800, 800)])
+
+
+def test_scroll_stage_read_and_set_follow_synapse():
+    # Synapse capture 2026-10-27: get 0x15/0x80 [01 00] -> [01 slot]; set 0x15/0x00 [01 slot]
+    t = FakeTransport({(0x15, 0x80): bytes([0x01, 0x04]), (0x15, 0x00): bytes([0x01, 0x02])})
+    naga = NagaV2Pro(t)
+    assert naga.scroll_stage() == 4
+    naga.set_scroll_stage(2)
+    get, put = t.requests
+    assert (get.cmd_class, get.cmd_id, bytes(get.args[:2])) == (0x15, 0x80, bytes([1, 0]))
+    assert (put.cmd_class, put.cmd_id, bytes(put.args[:2])) == (0x15, 0x00, bytes([1, 2]))
+    assert get.size == 2 and put.size == 2
+
+
+@pytest.mark.parametrize("slot", [0, 7, -1, "2", True])
+def test_scroll_stage_rejects_bad_slots(slot):
+    t = FakeTransport()
+    with pytest.raises(ValueError):
+        NagaV2Pro(t).set_scroll_stage(slot)
+    assert t.sent == []

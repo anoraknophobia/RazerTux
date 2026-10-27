@@ -1,10 +1,11 @@
 """Tab "Scroll wheel": the firmware's six scroll-wheel stages (Synapse style).
 
 The active stage comes from the daemon status ("scroll_stage", reported by the
-mouse when the front top button cycles it; -1 = unknown). The stage names are
-fixed: Synapse's list order (user-verified). No command to choose a stage from
-the host is known, so the stages are shown, not selectable. Tension/steps cannot
-be read or set on Linux, the Synapse presets are shown for reference only."""
+mouse when the front top button cycles it or the daemon reads it at connect;
+-1 = unknown). The stage names are fixed: Synapse's list order (user-verified).
+A click on a stage emits `stageRequested(slot)` (the window asks the daemon to
+switch); "Custom" is not selectable yet. Tension/steps cannot be read or set on
+Linux, the Synapse presets are shown for reference only."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
@@ -33,11 +34,14 @@ def _restyle(w: QWidget) -> None:
 
 
 class StageRow(QFrame):
-    """One stage: "Stage n", its fixed name, marker when active."""
+    """One stage: "Stage n", its fixed name, marker when active; clickable unless WIP."""
+
+    clicked = Signal(int)
 
     def __init__(self, slot: int, parent: QWidget | None = None):
         super().__init__(parent)
         self.slot = slot
+        self.selectable = slot not in WIP_SLOTS
         self.setObjectName("stageRow")
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setProperty("active", False)
@@ -58,6 +62,16 @@ class StageRow(QFrame):
         lay.addWidget(self.name, 1)
         lay.addWidget(self.wip)
         lay.addWidget(self.marker)
+        if self.selectable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.setToolTip(self.tr("Click to switch the mouse to this stage"))
+
+    def mousePressEvent(self, e) -> None:
+        if self.selectable and e.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self.slot)
+            e.accept()
+            return
+        super().mousePressEvent(e)
 
     def set_active(self, on: bool) -> None:
         if self.property("active") != on:
@@ -83,6 +97,7 @@ def _tile(caption: str) -> tuple[QFrame, QLabel]:
 
 class ScrollTab(QWidget):
     changed = Signal()
+    stageRequested = Signal(int)  # a stage row was clicked (1-5)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -91,12 +106,12 @@ class ScrollTab(QWidget):
 
         stages = Card(self.tr("Scroll wheel stages"))
         stages.add(description(self.tr(
-            "The mouse has six scroll wheel stages, named as in Synapse. Switch between them "
-            "with the front top button; choosing a stage here is not possible yet (the command "
-            "for it is not known).")))
+            "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to "
+            "switch to it, or use the front top button. “Custom” cannot be chosen here yet.")))
         self.rows: list[StageRow] = []
         for slot in range(1, SCROLL_STAGES + 1):
             row = StageRow(slot)
+            row.clicked.connect(self.stageRequested)
             self.rows.append(row)
             stages.add(row)
         stages.body.addStretch(1)

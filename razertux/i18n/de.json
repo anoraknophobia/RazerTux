@@ -239,7 +239,7 @@
     "Off": "Aus",
     "Don't change": "Nicht ändern",
     "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.",
-    "The mouse has six scroll wheel stages, named as in Synapse. Switch between them with the front top button; choosing a stage here is not possible yet (the command for it is not known).": "Die Maus hat sechs Mausrad-Stufen, benannt wie in Synapse. Umschalten kannst du mit der vorderen oberen Taste; hier eine Stufe auszuwählen ist noch nicht möglich (der Befehl dafür ist nicht bekannt)."
+    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. “Custom” cannot be chosen here yet.": "Die Maus hat sechs Mausrad-Stufen, benannt wie in Synapse. Klick auf eine Stufe, um zu ihr zu wechseln, oder nutze die vordere obere Taste. „Custom“ kann hier noch nicht ausgewählt werden."
   },
   "StageRow": {
     "Active stage": "Aktive Stufe",
@@ -247,7 +247,8 @@
     "Remove stage": "Stufe entfernen",
     "Y": "Y",
     "active": "aktiv",
-    "not working yet (WIP)": "funktioniert noch nicht (WIP)"
+    "not working yet (WIP)": "funktioniert noch nicht (WIP)",
+    "Click to switch the mouse to this stage": "Klicken, um die Maus auf diese Stufe umzuschalten"
   },
   "TrayIcon": {
     "Polling rate": "Abfragerate",

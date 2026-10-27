@@ -148,6 +148,20 @@ class NagaV2Pro(RazerMouse):
             args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])  # 1-based ids
         self._raw(0x04, 0x06, bytes(args), 0x26)
 
+    # -- scroll wheel stages (class 0x15, from a Synapse capture, 2026-10-27) --
+
+    def scroll_stage(self) -> int:
+        """Active scroll wheel stage 1-6: class 0x15 id 0x80 [01 00] -> [01 slot]."""
+        return self._raw(0x15, 0x80, bytes([VARSTORE, 0]), 2)[1]
+
+    def set_scroll_stage(self, slot: int) -> None:
+        """Make stage ``slot`` (1-6) active, as Synapse does: class 0x15 id 0x00
+        [01 slot]. Like the front top button, the mouse keeps the stage; it confirms
+        with the usual 05 3a notification."""
+        if type(slot) is not int or not 1 <= slot <= 6:
+            raise ValueError(f"scroll stage {slot!r} outside 1-6")
+        self._raw(0x15, 0x00, bytes([VARSTORE, slot]), 2)
+
     def repair_active_stage(self) -> tuple[int, int] | None:
         """Onboard stage table (class 0x04 id 0x83 VARSTORE, the one the back top
         button cycles; entries carry 1-based stage ids). If the active id is not in

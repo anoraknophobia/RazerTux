@@ -1470,3 +1470,47 @@ async def test_battery_poll_is_suspended_while_paused(tmp_path):
     session._battery.poll()
     assert (0x07, 0x80) in [(r.cmd_class, r.cmd_id) for r in t.requests[before:]]
     await d.shutdown()
+
+
+# -- choosing the scroll wheel stage from the host (class 0x15, Synapse capture) -------
+
+async def test_connect_reads_the_active_scroll_stage(tmp_path):
+    t = naga_transport()
+    t.responses[(0x15, 0x80)] = bytes([0x01, 0x03])
+    d, _ = make_daemon(tmp_path, transport=t)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    assert d.hw_status()["scroll_stage"] == 3
+    await d.shutdown()
+
+
+async def test_set_scroll_stage_writes_and_updates_status(tmp_path):
+    t = naga_transport()
+    t.responses[(0x15, 0x00)] = lambda a: a[:2]
+    d, _ = make_daemon(tmp_path, transport=t)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    naga(d).set_scroll_stage(2)
+    req = t.requests[-1]
+    assert (req.cmd_class, req.cmd_id, bytes(req.args[:2])) == (0x15, 0x00, bytes([1, 2]))
+    assert d.hw_status()["scroll_stage"] == 2
+    with pytest.raises(ValueError):
+        naga(d).set_scroll_stage(7)
+    await d.shutdown()
+
+
+async def test_set_scroll_stage_needs_a_connected_writable_naga(tmp_path):
+    from razertux.daemon.session import NotConnected, ReadOnly
+    d, t = make_daemon(tmp_path)
+    await d.start()
+    with pytest.raises(NotConnected):
+        naga(d).set_scroll_stage(2)
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    await naga(d).pause()
+    with pytest.raises(ReadOnly):
+        naga(d).set_scroll_stage(2)
+    assert (0x15, 0x00) not in t.sent
+    await d.shutdown()

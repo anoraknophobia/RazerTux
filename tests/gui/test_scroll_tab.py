@@ -29,6 +29,20 @@ def test_custom_stage_is_marked_work_in_progress(tab):
     assert not tab.rows[5].name.isEnabled() and tab.rows[0].name.isEnabled()
 
 
+def test_click_on_a_stage_requests_it_custom_is_not_selectable(tab, qapp):
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtTest import QTest
+    tab.load(Settings("default"))
+    asked = []
+    tab.stageRequested.connect(asked.append)
+    tab.show()
+    for slot in (3, 1, 6):
+        QTest.mouseClick(tab.rows[slot - 1], Qt.MouseButton.LeftButton, pos=QPoint(10, 10))
+    assert asked == [3, 1]  # "Custom" (6) is work in progress
+    assert tab.rows[0].selectable and not tab.rows[5].selectable
+    tab.hide()
+
+
 def test_active_stage_highlight_and_big_name(tab):
     tab.load(Settings("default", scroll_stage_names={2: "Fein"}))
     tab.set_status({"scroll_stage": 6})
@@ -52,7 +66,7 @@ def test_unknown_stage(tab):
 def test_hint_and_reference(tab):
     names = tab.findChildren(type(tab.hint))
     texts = " ".join(w.text() for w in names)
-    assert "rename" not in texts and "not possible yet" in texts
+    assert "rename" not in texts and "Click a stage" in texts
     assert "front top button" in tab.hint.text() and "Razer Synapse" in tab.hint.text()
     assert [p[0] for p in SYNAPSE_PRESETS] == ["Ultra-fine", "Standard", "Distinct",
                                                 "Adaptive", "Smooth Scroll", "Custom"]

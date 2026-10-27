@@ -239,7 +239,7 @@
     "Off": "Desactivado",
     "Don't change": "No cambiar",
     "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Se aplica al perfil. «No cambiar» deja el ajuste del ratón como está.",
-    "The mouse has six scroll wheel stages, named as in Synapse. Switch between them with the front top button; choosing a stage here is not possible yet (the command for it is not known).": "El ratón tiene seis niveles de rueda, con los nombres de Synapse. Cambia entre ellos con el botón superior delantero; elegir un nivel aquí aún no es posible (no se conoce el comando)."
+    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. “Custom” cannot be chosen here yet.": "El ratón tiene seis niveles de rueda, con los nombres de Synapse. Haz clic en un nivel para cambiar a él, o usa el botón superior delantero. “Custom” aún no se puede elegir aquí."
   },
   "StageRow": {
     "Active stage": "Nivel activo",
@@ -247,7 +247,8 @@
     "Remove stage": "Quitar nivel",
     "Y": "Y",
     "active": "activo",
-    "not working yet (WIP)": "aún no funciona (WIP)"
+    "not working yet (WIP)": "aún no funciona (WIP)",
+    "Click to switch the mouse to this stage": "Haz clic para cambiar el ratón a este nivel"
   },
   "TrayIcon": {
     "Polling rate": "Tasa de sondeo",

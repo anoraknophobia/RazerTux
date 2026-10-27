@@ -288,6 +288,12 @@ def test_top_buttons_locked_unless_remap(env):
     assert not view._buttons[ButtonId.TOP_1].isEnabled()
 
 
+def test_click_on_a_scroll_stage_asks_the_daemon(env):
+    w, store, transport = env
+    w.scroll_tab.stageRequested.emit(4)
+    assert ("SetScrollStage", ("naga_v2_pro", 4)) in transport.calls
+
+
 def test_scroll_tab_status(env):
     w, store, transport = env
     w.client.statusChanged.emit("naga_v2_pro", {"connected": True, "scroll_stage": 6, "dpi": 2500,

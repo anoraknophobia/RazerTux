@@ -626,6 +626,20 @@ class DeviceSession:
             logger.warning("Scroll wheel stage not saved (%s): %s", self._state_path, e)
         self._on_status()
 
+    def set_scroll_stage(self, slot: int) -> None:
+        """Switch the Naga to scroll wheel stage ``slot`` (1-6), like its front top button.
+        Raises NotConnected, ReadOnly (probe failed or paused for the recorder) or
+        ValueError (bad slot or a mouse without stages)."""
+        if self._mouse is None:
+            raise NotConnected(self.model)
+        naga = self._naga
+        if naga is None:
+            raise ValueError(f"{self.info.name} has no scroll wheel stages")
+        if self._paused or not self._write_ok:
+            raise ReadOnly(self.model)
+        naga.set_scroll_stage(slot)
+        self._set_scroll_stage(slot)  # the mouse confirms with 05 3a as well
+
     def _apply_active(self) -> None:
         profile = self.profile
         if profile is None:
@@ -792,6 +806,9 @@ class DeviceSession:
                     logger.warning("Cannot read %s: %s", vendor_path, e)
             self._absent_zones = {z for z, led in ZONE_LED.items()
                                   if _safe(lambda led=led: naga.brightness(led), None) is None}
+            stage = _safe(naga.scroll_stage, None)
+            if isinstance(stage, int) and 1 <= stage <= 6:
+                self._set_scroll_stage(stage)
         self._hw = {"connected": True, "connection": self.info.pids.get(pid, ""),
                     "battery": _safe(mouse.battery, -1) if self._can("battery") else -1,
                     "charging": bool(_safe(mouse.charging, False)) if self._can("charging")

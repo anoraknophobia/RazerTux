@@ -66,8 +66,16 @@ the value via `razertux status` or by visual inspection. Record the result here.
 - **Driver mode (0x03):** TOP_1/TOP_2 send `04 57` / `04 52` (release `04 00`); the
   firmware then does **not** step any stages. The wheel haptics stay as they are (checked by
   the user).
-- No command to read or set the active slot is known. `0x02/0x98` only returns its argument
-  (harmless, useless); `NagaV2Pro.scroll_profile()` and the R16 block have been removed.
+- `0x02/0x98` only returns its argument (harmless, useless); `NagaV2Pro.scroll_profile()`
+  and the R16 block have been removed.
+- **Read/set the active slot (Synapse USB capture, 2026-10-27):** Synapse first reads
+  class `0x15` id `0x80` with args `01 00` (reply `01 <slot>`), then sets class `0x15` id
+  `0x00` with args `01 <slot>` (size 2). The mouse answers each with the usual `05 3a`
+  notification. Slot numbers match the notifications; the preset ids per slot are
+  1=`83`, 2=`81`, 3=`82`, 4=`84`, 5=`85`, 6=`86`.
+- Also seen in that capture, not used yet: `0x15/0x09` and `0x15/0x03` (80 bytes) when
+  the Custom stage was edited, `0x15/0x04` (80 bytes, float values, per slot) and, sent to
+  the wireless dongle only, `0x15/0x07` with args `01 <slot> 06 83 81 82 84 85 86`.
 - Synapse reference values (resistance/detents): Ultra-fine 65/96, Standard 60/24,
   Distinct 58/15, Adaptive 75/24, Smooth Scroll 0/32, Custom 50/90.
 
