@@ -1,10 +1,12 @@
 """OpenRazer D-Bus client against an in-memory fake daemon."""
 import asyncio
 
+import pytest
+
 from fake_openrazer import FakeOpenRazerBus, FakeOrDev
 
 from razertux.openrazer import client as C
-from razertux.openrazer.client import OpenRazerClient
+from razertux.openrazer.client import OpenRazerClient, OpenRazerError
 
 
 async def test_devices_lists_pid_and_methods():
@@ -32,7 +34,17 @@ async def test_call_times_out(monkeypatch):
     monkeypatch.setattr(C, "OPENRAZER_TIMEOUT", 0.05)
     bus = FakeOpenRazerBus({"PM1": FakeOrDev(0x00A8)})
     bus.hang = True
-    assert await asyncio.wait_for(OpenRazerClient(bus).devices(), 1.0) == []
+    with pytest.raises(OpenRazerError):
+        await asyncio.wait_for(OpenRazerClient(bus).devices(), 1.0)
+
+
+async def test_devices_stops_at_first_timeout(monkeypatch):
+    monkeypatch.setattr(C, "OPENRAZER_TIMEOUT", 0.05)
+    bus = FakeOpenRazerBus({"A": FakeOrDev(0x00A7), "B": FakeOrDev(0x00A8), "C": FakeOrDev(0x0084)})
+    bus.hang_members = {"getVidPid"}
+    with pytest.raises(OpenRazerError):
+        await OpenRazerClient(bus).devices()
+    assert [c[2] for c in bus.calls].count("getVidPid") == 1
 
 
 async def test_owner_changed_callback():

@@ -22,6 +22,10 @@ class OpenRazerError(Exception):
     """A call to the OpenRazer daemon failed (error reply, timeout, no bus)."""
 
 
+class OpenRazerTimeout(OpenRazerError):
+    """The OpenRazer daemon did not answer in time (probably hung)."""
+
+
 class Bus(Protocol):
     async def call(self, path: str, interface: str, member: str, signature: str = "",
                    args: tuple = ()) -> list: ...
@@ -51,7 +55,7 @@ async def _timed(coro: Any) -> Any:
     try:
         return await asyncio.wait_for(coro, _self.OPENRAZER_TIMEOUT)
     except asyncio.TimeoutError as e:
-        raise OpenRazerError("timeout") from e
+        raise OpenRazerTimeout("timeout") from e
 
 
 class SessionBus:
@@ -136,23 +140,24 @@ class OpenRazerClient:
         self.bus.on_owner_changed(OPENRAZER_BUS_NAME, cb)
 
     async def devices(self) -> list[OrDevice]:
-        """Every device the daemon manages; a device whose calls fail is skipped."""
+        """Every device the daemon manages; a device whose calls fail is skipped.
+        Raises OpenRazerError if the list cannot be read or the daemon stops answering
+        (no further calls after the first timeout)."""
         if not await self.available():
             return []
-        try:
-            serials, = await self.bus.call(ROOT_PATH, "razer.devices", "getDevices")
-        except OpenRazerError as e:
-            logger.warning("OpenRazer: device list not read: %s", e)
-            return []
+        serials, = await self.bus.call(ROOT_PATH, "razer.devices", "getDevices")
         found = []
         for serial in serials:
             path = f"{ROOT_PATH}/device/{serial}"
             try:
                 vid_pid, = await self.bus.call(path, "razer.device.misc", "getVidPid")
                 methods = await self.bus.introspect(path)
-            except OpenRazerError as e:
+                dev = OrDevice(str(serial), path, int(vid_pid[1]),
+                               {k: frozenset(v) for k, v in methods.items()})
+            except OpenRazerTimeout:
+                raise
+            except Exception as e:  # error reply, malformed answer
                 logger.warning("OpenRazer: device %s skipped: %s", path, e)
                 continue
-            found.append(OrDevice(str(serial), path, int(vid_pid[1]),
-                                  {k: frozenset(v) for k, v in methods.items()}))
+            found.append(dev)
         return found

@@ -82,7 +82,9 @@ async def test_owned_not_written_back(tmp_path):
     assert (0x00, 0x05) not in writes(t)  # neither applied nor written back over hidraw
 
 
-async def test_unknown_device_runs_local(tmp_path, caplog):
+async def test_unknown_device_runs_local(tmp_path, caplog, monkeypatch):
+    from razertux.daemon import session as S
+    monkeypatch.setattr(S, "REMATCH_DELAY", 0)
     bus = fake_bus(OTHER=FakeOrDev(0x0999, DA_METHODS))
     with caplog.at_level(logging.WARNING):
         s, _, t = await da_session(tmp_path, bus)
@@ -241,3 +243,74 @@ async def test_conflict_warning_only_in_razertux_mode(tmp_path, caplog):
         d._warn_openrazer()
     assert "Device access" in caplog.text
     await d.shutdown()
+
+
+async def test_reroute_in_razertux_mode_writes_nothing(tmp_path):
+    s, _, t = await da_session(tmp_path, da_bus(), mode="razertux")
+    n = len(writes(t))
+    await s.reroute()
+    await s.settle()
+    assert writes(t)[n:] == []
+    await s.close()
+
+
+async def test_late_failure_of_replaced_device_is_ignored(tmp_path):
+    bus = da_bus()
+    s, _, _ = await da_session(tmp_path, bus)
+    old = s._routed.remote
+    bus.set_owner(False)
+    await s.reroute()
+    bus.set_owner(True)
+    await s.reroute()
+    assert s._routed.remote is not old
+    old._report("setPollRate", Exception("late"))  # failure from the replaced object
+    assert s.access() == "openrazer"
+    await s.settle()
+    bus.calls.clear()
+    old.set_poll_rate(125)  # a dropped object sends nothing more
+    await old.drain()
+    assert bus.writes() == []
+    await s.close()
+
+
+async def test_unknown_device_rematched_when_openrazer_lists_it_later(tmp_path, monkeypatch):
+    from razertux.daemon import session as S
+    monkeypatch.setattr(S, "REMATCH_DELAY", 0)
+    bus = fake_bus()
+    calls = {"n": 0}
+    real = bus.call
+
+    async def late_listing(path, interface, member, signature="", args=()):
+        if member == "getDevices":
+            calls["n"] += 1
+            if calls["n"] == 2:  # OpenRazer has built its device object by now
+                bus.devices["DA1"] = FakeOrDev(DA_PID, DA_METHODS)
+        return await real(path, interface, member, signature, args)
+
+    bus.call = late_listing
+    s, _, _ = await da_session(tmp_path, bus)
+    await s.settle()
+    assert s.access() == "openrazer"
+    assert ("razer.device.misc", "setPollRate", (500,)) in bus.writes()
+    await s.close()
+
+
+async def test_broken_openrazer_answer_keeps_mouse_on_razertux(tmp_path, monkeypatch):
+    from razertux.daemon import session as S
+    monkeypatch.setattr(S, "REMATCH_DELAY", 0)
+    bus = da_bus()
+    bus.introspect_error = ValueError("bad xml")
+    s, _, t = await da_session(tmp_path, bus)
+    assert s.status()["connected"] is True
+    assert (0x00, 0x05) in writes(t)
+    assert s.access() == "openrazer-unknown-device"  # the broken device object is skipped
+    await s.close()
+
+
+async def test_hung_device_list_reports_unavailable(tmp_path, monkeypatch):
+    monkeypatch.setattr(C, "OPENRAZER_TIMEOUT", 0.05)
+    bus = da_bus()
+    bus.hang_members = {"getDevices"}
+    s, _, _ = await da_session(tmp_path, bus)
+    assert s.access() == "openrazer-unavailable"
+    await s.close()

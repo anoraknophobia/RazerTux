@@ -77,7 +77,8 @@ def _pct(raw: int) -> float:
 
 
 class OpenRazerDevice:
-    def __init__(self, bus: Bus, dev: OrDevice, on_failure: Callable[[], None]):
+    def __init__(self, bus: Bus, dev: OrDevice,
+                 on_failure: Callable[[OpenRazerDevice], None]):
         self.bus = bus
         self.dev = dev
         self._on_failure = on_failure
@@ -118,7 +119,12 @@ class OpenRazerDevice:
         if not self.failed:
             self.failed = True
             logger.warning("OpenRazer: %s failed (%s) - RazerTux takes over", what, e)
-            self._on_failure()
+            self._on_failure(self)
+
+    def drop(self) -> None:
+        """No longer used (replaced, mouse gone): queued and later writes are not sent,
+        failures are not reported."""
+        self.failed = True
 
     def _queue(self, interface: str, member: str, signature: str, *args: Any) -> None:
         async def run() -> None:
@@ -165,7 +171,7 @@ class OpenRazerDevice:
         return self._cache[key]
 
     def battery(self) -> int:
-        return round(float(self._cached("battery")) * 255 / 100)
+        return round(float(self._cached("battery")))  # percent, like RazerMouse
 
     def charging(self) -> bool:
         return bool(self._cached("charging"))

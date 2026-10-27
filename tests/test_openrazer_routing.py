@@ -24,8 +24,8 @@ def remote(methods=NAGA_METHODS, pid=0x00A7, bus=None, failures=None):
     bus = bus or FakeOpenRazerBus({"PM1": FakeOrDev(pid, methods)})
     dev = OrDevice("PM1", "/org/razer/device/PM1", pid,
                    {k: frozenset(v) for k, v in methods.items()})
-    return OpenRazerDevice(bus, dev, on_failure=(lambda: failures.append(1)) if failures is not None
-                           else (lambda: None)), bus
+    return OpenRazerDevice(bus, dev, on_failure=(lambda dev: failures.append(1)) if failures is not None
+                           else (lambda dev: None)), bus
 
 
 def naga(transport=None):
@@ -89,7 +89,7 @@ async def test_battery_from_cache():
     r, _ = remote()
     await r.refresh()
     m = RoutedMouse(naga(), r, "naga_v2_pro")
-    assert m.battery() == 128 and m.charging() is False
+    assert m.battery() == 50 and m.charging() is False  # percent, like RazerMouse
 
 
 async def test_write_timeout_falls_back(monkeypatch):

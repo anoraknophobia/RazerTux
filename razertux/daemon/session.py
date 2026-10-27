@@ -52,6 +52,9 @@ WIRELESS = ("wireless", "receiver")
 _DISCONNECTED = {"connected": False, "connection": "", "battery": -1, "charging": False,
                  "dpi": -1}
 _HW_ERRORS = (RazerError, OSError, ValueError, IndexError, OpenRazerError)
+# a just-plugged device may not be listed by OpenRazer yet: ask again this often
+REMATCH_DELAY = 2.0  # seconds
+REMATCH_TRIES = 5
 
 
 class NotConnected(Exception):
@@ -274,6 +277,7 @@ class DeviceSession:
         self._routed: RoutedMouse | None = None
         self._access = "razertux"
         self._remote_state = "unavailable"  # "ok" | "unknown" | "unavailable"
+        self._rematch: asyncio.Task | None = None
 
     @property
     def _is_naga_model(self) -> bool:
@@ -317,6 +321,9 @@ class DeviceSession:
             if self._tasks:
                 await asyncio.gather(*list(self._tasks))
                 continue
+            if self._rematch is not None and not self._rematch.done():
+                await asyncio.gather(self._rematch, return_exceptions=True)
+                continue
             remote = self._routed.remote if self._routed is not None else None
             if remote is None or not remote.busy:
                 return
@@ -324,6 +331,7 @@ class DeviceSession:
 
     async def close(self) -> None:
         """Clean shutdown: write-back, normal mode, release and ungrab."""
+        self._stop_rematch()
         await self.settle()
         self._paused = False
         self._write_back()
@@ -803,12 +811,20 @@ class DeviceSession:
         if self._settings().device_access != "openrazer" or client is None:
             self._remote_state = "unavailable"
             return None
-        if not await client.available():
+        try:
+            up = await client.available()
+            devices = await client.devices() if up else []
+        except Exception as e:  # hung daemon, malformed answer: never lose the mouse
+            logger.warning("%s: OpenRazer not usable (%s) - RazerTux manages everything",
+                           self.info.name, e)
+            self._remote_state = "unavailable"
+            return None
+        if not up:
             self._remote_state = "unavailable"
             logger.info("%s: OpenRazer not running - RazerTux manages everything",
                         self.info.name)
             return None
-        match = [d for d in await client.devices() if d.pid == pid]
+        match = [d for d in devices if d.pid == pid]
         if not match:
             self._remote_state = "unknown"
             logger.info("%s: unknown to OpenRazer - RazerTux manages everything",
@@ -824,11 +840,13 @@ class DeviceSession:
                     match[0].path)
         return remote
 
-    def _remote_failed(self) -> None:
-        """An OpenRazer call failed or timed out: RazerTux takes over everything."""
+    def _remote_failed(self, remote: OpenRazerDevice) -> None:
+        """An OpenRazer call failed or timed out: RazerTux takes over everything.
+        Ignored for a device object that is no longer the current one."""
+        if self._routed is None or self._routed.remote is not remote:
+            return
         self._remote_state = "unavailable"
-        if self._routed is not None:
-            self._routed.remote = None
+        self._routed.remote = None
         self._power_applied = {}
         self._apply_active()
         self.apply_power(self._settings())
@@ -842,9 +860,17 @@ class DeviceSession:
         mode = self._settings().device_access
         if not force and mode == self._access:
             return False
-        remote = await self._find_remote(self._pid) if mode == "openrazer" else None
-        if self._mouse is None or self._routed is None:  # disconnected meanwhile
+        routed, pid = self._routed, self._pid
+        remote = await self._find_remote(pid) if mode == "openrazer" else None
+        if self._routed is not routed or self._pid != pid:  # reconnected/gone meanwhile
+            if remote is not None:
+                remote.drop()
             return False
+        old = routed.remote
+        if remote is None and old is None and mode == self._access:
+            return False  # nothing changes (RazerTux mode, or device still unknown)
+        if old is not None:
+            old.drop()
         if remote is not None:
             # values RazerTux changed that OpenRazer will own: back to the backup's first
             self._write_back(RoutedMouse(self._mouse, remote, self.model).owned_backup_fields())
@@ -852,6 +878,20 @@ class DeviceSession:
         self._access = mode
         self._power_applied = {}
         return True
+
+    def _stop_rematch(self) -> None:
+        if self._rematch is not None:
+            self._rematch.cancel()
+            self._rematch = None
+
+    async def _rematch_later(self) -> None:
+        """OpenRazer did not list the device yet (it builds its object from its own udev
+        event): ask again a few times."""
+        for _ in range(REMATCH_TRIES):
+            await asyncio.sleep(REMATCH_DELAY)
+            if self._mouse is None or self._remote_state != "unknown":
+                return
+            await self.reroute()
 
     async def reroute(self) -> None:
         """OpenRazer appeared or vanished: re-match and re-apply (on resume if paused)."""
@@ -980,6 +1020,8 @@ class DeviceSession:
                     "dpi": -1}
         logger.info("Mouse connected: %s %s", self.info.name, self._hw)
         self._warn_openrazer()
+        if self._remote_state == "unknown" and self._access == "openrazer":
+            self._rematch = asyncio.get_running_loop().create_task(self._rematch_later())
         self._apply_active()
         dpi = _safe(self._routed.dpi, None) if self._can("dpi") else None
         self._hw["dpi"] = dpi[0] if dpi else -1
@@ -1072,6 +1114,9 @@ class DeviceSession:
             if close:
                 close()
         was_connected = self._hw["connected"]
+        self._stop_rematch()
+        if self._routed is not None and self._routed.remote is not None:
+            self._routed.remote.drop()
         self._transport = self._mouse = None
         self._routed = None
         self._write_ok = True

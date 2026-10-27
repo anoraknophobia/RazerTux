@@ -1,7 +1,7 @@
 """In-memory stand-in for the OpenRazer daemon on D-Bus (razertux.openrazer.client.Bus)."""
 import asyncio
 
-from razertux.openrazer.client import OpenRazerError
+from razertux.openrazer.client import OpenRazerError, OpenRazerTimeout
 
 # What OpenRazer 3.12.4 offers the Naga V2 Pro (docs/hardware-notes.md)
 NAGA_METHODS = {
@@ -34,6 +34,8 @@ class FakeOpenRazerBus:
         self.devices = dict(devices or {})  # serial -> FakeOrDev
         self.owner = owner
         self.hang = False
+        self.hang_members = set()  # only these members never answer
+        self.introspect_error = None  # exception introspect() raises
         self.calls = []  # (path, interface, member, args)
         self._owner_cbs = []
 
@@ -45,8 +47,8 @@ class FakeOpenRazerBus:
     def writes(self):
         return [(i, m, a) for _, i, m, a in self.calls if m.startswith("set")]
 
-    async def _maybe_hang(self):
-        if self.hang:
+    async def _maybe_hang(self, member=""):
+        if self.hang or member in self.hang_members:
             await asyncio.sleep(3600)
 
     def _dev(self, path):
@@ -59,9 +61,9 @@ class FakeOpenRazerBus:
         self.calls.append((path, interface, member, tuple(args)))
         from razertux.openrazer import client
         try:
-            await asyncio.wait_for(self._maybe_hang(), client.OPENRAZER_TIMEOUT)
+            await asyncio.wait_for(self._maybe_hang(member), client.OPENRAZER_TIMEOUT)
         except asyncio.TimeoutError as e:
-            raise OpenRazerError("timeout") from e
+            raise OpenRazerTimeout("timeout") from e
         if path == "/org/razer":
             if not self.owner:
                 raise OpenRazerError("ServiceUnknown")
@@ -76,6 +78,8 @@ class FakeOpenRazerBus:
         return [dev.values.get(member)]
 
     async def introspect(self, path):
+        if self.introspect_error is not None:
+            raise self.introspect_error
         return {k: set(v) for k, v in self._dev(path).methods.items()}
 
     async def name_has_owner(self, name):
