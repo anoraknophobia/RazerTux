@@ -161,11 +161,15 @@ class ButtonsPage(QWidget):
         self.hold = QTimer(self)
         self.hold.setSingleShot(True)
         self.hold.timeout.connect(self._release_held)
+        # Start/Done left, the step buttons right: the pointer that clicked "Start" must not
+        # rest on "Not on this device" when the user clicks for the left button step
         row = QHBoxLayout()
-        for b in (self.start_btn, self.absent_btn, self.nosignal_btn, self.stop_btn, self.finish_btn):
-            row.addWidget(b)
+        row.addWidget(self.start_btn)
+        row.addWidget(self.finish_btn)
         row.addStretch(1)
         row.addWidget(self.indicator)
+        for b in (self.absent_btn, self.nosignal_btn, self.stop_btn):
+            row.addWidget(b)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(12)
@@ -389,9 +393,10 @@ class ButtonsPage(QWidget):
         self.finish_btn.setVisible(ph == "free")
         if self.steps:
             self.intro.setText(self.tr(
-                "First the buttons of the picture one by one: press the lit-up button once. The "
-                "wizard moves on by itself. Then press every other button the device has. Only "
-                "which signals arrive is stored – no order, no timing, no typed text.")
+                "First the buttons of the picture one by one: press the lit-up button once and "
+                "wait until the wizard moves on by itself (about a second). If nothing happens, "
+                "press it again. Then press every other button the device has. Only which "
+                "signals arrive is stored – no order, no timing, no typed text.")
             + " " + self.tr("Clicks on this window's own buttons are ignored."))
         else:
             self.intro.setText(self.tr(

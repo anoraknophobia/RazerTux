@@ -58,6 +58,7 @@ MAX_LINE = 4096
 IDLE_TIMEOUT = 600
 LISTEN_MAX = 120
 POLL_STEP = 0.25
+REPEAT_AFTER = 0.5  # a signal is passed on again after this many seconds (new press)
 ID_MAX = 2**31 - 1
 # hard deadline (SIGALRM, default action: terminate) re-armed per request in main(): even a
 # client that stops reading stdout (blocked write) cannot keep the root process alive
@@ -367,7 +368,7 @@ class Helper:
         except OSError:
             emit({"error": "cannot open input nodes"})
             return True
-        filt = SignalFilter(kind)
+        filt = SignalFilter(kind, repeat_after=REPEAT_AFTER, clock=self._clock)
         deadline = self._clock() + seconds
         keep = True
         try:

@@ -1015,3 +1015,23 @@ def test_in_process_backend_passes_the_bus_path(tmp_path):
     assert rig.hidraw_opened == [("/dev/hidraw5", 0xA7)]
     assert backend._open_req(0xA7, None, "5-6") == {"op": "open", "pid": 0xA7, "bus": "5-6"}
     assert backend._open_req(0xA7, None) == {"op": "open", "pid": 0xA7}
+
+
+def test_filter_repeats_a_signal_after_the_cooldown():
+    t = [0.0]
+    f = keyfilter.SignalFilter("mouse", repeat_after=0.5, clock=lambda: t[0])
+    sig = ("if0:mouse", E.EV_KEY, E.BTN_LEFT)
+    assert f.feed("if0:mouse", *press(E.BTN_LEFT)) == sig
+    t[0] = 0.3
+    assert f.feed("if0:mouse", *press(E.BTN_LEFT)) is None  # bounce / double click
+    t[0] = 0.9
+    assert f.feed("if0:mouse", *press(E.BTN_LEFT)) == sig  # a new press later on
+    assert f.feed("if0:keyboard", *press(E.KEY_A)) is None  # typing keys still never pass
+
+
+def test_listen_passes_a_press_again_later(tmp_path):
+    # the click on "Start" (BTN_LEFT) must not block the "left button" step of the same listen
+    rig = Rig(tmp_path, batches=[[("if0:mouse", *press(E.BTN_LEFT))], [], [], [("if0:mouse", *press(E.BTN_LEFT))]])
+    rig.one({"op": "open", "pid": 0xA7})
+    out, _ = rig.send({"op": "listen", "seconds": 2})
+    assert out.count({"signal": ["if0:mouse", E.EV_KEY, E.BTN_LEFT]}) == 2

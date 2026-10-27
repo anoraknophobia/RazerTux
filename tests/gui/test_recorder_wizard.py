@@ -748,3 +748,30 @@ def test_no_reload_without_a_light_test(make):
     w.next_btn.click()
     pump(0.05)
     assert ("Reload", ()) not in w.transport.calls
+
+
+def test_start_button_is_not_where_the_step_buttons_appear(make):
+    # after clicking "Start" the pointer stays there: the next click (the left button step)
+    # must not land on "Not on this device"
+    be = FakeBackend(model="death_adder_v2")
+    w = make(device(DA_PID, "Razer DeathAdder V2"), be)
+    w.show()
+    start_recording(w)
+    to_page(w, "buttons")
+    page = w.pages["buttons"]
+    pump(0.05)
+    start = page.start_btn.geometry()
+    page.start_btn.click()
+    wait_until(be.listening.is_set)
+    pump(0.05)
+    for b in (page.absent_btn, page.nosignal_btn, page.stop_btn):
+        assert b.isVisible() and not b.geometry().intersects(start)
+
+
+def test_buttons_intro_asks_for_short_pauses(make):
+    be = FakeBackend(model="death_adder_v2")
+    w = make(device(DA_PID, "Razer DeathAdder V2"), be)
+    start_recording(w)
+    to_page(w, "buttons")
+    text = w.pages["buttons"].intro.text()
+    assert "wait until" in text and "press it again" in text

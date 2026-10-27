@@ -9,6 +9,9 @@ or keys). Sources are labels "if<N>:<node kind>".
 """
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
+
 from evdev import ecodes as E
 
 # Ordinary typing keys: KEY_ESC..KEY_COMPOSE (1-127) covers letters, digits, punctuation, space,
@@ -71,10 +74,24 @@ def drops(kind: str | None, source: str, code: int) -> bool:
 
 
 class SignalFilter:
-    def __init__(self, kind: str | None):
+    """Passes each recordable signal once. With ``repeat_after`` (seconds) a signal passes again
+    when it was last passed at least that long ago: the record helper uses this so a button
+    pressed once already (e.g. the click on "Start") can still be recorded in a later step."""
+
+    def __init__(self, kind: str | None, repeat_after: float | None = None,
+                 clock: Callable[[], float] = time.monotonic):
         self.kind = kind
-        self._seen: set[tuple] = set()
+        self._repeat_after, self._clock = repeat_after, clock
+        self._seen: dict[tuple, float] = {}
         self._standard_sources: set[str] = set()
+
+    def _new(self, sig: tuple) -> bool:
+        now = self._clock()
+        last = self._seen.get(sig)
+        if last is not None and (self._repeat_after is None or now - last < self._repeat_after):
+            return False
+        self._seen[sig] = now
+        return True
 
     def feed(self, source: str, ev_type: int, code: int, value: int) -> tuple | None:
         """The new signal (source, ev_type, code) to pass on, or None. Wheel axes carry a 4th
@@ -87,10 +104,7 @@ class SignalFilter:
             if value == 0:
                 return None
             sig = (source, ev_type, code, 1 if value > 0 else -1)
-            if sig in self._seen:
-                return None
-            self._seen.add(sig)
-            return sig
+            return sig if self._new(sig) else None
         if ev_type == E.EV_KEY:
             if value != 1:  # release / autorepeat
                 return None
@@ -98,10 +112,7 @@ class SignalFilter:
                 self._standard_sources.add(source)
                 return None
         sig = (source, ev_type, code)
-        if sig in self._seen:
-            return None
-        self._seen.add(sig)
-        return sig
+        return sig if self._new(sig) else None
 
     @property
     def standard_keys_seen(self) -> int:
