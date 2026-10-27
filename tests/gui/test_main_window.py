@@ -167,15 +167,48 @@ def test_store_errors_are_shown(env):
     assert w.errors_banner.isVisible() and "p2.json" in w.errors_banner.label.text()
 
 
-def test_openrazer_warning(env):
+def test_banner_only_in_razertux_mode(env):
     w, *_ = env
     w.show()
     assert not w.openrazer_banner.isVisible()
-    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True})
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True,
+                                                "device_access": "razertux"})
     assert w.openrazer_banner.isVisible()
-    assert "OpenRazer driver is loaded" in w.openrazer_banner.label.text()
+    assert "View → Device access" in w.openrazer_banner.label.text()
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True,
+                                                "device_access": "openrazer"})
+    assert not w.openrazer_banner.isVisible()
     w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": False})
     assert not w.openrazer_banner.isVisible()
+
+
+def test_openrazer_unavailable_shown(env):
+    w, *_ = env
+    w.show()
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_loaded": True,
+                                                "device_access": "openrazer-unavailable"})
+    assert w.openrazer_banner.isVisible()
+    assert "OpenRazer not running" in w.openrazer_banner.label.text()
+
+
+def test_openrazer_action_disabled_without_daemon(env):
+    w, *_ = env
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_available": False})
+    assert not w.access_actions["openrazer"].isEnabled()
+    assert "OpenRazer daemon not running" in w.access_actions["openrazer"].toolTip()
+    assert w.access_actions["razertux"].isChecked()
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_available": True})
+    assert w.access_actions["openrazer"].isEnabled()
+
+
+def test_switch_saves_and_reloads(env):
+    w, store, transport = env
+    w.client.statusChanged.emit("naga_v2_pro", {"openrazer_available": True})
+    w.access_actions["openrazer"].trigger()
+    assert store.load_settings().device_access == "openrazer"
+    assert store.load_settings().active_profile == "p2"  # nothing else changed
+    assert ("Reload", ()) in transport.calls
+    assert w.access_actions["openrazer"].isChecked()
 
 
 # -- tabs, power settings, theme, battery ----------------------------------

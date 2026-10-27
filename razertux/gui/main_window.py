@@ -18,6 +18,7 @@ from razertux.gui.action_dialog import ActionDialog
 from razertux.gui.buttons_tab import ButtonsTab
 from razertux.gui.dbus_client import DaemonClient
 from razertux.gui.device_actions import DeviceActions, device_info
+from razertux.gui.device_access import DeviceAccessMenu, banner_text
 from razertux.gui.device_bar import DeviceBar, make_banner
 from razertux.gui.header import HeaderBar
 from razertux.gui.keyboard_view import KeyboardPage
@@ -83,8 +84,7 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
             "The service (razertuxd) is not running. Changes are saved but only applied once "
             "the service starts.")
         self.banner = make_banner(self._no_daemon_text)
-        self.openrazer_banner = make_banner(self.tr(
-            "The OpenRazer driver is loaded – please uninstall it, otherwise both programs interfere with each other"))
+        self.openrazer_banner = make_banner("")
         self.errors_banner = make_banner("", "#8a5a00")
         self.errors_dismiss = QPushButton(self.tr("Dismiss"), self.errors_banner)
         self.errors_dismiss.clicked.connect(lambda _=False: self._dismiss_errors())
@@ -124,6 +124,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.system_colors_action.triggered.connect(
             lambda on: self.themeRequested.emit("system" if on else "synapse"))
         self.language_menu = add_language_menu(view, self.settings.language, self.languageRequested.emit)
+        self.device_access = DeviceAccessMenu(view, self.store, self.settings, self.client)
+        self.access_actions = self.device_access.actions
         help_menu = self.menuBar().addMenu(self.tr("Help"))
         help_menu.addAction(self.tr("Record device…")).triggered.connect(
             lambda _=False: open_recorder(self, self.client))
@@ -356,11 +358,17 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
 
     def _on_status(self, status: dict) -> None:
         self._daemon_errors = list(status.get("config_errors", [])) if status else []
-        self.openrazer_banner.setVisible(bool(status and status.get("openrazer_loaded")))
+        self._show_openrazer(status or {})
         self._update_warnings()
         self.header.set_status(status)
         self.scroll_tab.set_status(status)
         self._show_device_status(status)
+
+    def _show_openrazer(self, status: dict) -> None:
+        text = banner_text(status)
+        self.openrazer_banner.label.setText(text)
+        self.openrazer_banner.setVisible(bool(text))
+        self.device_access.set_status(status)
 
     # -- closing --------------------------------------------------------------
     def request_close(self) -> bool:

@@ -59,11 +59,13 @@ class Daemon1Service(ServiceInterface):
     (activate, reload, ...) hold the logic, the D-Bus methods are thin wrappers."""
 
     def __init__(self, store: ConfigStore, sessions: Callable[[], Mapping[str, DeviceSession]], *,
-                 openrazer_loaded: Callable[[], bool] = openrazer_loaded) -> None:
+                 openrazer_loaded: Callable[[], bool] = openrazer_loaded,
+                 openrazer_available: Callable[[], bool] = lambda: False) -> None:
         super().__init__(INTERFACE)
         self._store = store
         self._sessions = sessions
         self._openrazer = openrazer_loaded
+        self._openrazer_available = openrazer_available
         self._seen: dict[str, tuple[bool, str]] = {}  # model -> (connected, connection)
         self.pause_timeout = PAUSE_TIMEOUT
         # model -> (callers' unique bus names, auto-resume timer)
@@ -242,6 +244,8 @@ class Daemon1Service(ServiceInterface):
             "experimental": Variant("b", not st["verified"]),
             "model": Variant("s", model),
             "name": Variant("s", session.info.name),
+            "device_access": Variant("s", str(st.get("device_access", "razertux"))),
+            "openrazer_available": Variant("b", bool(self._openrazer_available())),
         }
 
     def notify_status(self, model: str) -> None:

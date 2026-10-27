@@ -54,6 +54,12 @@
     "Service is not running": "Dienst läuft nicht",
     "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again": "Dienst-Version passt nicht – bitte den RazerTux-Dienst neu starten (systemctl --user restart razertuxd) oder neu anmelden"
   },
+  "DeviceAccess": {
+    "Device access": "Gerätezugriff",
+    "OpenRazer daemon not running": "OpenRazer-Dienst läuft nicht",
+    "OpenRazer not running – RazerTux manages everything for now": "OpenRazer läuft nicht – RazerTux übernimmt vorerst alles",
+    "OpenRazer detected – switch to “RazerTux + OpenRazer” under View → Device access": "OpenRazer erkannt – unter Ansicht → Gerätezugriff auf „RazerTux + OpenRazer“ umstellen"
+  },
   "HeaderBar": {
     "Profile": "Profil",
     "Profile actions": "Profilaktionen",
@@ -171,7 +177,6 @@
     "SCROLL WHEEL": "MAUSRAD",
     "Profile name:": "Name des Profils:",
     "New profile": "Neues Profil",
-    "The OpenRazer driver is loaded – please uninstall it, otherwise both programs interfere with each other": "OpenRazer-Treiber ist geladen – bitte deinstallieren, sonst stören sich beide Programme",
     "Profile (*.json)": "Profil (*.json)",
     "Duplicate profile": "Profil duplizieren",
     "Export profile": "Profil exportieren",

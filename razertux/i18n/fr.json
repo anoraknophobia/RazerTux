@@ -54,6 +54,12 @@
     "Service is not running": "Le service n’est pas en cours d’exécution",
     "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again": "La version du service ne correspond pas – veuillez redémarrer le service RazerTux (systemctl --user restart razertuxd) ou vous reconnecter"
   },
+  "DeviceAccess": {
+    "Device access": "Accès au périphérique",
+    "OpenRazer daemon not running": "Le service OpenRazer n’est pas lancé",
+    "OpenRazer not running – RazerTux manages everything for now": "OpenRazer n’est pas lancé – RazerTux gère tout pour l’instant",
+    "OpenRazer detected – switch to “RazerTux + OpenRazer” under View → Device access": "OpenRazer détecté – passez à « RazerTux + OpenRazer » dans Affichage → Accès au périphérique"
+  },
   "HeaderBar": {
     "Profile": "Profil",
     "Profile actions": "Actions du profil",
@@ -171,7 +177,6 @@
     "SCROLL WHEEL": "MOLETTE",
     "Profile name:": "Nom du profil :",
     "New profile": "Nouveau profil",
-    "The OpenRazer driver is loaded – please uninstall it, otherwise both programs interfere with each other": "Le pilote OpenRazer est chargé – veuillez le désinstaller, sinon les deux programmes se gênent",
     "Profile (*.json)": "Profil (*.json)",
     "Duplicate profile": "Dupliquer le profil",
     "Export profile": "Exporter le profil",

@@ -135,8 +135,10 @@ async def test_get_status_disconnected(tmp_path):
         "connected": False, "connection": "", "battery": -1, "charging": False,
         "scroll_stage": -1, "dpi": -1, "openrazer_loaded": False, "config_errors": [],
         "writable": False, "paused": False, "experimental": False, "model": NAGA,
-        "name": load_devices()[NAGA].name,
+        "name": load_devices()[NAGA].name, "device_access": "razertux",
+        "openrazer_available": False,
     }
+    assert st["device_access"].signature == "s" and st["openrazer_available"].signature == "b"
     assert st["battery"].signature == "i" and st["config_errors"].signature == "as"
     assert st["writable"].signature == "b" and st["name"].signature == "s"
 

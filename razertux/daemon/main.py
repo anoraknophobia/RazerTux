@@ -62,7 +62,8 @@ class Daemon:
         self._tasks: set[asyncio.Task] = set()
         self.sessions: dict[str, DeviceSession] = {}
         self.service = Daemon1Service(store, lambda: self.sessions,
-                                      openrazer_loaded=openrazer_loaded)
+                                      openrazer_loaded=openrazer_loaded,
+                                      openrazer_available=self.openrazer_available)
         self._session(load_devices()[NAGA_MODEL])
 
     @property
