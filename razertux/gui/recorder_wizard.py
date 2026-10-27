@@ -151,6 +151,17 @@ class RecorderWizard(QWidget):
         return ORDER[min(max(i, 0), len(ORDER) - 1)]
 
     @guarded
+    def preselect(self, device) -> None:
+        """Select ``device`` (FoundDevice, matched by PID and USB port) on the first page."""
+        if self.page_name != "choose":
+            return
+        page = self.pages["choose"]
+        page.refresh()
+        for row, dev in enumerate(page.devices):
+            if dev.pid == device.pid and dev.bus == device.bus:
+                page.list.setCurrentRow(row)
+                return
+
     def next(self) -> None:
         if self.page_name == "choose":
             dev = self.pages["choose"].selected()
@@ -266,12 +277,17 @@ class RecorderWizard(QWidget):
 _open: RecorderWizard | None = None
 
 
-def open_recorder(parent: QWidget | None, client: DaemonClient | None) -> RecorderWizard:
-    """Show the wizard (one at a time)."""
+
+def open_recorder(parent: QWidget | None, client: DaemonClient | None,
+                  device=None) -> RecorderWizard:
+    """Show the wizard (one at a time); ``device`` (FoundDevice) is preselected when the
+    wizard is still on its first page."""
     global _open
     if _open is None or not shiboken6.isValid(_open) or not _open.isVisible():
         _open = RecorderWizard(client, parent)
         _open.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+    if device is not None:
+        _open.preselect(device)
     _open.show()
     _open.raise_()
     _open.activateWindow()

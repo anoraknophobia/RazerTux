@@ -47,7 +47,8 @@ def make_banner(text: str, colour: str = "#b3261e") -> QFrame:
 
 
 class DeviceBar(QWidget):
-    deviceChanged = Signal(str)  # model
+    deviceChanged = Signal(str)  # model (also when a keyboard was shown and the mouse is chosen)
+    keyboardChosen = Signal(object)  # FoundDevice of a connected Razer keyboard (untested)
     remapToggled = Signal(bool)  # "Enable button assignment"
 
     def __init__(self, client: DaemonClient, parent: QWidget | None = None):
@@ -55,6 +56,10 @@ class DeviceBar(QWidget):
         self.client = client
         self.model = ""
         self.pills: dict[str, QPushButton] = {}
+        self.keyboard_pills: dict[str, QPushButton] = {}  # "kbd:<pid>:<bus>"
+        self.keyboard_shown = False
+        self._mice: list[tuple[str, str, str, bool]] = []
+        self._keyboards: list = []
         self._pill_box = QHBoxLayout()
         self._pill_box.setContentsMargins(16, 6, 16, 2)
         self._pill = PillToggle()
@@ -102,28 +107,65 @@ class DeviceBar(QWidget):
     # -- devices -------------------------------------------------------------------
     def set_devices(self, devices: list[tuple[str, str, str, bool]], current: str) -> None:
         """(model, name, connection, connected) of every mouse; `current` is checked."""
-        for b in self.pills.values():
+        self._mice = list(devices)
+        self.model = current
+        self._rebuild()
+
+    def set_keyboards(self, keyboards: list) -> None:
+        """Connected Razer keyboards (FoundDevice), shown after the mice."""
+        from razertux.gui.keyboard_view import keyboard_name
+        keys = [(f"kbd:{k.pid:04x}:{k.bus}", keyboard_name(k)) for k in keyboards]
+        if keys == [(key, n) for key, n in self._keyboard_keys()]:
+            return
+        self._keyboards = list(keyboards)
+        self._rebuild()
+
+    def _keyboard_keys(self) -> list[tuple[str, str]]:
+        from razertux.gui.keyboard_view import keyboard_name
+        return [(f"kbd:{k.pid:04x}:{k.bus}", keyboard_name(k)) for k in self._keyboards]
+
+    def _rebuild(self) -> None:
+        shown_key = next((k for k, b in self.keyboard_pills.items() if b.isChecked()), None)
+        for b in [*self.pills.values(), *self.keyboard_pills.values()]:
             self._pill.group.removeButton(b)
             b.setParent(None)
             b.deleteLater()
-        self.pills = {}
-        for model, name, _connection, connected in devices:
+        self.pills, self.keyboard_pills = {}, {}
+        for model, name, _connection, connected in self._mice:
             b = self._pill.add(short_name(name))
             b.setToolTip(name if connected else self.tr("%1 (not connected)").replace("%1", name))
             b.clicked.connect(lambda _=False, m=model: self._clicked(m))
             self.pills[model] = b
-        self._pill.setVisible(bool(self.pills))
-        self.select(current)
+        for dev, (key, name) in zip(self._keyboards, self._keyboard_keys()):
+            b = self._pill.add(short_name(name))
+            b.setToolTip(self.tr("%1 (keyboard, untested)").replace("%1", name))
+            b.clicked.connect(lambda _=False, d=dev: self._keyboard_clicked(d))
+            self.keyboard_pills[key] = b
+        self._pill.setVisible(bool(self.pills or self.keyboard_pills))
+        if self.keyboard_shown and shown_key in self.keyboard_pills:
+            self.keyboard_pills[shown_key].setChecked(True)
+        elif self.keyboard_shown:  # the shown keyboard was unplugged: back to the mouse
+            self.keyboard_shown = False
+            self.select(self.model)
+            self.deviceChanged.emit(self.model)
+        else:
+            self.select(self.model)
 
     def select(self, model: str) -> None:
         """Check the pill of `model` (no signal)."""
         self.model = model
+        self.keyboard_shown = False
         if model in self.pills:
             self.pills[model].setChecked(True)
 
     def _clicked(self, model: str) -> None:
-        if model != self.model:
+        if model != self.model or self.keyboard_shown:
             self.deviceChanged.emit(model)  # the window calls select() when it switched
+
+    def _keyboard_clicked(self, dev) -> None:
+        self.keyboard_shown = True
+        self.banner.hide()
+        self.keyboardChosen.emit(dev)
 
     # -- banner --------------------------------------------------------------------
     def set_status(self, status: dict, remap_enabled: bool) -> None:

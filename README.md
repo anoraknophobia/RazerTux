@@ -212,6 +212,16 @@ Run `razertux restore` before uninstalling, while RazerTux is still installed.
   `/usr/share/licenses/razertux/`). The udev rule `70-razertux.rules` is generated from it
   with `python tools/import_openrazer.py --udev`.
 
+## Keyboards (untested)
+
+Razer keyboards from the OpenRazer database (107 models) are recognised: a connected one
+appears in the device bar with a picture of a typical keyboard of its size (full size,
+tenkeyless, 75 % or 60 %, guessed from the model name) and a button **"Record this keyboard
+…"**. RazerTux cannot configure keyboards yet and has not been tested with one. It never
+reads what you type: there is no key assignment for keyboards, and the device recorder only
+keeps which special keys exist (ordinary typing keys are counted, never stored). Recording
+your keyboard is the way to get it supported.
+
 ## Laser graphics
 
 The mouse views with button labels ("laser" lines) are original drawings (SVG templates in

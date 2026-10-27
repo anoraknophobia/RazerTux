@@ -404,7 +404,8 @@
     "Experimental – untested": "Experimentell – ungetestet",
     "No diagnostics available (service not running or mouse not probed).": "Keine Diagnose verfügbar (Dienst läuft nicht oder Maus nicht geprüft).",
     "Read-only: the mouse did not answer the probe commands as expected.": "Nur lesend: die Maus hat auf die Prüfbefehle nicht wie erwartet geantwortet.",
-    "Enable button assignment": "Tastenbelegung aktivieren"
+    "Enable button assignment": "Tastenbelegung aktivieren",
+    "%1 (keyboard, untested)": "%1 (Tastatur, ungetestet)"
   },
   "LearnDialog": {
     "Cancel": "Abbrechen",
@@ -567,5 +568,15 @@
     "Save as file": "Als Datei speichern",
     "Thank you for helping RazerTux support more devices!": "Danke, dass du hilfst, mehr Geräte in RazerTux zu unterstützen!",
     "“Submit on GitHub” opens a prefilled issue in your browser; you need a GitHub account. Nothing is published before you press “Create” there. You can also save the report as a file and attach it to an issue yourself.": "„Auf GitHub einsenden“ öffnet ein vorausgefülltes Issue im Browser; du brauchst ein GitHub-Konto. Veröffentlicht wird erst, wenn du dort „Create“ drückst. Du kannst den Bericht auch als Datei speichern und selbst an ein Issue anhängen."
+  },
+  "KeyboardPage": {
+    "60 %": "60 %",
+    "75 %": "75 %",
+    "Keyboard (untested)": "Tastatur (ungetestet)",
+    "RazerTux recognises this keyboard but cannot configure keyboards yet, and it has not been tested with one. The picture shows a typical keyboard of this size, not the exact model. Recording it helps to add it: the recorder collects its keys and device data and opens a prefilled report on GitHub.": "RazerTux erkennt diese Tastatur, kann Tastaturen aber noch nicht einstellen und wurde noch mit keiner getestet. Das Bild zeigt eine typische Tastatur dieser Größe, nicht das genaue Modell. Eine Aufzeichnung hilft, sie einzubauen: Der Recorder sammelt ihre Tasten und Gerätedaten und öffnet einen vorausgefüllten Bericht auf GitHub.",
+    "Record this keyboard …": "Diese Tastatur aufzeichnen …",
+    "USB ID %1 · probably %2": "USB-ID %1 · vermutlich %2",
+    "full size": "volle Größe",
+    "tenkeyless": "ohne Ziffernblock (TKL)"
   }
 }

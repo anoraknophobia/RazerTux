@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import copy
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
-    QHBoxLayout, QMainWindow, QMessageBox, QPushButton, QTabWidget, QVBoxLayout, QWidget,
+    QHBoxLayout, QMainWindow, QMessageBox, QPushButton, QStackedWidget, QTabWidget, QVBoxLayout,
+    QWidget,
 )
 
 from razertux import APP_NAME
@@ -19,6 +20,7 @@ from razertux.gui.dbus_client import DaemonClient
 from razertux.gui.device_actions import DeviceActions, device_info
 from razertux.gui.device_bar import DeviceBar, make_banner
 from razertux.gui.header import HeaderBar
+from razertux.gui.keyboard_view import KeyboardPage
 from razertux.gui.language import (
     add_language_menu, check_language, make_language_combo, select_language,
 )
@@ -30,6 +32,7 @@ from razertux.gui.profile_actions import ProfileActions
 from razertux.gui.recorder_wizard import open_recorder
 from razertux.gui.scroll_tab import ScrollTab
 from razertux.hw.buttons import ButtonId
+from razertux.recorder.discover import list_razer_devices
 
 POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # GUI-owned settings
                 "scroll_stage_names", "dpi_limit")
@@ -87,7 +90,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.errors_banner.layout().addWidget(self.errors_dismiss)
 
         self.device_bar = DeviceBar(self.client)
-        self.device_bar.deviceChanged.connect(self.switch_device)
+        self.device_bar.deviceChanged.connect(self.choose_mouse)
+        self.device_bar.keyboardChosen.connect(self.show_keyboard)
         self.device_bar.remapToggled.connect(self.set_remap_enabled)
         self.buttons_tab = ButtonsTab(self.profiles, self.client.reload)
         self.buttons_tab.bindingClicked.connect(self.edit_binding)
@@ -147,11 +151,24 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
             lay.addWidget(b)
         body = QVBoxLayout()
         body.setContentsMargins(16, 4, 16, 0)
-        body.addWidget(self.tabs)
+        self.keyboard_page = KeyboardPage()
+        self.keyboard_page.recordRequested.connect(
+            lambda dev: open_recorder(self, self.client, device=dev))
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self.tabs)
+        self.stack.addWidget(self.keyboard_page)
+        body.addWidget(self.stack)
         lay.addLayout(body, 1)
         lay.addLayout(footer)
         self.setCentralWidget(central)
         self.resize(1100, 800)
+        # connected Razer keyboards (sysfs only, untested): pills in the device bar
+        self.list_razer_devices = list_razer_devices
+        self.keyboard_timer = QTimer(self)
+        self.keyboard_timer.setInterval(3000)
+        self.keyboard_timer.timeout.connect(self.refresh_keyboards)
+        self.keyboard_timer.start()
+        self.refresh_keyboards()
 
     # -- hooks (replaced in tests) --------------------------------------------
     def _warn(self, title: str, text: str) -> None:

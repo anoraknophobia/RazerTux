@@ -68,6 +68,12 @@ class HeaderBar(QWidget):
         self.title.setGeometry((self.width() - hint.width()) // 2, (self.height() - hint.height()) // 2,
                                hint.width(), hint.height())
 
+    def set_mouse_controls(self, visible: bool) -> None:
+        """Profile, DPI and battery belong to the mouse: hidden while a keyboard is shown."""
+        for w in (self.profile_combo, self.menu_button, self.activate_btn, self.dpi_label,
+                  self.battery_label):
+            w.setVisible(visible)
+
     def set_device_name(self, name: str) -> None:
         """"Razer Naga V2 Pro" is shown as "Naga V2 Pro" (from the status or the database)."""
         self.title.setText(short_name(name))

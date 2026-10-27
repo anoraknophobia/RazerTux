@@ -404,7 +404,8 @@
     "Experimental – untested": "Expérimental – non testé",
     "No diagnostics available (service not running or mouse not probed).": "Aucun diagnostic disponible (service arrêté ou souris non vérifiée).",
     "Read-only: the mouse did not answer the probe commands as expected.": "Lecture seule : la souris n’a pas répondu aux commandes de test comme prévu.",
-    "Enable button assignment": "Activer l’assignation des boutons"
+    "Enable button assignment": "Activer l’assignation des boutons",
+    "%1 (keyboard, untested)": "%1 (clavier, non testé)"
   },
   "LearnDialog": {
     "Cancel": "Annuler",
@@ -567,5 +568,15 @@
     "Save as file": "Enregistrer dans un fichier",
     "Thank you for helping RazerTux support more devices!": "Merci d’aider RazerTux à prendre en charge plus d’appareils !",
     "“Submit on GitHub” opens a prefilled issue in your browser; you need a GitHub account. Nothing is published before you press “Create” there. You can also save the report as a file and attach it to an issue yourself.": "« Soumettre sur GitHub » ouvre un ticket prérempli dans votre navigateur ; un compte GitHub est nécessaire. Rien n’est publié avant que vous cliquiez sur « Create ». Vous pouvez aussi enregistrer le rapport dans un fichier et le joindre vous-même à un ticket."
+  },
+  "KeyboardPage": {
+    "60 %": "60 %",
+    "75 %": "75 %",
+    "Keyboard (untested)": "Clavier (non testé)",
+    "RazerTux recognises this keyboard but cannot configure keyboards yet, and it has not been tested with one. The picture shows a typical keyboard of this size, not the exact model. Recording it helps to add it: the recorder collects its keys and device data and opens a prefilled report on GitHub.": "RazerTux reconnaît ce clavier, mais ne peut pas encore configurer les claviers et n’a été testé avec aucun. L’image montre un clavier typique de cette taille, pas le modèle exact. L’enregistrer aide à l’ajouter : l’enregistreur collecte ses touches et les données de l’appareil et ouvre un rapport prérempli sur GitHub.",
+    "Record this keyboard …": "Enregistrer ce clavier …",
+    "USB ID %1 · probably %2": "ID USB %1 · probablement %2",
+    "full size": "pleine taille",
+    "tenkeyless": "sans pavé numérique (TKL)"
   }
 }

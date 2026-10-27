@@ -1,5 +1,5 @@
 """Device handling of the main window: which mouse is shown, its tabs, the
-experimental banner and "Learn button". A mixin for MainWindow (no texts of its
+experimental banner, "Learn button" and the pages of connected Razer keyboards. A mixin for MainWindow (no texts of its
 own; the dialogs and the device bar carry them)."""
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from razertux.config.model import NAGA_MODEL
 from razertux.devices.db import DeviceInfo, load_devices
 from razertux.gui.dbus_client import DaemonError
 from razertux.gui.device_bar import tab_keys
+from razertux.gui.keyboard_view import connected_keyboards, keyboard_name
 from razertux.gui.learn_dialog import LearnDialog
 from razertux.hw.buttons import ButtonId
 
@@ -132,3 +133,31 @@ class DeviceActions:
     def _run_learn(self, dialog: LearnDialog) -> int:  # replaced in tests
         dialog.start()
         return dialog.exec()
+
+    # -- keyboards (untested: picture and recorder only) -------------------------
+    def refresh_keyboards(self) -> None:
+        try:
+            keyboards = connected_keyboards(self.list_razer_devices)
+        except OSError:
+            keyboards = []
+        self.device_bar.set_keyboards(keyboards)
+
+    def show_keyboard(self, dev) -> None:
+        self.keyboard_page.set_device(dev)
+        self.stack.setCurrentWidget(self.keyboard_page)
+        self.header.set_device_name(keyboard_name(dev))
+        self.header.set_mouse_controls(False)
+        for w in (self.save_btn, self.revert_btn):
+            w.setVisible(False)
+
+    def choose_mouse(self, model: str) -> None:
+        """A mouse pill: back from a keyboard page, and switch if it is another mouse."""
+        if self.stack.currentWidget() is not self.tabs:
+            self.stack.setCurrentWidget(self.tabs)
+            for w in (self.save_btn, self.revert_btn):
+                w.setVisible(True)
+            self.header.set_mouse_controls(True)
+            self.header.set_device_name(self.info.name)
+        if model != self.model:
+            self.switch_device(model)
+        self.device_bar.select(self.model)

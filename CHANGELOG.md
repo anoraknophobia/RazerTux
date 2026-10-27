@@ -2,6 +2,15 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.7.0] - 2026-10-27
+
+### Added
+- Razer keyboards (untested): a connected keyboard from the OpenRazer database appears in
+  the device bar. Its page shows the name, the USB ID, a laser picture of a typical keyboard
+  of its size (full size, tenkeyless, 75 % or 60 %) and "Record this keyboard …", which opens
+  the device recorder with the keyboard already selected. Keyboards cannot be configured
+  yet, and RazerTux never reads what you type.
+
 ## [0.6.0] - 2026-10-27
 
 ### Added

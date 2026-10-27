@@ -404,7 +404,8 @@
     "Experimental – untested": "Experimental – sin probar",
     "No diagnostics available (service not running or mouse not probed).": "No hay diagnóstico disponible (el servicio no está en marcha o el ratón no se ha comprobado).",
     "Read-only: the mouse did not answer the probe commands as expected.": "Solo lectura: el ratón no respondió a los comandos de prueba como se esperaba.",
-    "Enable button assignment": "Activar asignación de botones"
+    "Enable button assignment": "Activar asignación de botones",
+    "%1 (keyboard, untested)": "%1 (teclado, sin probar)"
   },
   "LearnDialog": {
     "Cancel": "Cancelar",
@@ -567,5 +568,15 @@
     "Save as file": "Guardar como archivo",
     "Thank you for helping RazerTux support more devices!": "¡Gracias por ayudar a que RazerTux admita más dispositivos!",
     "“Submit on GitHub” opens a prefilled issue in your browser; you need a GitHub account. Nothing is published before you press “Create” there. You can also save the report as a file and attach it to an issue yourself.": "«Enviar a GitHub» abre una incidencia rellenada en tu navegador; necesitas una cuenta de GitHub. No se publica nada hasta que pulses «Create» allí. También puedes guardar el informe como archivo y adjuntarlo tú mismo a una incidencia."
+  },
+  "KeyboardPage": {
+    "60 %": "60 %",
+    "75 %": "75 %",
+    "Keyboard (untested)": "Teclado (sin probar)",
+    "RazerTux recognises this keyboard but cannot configure keyboards yet, and it has not been tested with one. The picture shows a typical keyboard of this size, not the exact model. Recording it helps to add it: the recorder collects its keys and device data and opens a prefilled report on GitHub.": "RazerTux reconoce este teclado, pero aún no puede configurar teclados y no se ha probado con ninguno. La imagen muestra un teclado típico de este tamaño, no el modelo exacto. Grabarlo ayuda a añadirlo: la grabadora recoge sus teclas y datos del dispositivo y abre un informe rellenado en GitHub.",
+    "Record this keyboard …": "Grabar este teclado …",
+    "USB ID %1 · probably %2": "ID USB %1 · probablemente %2",
+    "full size": "tamaño completo",
+    "tenkeyless": "sin teclado numérico (TKL)"
   }
 }
