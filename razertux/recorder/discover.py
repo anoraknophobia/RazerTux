@@ -54,6 +54,7 @@ class FoundDevice:
     manufacturer: str
     product: str
     interfaces: list[FoundInterface] = field(default_factory=list)
+    bus: str = ""  # sysfs USB device name ("5-1.2"): tells identical units apart, never reported
 
     @property
     def accessible(self) -> bool:
@@ -141,7 +142,8 @@ def list_razer_devices(sysfs_root: str = "/sys") -> list[FoundDevice]:
         pid = _int(d / "idProduct", 16)
         if pid is None:
             continue
-        dev = FoundDevice(RAZER_VID, pid, _text(d / "bcdDevice"), _text(d / "manufacturer"), _text(d / "product"))
+        dev = FoundDevice(RAZER_VID, pid, _text(d / "bcdDevice"), _text(d / "manufacturer"), _text(d / "product"),
+                          bus=d.name)
         for idir in _glob(d, d.name + ":*"):
             fi = _interface(idir)
             if fi is not None:

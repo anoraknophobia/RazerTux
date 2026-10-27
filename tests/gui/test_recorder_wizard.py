@@ -1,4 +1,5 @@
 """Device recorder wizard: page flow, daemon pause/resume, report contents, sending."""
+import dataclasses
 import json
 import queue
 import threading
@@ -40,7 +41,7 @@ def pump(seconds):
 def device(pid, product):
     ev = EventNode("/dev/input/event7", readable=True, name=product, ev={1, 2}, key={E.BTN_LEFT})
     iface = FoundInterface(0, 3, 1, 2, b"\x05\x01", [Node("/dev/hidraw3", True, True)], [ev])
-    return FoundDevice(0x1532, pid, "0200", "Razer", product, [iface])
+    return FoundDevice(0x1532, pid, "0200", "Razer", product, [iface], bus="3-2")
 
 
 class FakeBackend:
@@ -58,8 +59,9 @@ class FakeBackend:
     def start(self):
         self.calls.append(("start",))
 
-    def open(self, pid, interfaces=None):
+    def open(self, pid, interfaces=None, bus=None):
         self.calls.append(("open", pid))
+        self.bus = bus
         return dict(self.answer)
 
     def read(self, name):
@@ -622,3 +624,11 @@ def test_razertux_record_help(capsys):
     with pytest.raises(SystemExit) as e:
         rw.main(["--help"])
     assert e.value.code == 0 and "razertux-record" in capsys.readouterr().out
+
+
+def test_backend_opens_the_unit_chosen_in_the_list(make):
+    be = FakeBackend(model="death_adder_v2")
+    w = make(device(DA_PID, "Razer DeathAdder V2"), be)
+    start_recording(w)
+    assert be.bus == "3-2"  # the sysfs USB device name: the helper opens exactly that unit
+    assert "3-2" not in json.dumps(dataclasses.asdict(w.session.report()))  # never reported

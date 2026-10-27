@@ -25,7 +25,7 @@ class BackendError(Exception):
 class Backend(Protocol):
     notice: str
 
-    def open(self, pid: int, interfaces: list[int] | None = None) -> dict: ...
+    def open(self, pid: int, interfaces: list[int] | None = None, bus: str | None = None) -> dict: ...
     def read(self, name: str) -> dict: ...
     def light(self, zone: str, state: str) -> dict: ...
     def listen(self, seconds: int, on_signal: Callable[[list], None], kind: str | None = None) -> dict: ...
@@ -40,10 +40,12 @@ def _listen_req(seconds: int, kind: str | None) -> dict:
     return req
 
 
-def _open_req(pid: int, interfaces: list[int] | None) -> dict:
+def _open_req(pid: int, interfaces: list[int] | None, bus: str | None = None) -> dict:
     req = {"op": "open", "pid": pid}
     if interfaces is not None:
         req["interfaces"] = list(interfaces)
+    if bus:
+        req["bus"] = bus  # the unit chosen in the wizard (sysfs USB device name)
     return req
 
 
@@ -90,8 +92,8 @@ class InProcessBackend:
             raise BackendError(final["error"])
         return final
 
-    def open(self, pid, interfaces=None):
-        return self._request(_open_req(pid, interfaces))
+    def open(self, pid, interfaces=None, bus=None):
+        return self._request(_open_req(pid, interfaces, bus))
 
     def read(self, name):
         return self._request({"op": "read", "name": name})
@@ -189,8 +191,8 @@ class HelperBackend:
                 raise BackendError(d["error"])
             return d
 
-    def open(self, pid, interfaces=None):
-        return self._request(_open_req(pid, interfaces))
+    def open(self, pid, interfaces=None, bus=None):
+        return self._request(_open_req(pid, interfaces, bus))
 
     def read(self, name):
         return self._request({"op": "read", "name": name})

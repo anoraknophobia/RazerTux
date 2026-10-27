@@ -6,13 +6,16 @@ Allowed are only
   (class 0x00 id 0x82);
 - inside ``light_mode()``: the light-test packet ids ``LIGHT_IDS`` with the storage byte
   (argument 0 for every one of them) set to NOSTORE.
-Anything else raises ``BlockedCommand`` and nothing is sent.
+Anything else raises ``BlockedCommand`` and nothing is sent. The daemon may use the same control
+node at the same time: a reply whose (class, id) is not the request's is dropped (``RazerError``).
 
 ``DeviceSession`` builds the per-device read table and light plans from the device database:
 - mice: ``razer.mouse.make_mouse`` read methods (serial is never read);
 - other kinds: the database's get_firmware / get_battery / get_charging / get_brightness:<zone>
   Commands, only with a known get builder and fully resolved arguments;
-- unknown PIDs: only firmware (0x00/0x81), tried with transaction ids 0x1F, 0x3F, 0xFF.
+- unknown PIDs: only firmware (0x00/0x81), tried with transaction ids 0x1F, 0x3F, 0xFF; the helper
+  opens the node only when its HID descriptor declares a 90-byte feature report
+  (``has_razer_feature_report``).
 Light: mice via ``RazerMouse.set_effect(zone, static green / off, store=NOSTORE)``, dry-run first
 and only offered when every packet of BOTH states is a NOSTORE light packet; other kinds only
 ``db.light_test_command`` (NOSTORE at its storage index), "off" being that command with black.
@@ -96,6 +99,45 @@ def is_allowed_light(report: bytes) -> bool:
     return (r.cmd_class, r.cmd_id) in LIGHT_IDS and len(r.args) > 0 and r.args[0] == NOSTORE
 
 
+RAZER_REPORT_BYTES = 90
+
+
+def has_razer_feature_report(descriptor: bytes) -> bool:
+    """True when the HID report descriptor declares a feature report of at least 90 bytes (the
+    Razer control report). Short items only; long items are skipped; a truncated descriptor ends
+    the scan."""
+    size = count = report_id = 0
+    stack: list[tuple[int, int, int]] = []
+    feature: dict[int, int] = {}  # report id -> bits
+    d, i = bytes(descriptor), 0
+    while i < len(d):
+        prefix = d[i]
+        if prefix == 0xFE:  # long item: 0xFE, data size, tag, data
+            if i + 1 >= len(d):
+                break
+            i += 3 + d[i + 1]
+            continue
+        n = (0, 1, 2, 4)[prefix & 0x03]
+        if i + 1 + n > len(d):
+            break
+        value = int.from_bytes(d[i + 1:i + 1 + n], "little")
+        tag = prefix & 0xFC
+        if tag == 0x74:    # Report Size (bits)
+            size = value
+        elif tag == 0x94:  # Report Count
+            count = value
+        elif tag == 0x84:  # Report ID
+            report_id = value
+        elif tag == 0xA4:  # Push
+            stack.append((size, count, report_id))
+        elif tag == 0xB4 and stack:  # Pop
+            size, count, report_id = stack.pop()
+        elif tag == 0xB0:  # Feature main item
+            feature[report_id] = feature.get(report_id, 0) + size * count
+        i += 1 + n
+    return any(bits >= RAZER_REPORT_BYTES * 8 for bits in feature.values())
+
+
 class GuardTransport:
     def __init__(self, inner: Transport):
         self._inner = inner
@@ -117,6 +159,11 @@ class GuardTransport:
         if not (is_allowed_get(report) or (self._light and is_allowed_light(report))):
             raise BlockedCommand("command not on the whitelist")
         resp = self._inner.query(report)
+        sent = parse_report(report)
+        if (resp.cmd_class, resp.cmd_id) != (sent.cmd_class, sent.cmd_id):
+            # the daemon shares the control node: this reply answers somebody else's command
+            raise RazerError(f"reply {resp.cmd_class:#04x}/{resp.cmd_id:#04x} does not match "
+                             f"the request {sent.cmd_class:#04x}/{sent.cmd_id:#04x}")
         self.responses.append(bytes(resp.args))
         return resp
 

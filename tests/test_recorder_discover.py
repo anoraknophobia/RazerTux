@@ -209,3 +209,11 @@ def test_report_shapes_known_and_unknown(tmp_path):
 
 def test_missing_root_is_empty(tmp_path):
     assert list_razer_devices(str(tmp_path / "nope")) == []
+
+
+def test_bus_path_names_the_unit_and_is_not_reported(tmp_path):
+    add_device(tmp_path, "5-9", 0x00A7, "A", [])
+    add_device(tmp_path, "5-10", 0x00A7, "B", [])
+    devs = list_razer_devices(str(tmp_path))
+    assert [d.bus for d in devs] == ["5-10", "5-9"]
+    assert "5-10" not in str(report_device(devs[0])) and "bus" not in report_device(devs[0])

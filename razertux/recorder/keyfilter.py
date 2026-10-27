@@ -3,7 +3,9 @@
 What survives the filter is only the SET of distinct (source, ev_type, code) signals, each once,
 in first-seen order: no values (a key counts only on press), no timestamps, no repeats.
 On every device kind except mice, ordinary typing keys are never passed on; on mice the same holds
-for nodes classified "keyboard" except the Naga-style number grid (``GRID_KEYS``). Dropped keys are
+for nodes classified "keyboard", where only the Naga-style number grid (``GRID_KEYS``) survives and
+only on a node that cannot type letters (no KEY_A capability; the helper passes the labels of nodes
+that can as ``full_keyboards``, e.g. a receiver with a paired keyboard). Dropped keys are
 only counted as "standard keys seen" (number of distinct sources that delivered any, never presses
 or keys). Sources are labels "if<N>:<node kind>".
 """
@@ -58,21 +60,25 @@ def node_kind(source: str) -> str:
     return source.rsplit(":", 1)[-1]
 
 
-def drops(kind: str | None, source: str, code: int) -> bool:
+def drops(kind: str | None, source: str, code: int, full_keyboards: frozenset[str] = frozenset()) -> bool:
     """True if key ``code`` from ``source`` is an ordinary typing key that must not be recorded.
 
-    Non-mouse kinds: every standard key. Mice: only on nodes classified "keyboard" (receivers
-    with a paired keyboard), and there every standard key except the GRID_KEYS side buttons."""
+    Non-mouse kinds: every standard key. Mice: only on nodes classified "keyboard"; there every
+    standard key except the GRID_KEYS side buttons, and those too when ``source`` is one of
+    ``full_keyboards`` (a node that declares letter keys)."""
     if not classify_standard_key(code):
         return False
     if filter_applies(kind):
         return True
-    return node_kind(source) == "keyboard" and code not in GRID_KEYS
+    if node_kind(source) != "keyboard":
+        return False
+    return code not in GRID_KEYS or source in full_keyboards
 
 
 class SignalFilter:
-    def __init__(self, kind: str | None):
+    def __init__(self, kind: str | None, full_keyboards=()):
         self.kind = kind
+        self.full_keyboards = frozenset(full_keyboards)
         self._seen: set[tuple] = set()
         self._standard_sources: set[str] = set()
 
@@ -94,7 +100,7 @@ class SignalFilter:
         if ev_type == E.EV_KEY:
             if value != 1:  # release / autorepeat
                 return None
-            if drops(self.kind, source, code):
+            if drops(self.kind, source, code, self.full_keyboards):
                 self._standard_sources.add(source)
                 return None
         sig = (source, ev_type, code)

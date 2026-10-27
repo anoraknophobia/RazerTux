@@ -41,7 +41,12 @@ def _w(p: Path, text):
     p.write_text(text)
 
 
-def add_device(root, busport, pid, ifaces, vid="1532"):
+# a Razer control interface: Usage Page 0x01, Usage 0x02, Report Size 8, Report Count 90, Feature
+RAZER_DESCRIPTOR = bytes([0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x75, 0x08, 0x95, 0x5A,
+                          0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x00, 0xB1, 0x02, 0xC0])
+
+
+def add_device(root, busport, pid, ifaces, vid="1532", descriptor=b"\x05\x01"):
     """ifaces: [(cls, [(input name, caps)])]; hidraw/event numbers unique over the whole tree."""
     d = root / "bus/usb/devices" / busport
     for k, v in (("idVendor", vid), ("idProduct", f"{pid:04x}"), ("bcdDevice", "0100"),
@@ -56,7 +61,7 @@ def add_device(root, busport, pid, ifaces, vid="1532"):
             continue
         h = i / f"0003:1532:{pid:04X}.000{num}"
         h.mkdir(parents=True)
-        (h / "report_descriptor").write_bytes(b"\x05\x01")
+        (h / "report_descriptor").write_bytes(descriptor)
         (h / "hidraw" / f"hidraw{_counter['hidraw']}").mkdir(parents=True)
         _counter["hidraw"] += 1
         for name, caps in inputs:
@@ -70,14 +75,16 @@ def add_device(root, busport, pid, ifaces, vid="1532"):
 
 MOUSE_CAPS = {"ev": "17", "key": "1f0000 0 0 0 0", "rel": "1943"}
 KBD_CAPS = {"ev": "120013", "key": "0 0 0 0 ffffffffffffffff"}
+GRID_CAPS = {"ev": "120013", "key": "3ffc"}  # KEY_1 .. KEY_EQUAL only, no KEY_A
 
 
 def build_sysfs(root):
     _counter.update(hidraw=0, event=0)
     add_device(root, "5-1", 0x00A7, [(3, [("Razer Naga V2 Pro", MOUSE_CAPS)]),
-                                     (3, [("Razer Naga V2 Pro Keyboard", KBD_CAPS)])])  # hidraw0/1, event0/1
+                                     (3, [("Razer Naga V2 Pro Keyboard", GRID_CAPS)])])  # hidraw0/1, event0/1
     add_device(root, "5-2", 0x0227, [(3, [("Razer Huntsman", KBD_CAPS)])])           # hidraw2, event2
-    add_device(root, "5-3", 0xFFFE, [(3, [("Razer Mystery", KBD_CAPS)])])            # hidraw3, event3
+    add_device(root, "5-3", 0xFFFE, [(3, [("Razer Mystery", GRID_CAPS)])],
+               descriptor=RAZER_DESCRIPTOR)                                            # hidraw3, event3
     add_device(root, "5-4", 0x1234, [(3, [("Other Vendor", MOUSE_CAPS)])], vid="046d")  # hidraw4, event4
     return str(root)
 
@@ -892,3 +899,124 @@ def test_filter_wheel_direction_and_hires():
     assert f.feed(src, E.EV_REL, E.REL_HWHEEL, 0) is None
     assert f.feed(src, E.EV_REL, E.REL_HWHEEL, -1) == (src, E.EV_REL, E.REL_HWHEEL, -1)
     assert f.feed(src, E.EV_REL, E.REL_X, 5) == (src, E.EV_REL, E.REL_X)
+
+
+# -- final review fixes ---------------------------------------------------------------------------
+
+class WrongReplyTransport(OkTransport):
+    """A reply meant for somebody else on the shared control node (e.g. the daemon's battery poll)."""
+
+    def query(self, report: bytes) -> RazerResponse:
+        self.raw.append(bytes(report))
+        return RazerResponse(STATUS_OK, 0x07, 0x80, 2, bytes([0, 200]))
+
+
+def test_guard_rejects_a_reply_for_another_command():
+    inner = WrongReplyTransport()
+    g = whitelist.GuardTransport(inner)
+    with pytest.raises(RazerError):
+        g.query(build_report(0x00, 0x81, bytes(2)))
+    assert g.responses == []  # the foreign reply is never recorded
+
+
+def test_read_with_a_foreign_reply_fails(tmp_path):
+    rig = Rig(tmp_path)
+    rig.open_hidraw = lambda path, pid: WrongReplyTransport()
+    rig.helper._open_hidraw = rig.open_hidraw
+    rig.one({"op": "open", "pid": 0xA7})
+    assert rig.one({"op": "read", "name": "firmware"}) == {"ok": True, "name": "firmware", "status": "failed"}
+
+
+def test_guard_light_reply_must_match_too():
+    class LightWrong(OkTransport):
+        def query(self, report):
+            self.raw.append(bytes(report))
+            return RazerResponse(STATUS_OK, 0x0F, 0x84, 3, bytes(3))
+    g = whitelist.GuardTransport(LightWrong())
+    with g.light_mode(), pytest.raises(RazerError):
+        g.query(build_report(0x0F, 0x02, bytes([0, 4, 1, 0, 0, 1, 0, 255, 0])))
+
+
+def _naga_twin(rig, busport="5-6"):
+    """A second Naga V2 Pro on another port (hidraw5/6, event5/6)."""
+    add_device(Path(rig.root), busport, 0x00A7, [(3, [("Razer Naga V2 Pro", MOUSE_CAPS)]),
+                                                 (3, [("Razer Naga V2 Pro Keyboard", GRID_CAPS)])])
+
+
+def test_open_picks_the_unit_on_the_given_bus_path(tmp_path):
+    rig = Rig(tmp_path)
+    _naga_twin(rig)
+    resp = rig.one({"op": "open", "pid": 0xA7, "bus": "5-6"})
+    assert resp["ok"] is True and rig.hidraw_opened == [("/dev/hidraw5", 0xA7)]
+    rig.helper.close()
+    rig.hidraw_opened.clear()
+    assert rig.one({"op": "open", "pid": 0xA7, "bus": "5-1"})["ok"] is True
+    assert rig.hidraw_opened == [("/dev/hidraw0", 0xA7)]
+
+
+def test_open_with_two_identical_units_needs_the_bus_path(tmp_path):
+    rig = Rig(tmp_path)
+    _naga_twin(rig)
+    assert set(rig.one({"op": "open", "pid": 0xA7})) == {"error"}
+    assert rig.hidraw_opened == []
+
+
+@pytest.mark.parametrize("bus", ["5-9", "5-2", "../5-1", "5-1:1.0", "/sys/bus/usb/devices/5-1", "", 5, None,
+                                 "5-1" + ".1" * 20])
+def test_open_rejects_a_bad_or_foreign_bus_path(tmp_path, bus):
+    rig = Rig(tmp_path)
+    assert set(rig.one({"op": "open", "pid": 0xA7, "bus": bus})) == {"error"}  # 5-2 is the Huntsman
+    assert rig.hidraw_opened == [] and rig.helper._dev is None
+
+
+def test_unknown_pid_without_razer_feature_report_gets_no_reads(tmp_path):
+    rig = Rig(tmp_path)
+    add_device(Path(rig.root), "5-7", 0xFFFD, [(3, [("Razer Odd", MOUSE_CAPS)])])  # descriptor: 05 01 only
+    resp = rig.one({"op": "open", "pid": 0xFFFD})
+    assert resp["ok"] is True and resp["control"] is False and resp["reads"] == []
+    assert rig.hidraw_opened == []  # not a single ioctl on it
+
+
+@pytest.mark.parametrize("desc, ok", [
+    (RAZER_DESCRIPTOR, True),
+    (bytes([0x75, 0x08, 0x96, 0x5A, 0x00, 0xB1, 0x02]), True),           # two-byte Report Count
+    (bytes([0x85, 0x01, 0x75, 0x08, 0x95, 0x5A, 0xB1, 0x02]), True),     # with a report id
+    (bytes([0x75, 0x08, 0x95, 0x5A, 0x81, 0x02]), False),                # an Input report, no Feature
+    (bytes([0x75, 0x08, 0x95, 0x08, 0xB1, 0x02]), False),                # Feature of 8 bytes only
+    (bytes([0x75, 0x01, 0x95, 0x5A, 0xB1, 0x02]), False),                # 90 bits
+    (bytes([0x75, 0x08, 0x95, 0x2D, 0xB1, 0x02, 0xB1, 0x02]), True),     # 2 x 45 bytes, same report
+    (b"\x05\x01", False), (b"", False), (bytes([0x75, 0x08, 0x95]), False),  # truncated
+    (bytes([0xFE, 0x02, 0x00, 0xAA, 0xBB, 0x75, 0x08, 0x95, 0x5A, 0xB1, 0x02]), True),  # long item skipped
+])
+def test_razer_feature_report_in_descriptor(desc, ok):
+    assert whitelist.has_razer_feature_report(desc) is ok
+
+
+def test_mouse_full_keyboard_node_drops_the_grid_too():
+    f = keyfilter.SignalFilter("mouse", full_keyboards={"if2:keyboard"})
+    events = [press(E.KEY_1), press(E.KEY_A), press(E.KEY_F13), press(E.BTN_SIDE)]
+    assert _feed(f, events, "if2:keyboard") == [("if2:keyboard", E.EV_KEY, E.KEY_F13),
+                                                ("if2:keyboard", E.EV_KEY, E.BTN_SIDE)]
+    assert f.standard_keys_seen == 1
+    assert _feed(f, [press(E.KEY_1)], "if1:keyboard") == [("if1:keyboard", E.EV_KEY, E.KEY_1)]
+
+
+def test_listen_on_mouse_drops_grid_keys_of_a_node_with_letter_keys(tmp_path):
+    rig = Rig(tmp_path)
+    add_device(Path(rig.root), "5-8", 0x00A7, [(3, [("Razer Naga V2 Pro", MOUSE_CAPS)]),
+                                               (3, [("Razer Naga V2 Pro Keyboard", KBD_CAPS)])])
+    rig.batches[:] = [[("if1:keyboard", *press(E.KEY_1)), ("if1:keyboard", *press(E.KEY_F13))]]
+    rig.one({"op": "open", "pid": 0xA7, "bus": "5-8"})
+    out, _ = rig.send({"op": "listen", "seconds": 1})
+    assert out == [{"signal": ["if1:keyboard", E.EV_KEY, E.KEY_F13]},
+                   {"done": True, "standard_keys_seen": 1}]
+
+
+def test_in_process_backend_passes_the_bus_path(tmp_path):
+    rig = Rig(tmp_path)
+    _naga_twin(rig)
+    b = backend.InProcessBackend(helper_obj=rig.helper)
+    assert b.open(0xA7, bus="5-6")["control"] is True
+    assert rig.hidraw_opened == [("/dev/hidraw5", 0xA7)]
+    assert backend._open_req(0xA7, None, "5-6") == {"op": "open", "pid": 0xA7, "bus": "5-6"}
+    assert backend._open_req(0xA7, None) == {"op": "open", "pid": 0xA7}

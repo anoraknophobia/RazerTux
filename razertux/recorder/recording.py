@@ -1,8 +1,15 @@
 """Button recording logic: guided (one step per button of a template) and free recording.
 
 Qt-free. Fed with the listen events of the record helper (``signal`` triples); the keylogger rules
-of ``keyfilter`` are applied again here, so nothing but the SET of non-typing signals is kept: no
-letters, digits, order, timing or values. Produces the ``buttons`` section of the device report.
+of ``keyfilter`` are applied again here. What is stored, per guided step and for the free recording:
+the set of distinct signal names "if<N>:<node kind>:<code name>" (wheel axes with their direction
+":+"/":-"), presses only, each once, in first-seen order; no values, no timing, no repeats and no
+cursor motion (REL_X/REL_Y). Ordinary typing keys are never stored on any kind but mice; on mice
+the digit row KEY_1..KEY_0, KEY_MINUS and KEY_EQUAL (the Naga number grid) are stored when they
+come from a node that cannot type letters (the helper drops them on nodes with KEY_A), and keys of
+non-keyboard nodes are stored as they are. Of dropped typing keys only the number of distinct
+sources that sent any is kept (``standard_keys_seen``). Produces the ``buttons`` section of the
+device report.
 """
 from __future__ import annotations
 

@@ -5,9 +5,14 @@ Every request may carry ``"id": int`` (0..2**31-1); it is echoed in every line a
 request (stream lines included), so a client can drop stale lines. Requests (no other fields are
 accepted, every other request gets ``{"error": "..."}``):
 
-- ``{"op": "open", "pid": int, "interfaces": [int, ...]}`` (interfaces optional, default all):
-  open the connected vendor-0x1532 device with this PID. Its nodes come only from sysfs discovery
+- ``{"op": "open", "pid": int, "interfaces": [int, ...], "bus": str}`` (interfaces optional,
+  default all; bus optional): open the connected vendor-0x1532 device with this PID. ``bus`` is the
+  sysfs USB device name the wizard showed ("5-1.2", checked by ``BUS_RE``); it must name a device
+  with this PID and selects that unit when several identical ones are connected (without it,
+  several matches are an error). Its nodes come only from sysfs discovery
   (``discover.list_razer_devices``); the client never names a path. One device per helper run.
+  A PID the database does not know gets its control node opened only when the interface's HID
+  descriptor declares a 90-byte feature report (``whitelist.has_razer_feature_report``).
   -> ``{"ok": true, "pid", "kind", "model", "control", "reads": [...], "light_zones": [...],
   "listen": [source, ...]}``
 - ``{"op": "read", "name": str}``: a name from the open device's ``reads`` table
@@ -44,9 +49,11 @@ from pathlib import Path
 
 from razertux.devices import db
 from razertux.razer.transport import HidrawTransport, _FcntlIo
+from evdev import ecodes as E
+
 from razertux.recorder.discover import RAZER_VID, Node, _event_kind, list_razer_devices
 from razertux.recorder.keyfilter import SignalFilter
-from razertux.recorder.whitelist import LIGHT_STATES, DeviceSession
+from razertux.recorder.whitelist import LIGHT_STATES, DeviceSession, has_razer_feature_report
 
 PROTOCOL = 2
 MAX_LINE = 4096
@@ -60,11 +67,12 @@ ALARM_SECONDS = IDLE_TIMEOUT + LISTEN_MAX + 60
 KINDS = frozenset({"mouse", "keyboard", "keypad", "headset", "mousemat", "accessory", "dock", "other"})
 MAX_IFACES = 16
 
+BUS_RE = re.compile(r"[1-9]\d{0,2}-[1-9]\d{0,2}(\.[1-9]\d{0,2}){0,6}")  # sysfs USB device name
 _HIDRAW_RE = re.compile(r"/dev/(hidraw\d{1,4})")
 _EVENT_RE = re.compile(r"/dev/input/(event\d{1,4})")
 
 _FIELDS = {
-    "open": ({"op", "id", "pid", "interfaces"}, {"op", "pid"}),
+    "open": ({"op", "id", "pid", "interfaces", "bus"}, {"op", "pid"}),
     "read": ({"op", "id", "name"}, {"op", "name"}),
     "light": ({"op", "id", "zone", "state"}, {"op", "zone", "state"}),
     "listen": ({"op", "id", "seconds", "kind"}, {"op", "seconds"}),
@@ -191,6 +199,7 @@ class _Open:
     session: DeviceSession | None
     transport: object | None
     events: list[tuple[str, str]]
+    full_keyboards: frozenset[str] = frozenset()  # labels of nodes that can type letters
 
 
 def _reject_constant(name: str):
@@ -281,17 +290,22 @@ class Helper:
     # -- ops ---------------------------------------------------------------------------
 
     def _op_open(self, req: dict, emit: Emit) -> None:
-        pid, ifaces = req["pid"], req.get("interfaces")
+        pid, ifaces, bus = req["pid"], req.get("interfaces"), req.get("bus")
         if not _is_int(pid, 1, 0xFFFF):
             return emit({"error": "invalid pid"})
+        if "bus" in req and (type(bus) is not str or not BUS_RE.fullmatch(bus)):
+            return emit({"error": "invalid bus"})
         if ifaces is not None and (type(ifaces) is not list or len(ifaces) > MAX_IFACES
                                    or not all(_is_int(i, 0, 255) for i in ifaces)):
             return emit({"error": "invalid interfaces"})
         if self._dev is not None:
             return emit({"error": "a device is already open"})
-        devs = [d for d in list_razer_devices(self.root) if d.vid == RAZER_VID and d.pid == pid]
+        devs = [d for d in list_razer_devices(self.root) if d.vid == RAZER_VID and d.pid == pid
+                and (bus is None or d.bus == bus)]
         if not devs:
             return emit({"error": "device not connected"})
+        if len(devs) > 1:
+            return emit({"error": "several such devices connected: bus required"})
         dev = devs[0]
         numbers = {i.number for i in dev.interfaces}
         sel = set(ifaces) if ifaces is not None else numbers
@@ -303,16 +317,21 @@ class Helper:
         if control_if in sel:
             iface = next(i for i in dev.interfaces if i.number == control_if)
             nodes = [n for n in iface.hidraw if _HIDRAW_RE.fullmatch(n.path) and self._allowed(n)]
+            if info is None and not has_razer_feature_report(iface.descriptor):
+                nodes = []  # unknown device without the Razer control report: no ioctl at all
             if nodes:
                 try:
                     transport = self._open_hidraw(nodes[0].path, pid)
                 except OSError:
                     transport = None
         session = DeviceSession(pid, transport) if transport is not None else None
-        events = [(e.path, f"if{i.number}:{_event_kind(e)}") for i in dev.interfaces if i.number in sel
+        picked = [(e, f"if{i.number}:{_event_kind(e)}") for i in dev.interfaces if i.number in sel
                   for e in i.events if _EVENT_RE.fullmatch(e.path) and self._allowed(e)]
+        events = [(e.path, label) for e, label in picked]
+        # a label shared by several nodes counts as a full keyboard if any of them is one
+        full = frozenset(label for e, label in picked if E.KEY_A in e.key)
         kind = db.kind_by_pid(pid) or "unknown"
-        self._dev = _Open(pid, kind, session, transport, events)
+        self._dev = _Open(pid, kind, session, transport, events, full)
         emit({"ok": True, "pid": pid, "kind": kind, "model": info.model if info else "",
               "control": session is not None,
               "reads": session.reads if session else [],
@@ -354,7 +373,7 @@ class Helper:
         except OSError:
             emit({"error": "cannot open input nodes"})
             return True
-        filt = SignalFilter(kind)
+        filt = SignalFilter(kind, self._dev.full_keyboards)
         deadline = self._clock() + seconds
         keep = True
         try:

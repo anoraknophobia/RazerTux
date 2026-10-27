@@ -153,14 +153,14 @@ class RecorderSession(QObject):
     def connect_backend(self, password: bool, done: Callable, failed: Callable) -> None:
         self.disconnect()
         self.password = password
-        pid = self.dev.pid
+        pid, bus = self.dev.pid, self.dev.bus or None
 
         def job() -> dict:
             be = self.make_backend(password)
             if password:
                 be.start()  # pkexec: the password prompt
             try:
-                answer = be.open(pid)
+                answer = be.open(pid, bus=bus)
             except BaseException:
                 be.close()
                 raise
