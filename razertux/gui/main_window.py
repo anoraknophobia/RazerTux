@@ -73,7 +73,8 @@ class MainWindow(QMainWindow, ProfileActions, DeviceActions):
         self.header = HeaderBar({
             "new": self.new_profile, "rename": self.rename_profile, "duplicate": self.duplicate_profile,
             "delete": self.delete_profile, "export": self.export_profile, "import": self.import_profile,
-            "activate": self.activate_current})
+            "activate": self.activate_current,
+            "record": lambda: open_recorder(self, self.client)})
         self.profile_combo, self.activate_btn = self.header.profile_combo, self.header.activate_btn
         self.dpi_label, self.battery_label = self.header.dpi_label, self.header.battery_label
         self.profile_combo.activated.connect(lambda _i: self.select_profile(self.profile_combo.currentData()))

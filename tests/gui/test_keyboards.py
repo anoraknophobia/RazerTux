@@ -121,3 +121,14 @@ def test_recorder_preselects_the_keyboard(qapp):
         assert w.pages["choose"].selected().pid == MINI
     finally:
         w.close()
+
+
+def test_add_unknown_device_button_opens_the_recorder(win, monkeypatch):
+    from razertux.gui import main_window
+    opened = []
+    monkeypatch.setattr(main_window, "open_recorder",
+                        lambda parent, client, device=None: opened.append(device))
+    btn = win.header.add_device_btn
+    assert btn.text() == "Add unknown device"
+    btn.click()
+    assert opened == [None]

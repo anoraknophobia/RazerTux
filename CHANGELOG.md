@@ -2,6 +2,12 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.7.1] - 2026-10-27
+
+### Added
+- "Add unknown device" button at the top right of the window: opens the device recorder
+  (also still in Help → Record device…).
+
 ## [0.7.0] - 2026-10-27
 
 ### Added

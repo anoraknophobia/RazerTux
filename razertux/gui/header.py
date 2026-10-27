@@ -19,7 +19,7 @@ def short_name(name: str) -> str:
 
 
 class HeaderBar(QWidget):
-    """slots: new, rename, duplicate, delete, export, import, activate."""
+    """slots: new, rename, duplicate, delete, export, import, activate, record."""
 
     def __init__(self, slots: dict[str, Callable[[], None]], parent: QWidget | None = None):
         super().__init__(parent)
@@ -48,6 +48,10 @@ class HeaderBar(QWidget):
         self.dpi_label = QLabel()
         self.dpi_label.setObjectName("mutedText")
         self.battery_label = BatteryIndicator()
+        self.add_device_btn = QPushButton(self.tr("Add unknown device"))
+        self.add_device_btn.setToolTip(self.tr(
+            "Record a Razer device RazerTux does not support yet and send the report on GitHub"))
+        self.add_device_btn.clicked.connect(lambda _=False: slots["record"]())
         row = QHBoxLayout(self)
         row.setContentsMargins(16, 8, 16, 8)
         row.setSpacing(8)
@@ -58,6 +62,8 @@ class HeaderBar(QWidget):
         row.addWidget(self.dpi_label)
         row.addSpacing(16)
         row.addWidget(self.battery_label)
+        row.addSpacing(16)
+        row.addWidget(self.add_device_btn)
 
     def resizeEvent(self, e) -> None:
         super().resizeEvent(e)

@@ -130,7 +130,8 @@ pick a model when several mice are connected.
 Is your Razer device missing, or are some of its buttons not recognized? The built-in
 recorder collects a small, anonymous device report that you can send to the project.
 
-1. Open Help, then "Record device…", or run `razertux-record`.
+1. Click **"Add unknown device"** at the top right (or Help → "Record device…"), or run
+   `razertux-record`.
 2. Choose your device.
 3. Entering your password is optional; it only unlocks extra read-only information.
 4. Press the buttons of the device, one after another.

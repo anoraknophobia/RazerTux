@@ -65,7 +65,9 @@
     "Import …": "Import …",
     "Activate": "Aktivieren",
     "Use this profile for the mouse": "Dieses Profil für die Maus verwenden",
-    "%1 DPI": "%1 DPI"
+    "%1 DPI": "%1 DPI",
+    "Add unknown device": "Unbekanntes Gerät hinzufügen",
+    "Record a Razer device RazerTux does not support yet and send the report on GitHub": "Ein Razer-Gerät aufzeichnen, das RazerTux noch nicht unterstützt, und den Bericht auf GitHub einsenden"
   },
   "KeyCapture": {
     "Click to record": "Drücken zum Aufnehmen",
