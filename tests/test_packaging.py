@@ -106,7 +106,7 @@ def test_readme_documents_new_sections():
     r = (ROOT / "README.md").read_text()
     for h in ("## Supported mice", "## Laser graphics", "## On-screen display (OSD)"):
         assert h in r, h
-    assert "pre-schema2" in r and "Copy diagnostics" in r
+    assert "Copy diagnostics" in r
     assert r.startswith("# RazerTux")
 
 

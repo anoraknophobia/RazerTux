@@ -58,17 +58,6 @@ After upgrading the package, restart the service as a normal user and restart th
 systemctl --user restart razertuxd.service
 ```
 
-### Update to 0.4.0
-
-The service gained `PauseDevice`/`ResumeDevice` for the recorder, so restart `razertuxd`
-after the upgrade (see above). The package now depends on `polkit` (for the optional
-password mode of the recorder).
-
-### Update to 0.3.0
-
-The configuration lives in `~/.config/razertux`. On first start it is migrated to schema 2
-automatically; the old files are kept unchanged in the `pre-schema2/` subfolder there.
-
 ## Getting started
 
 1. Connect the mouse via wireless dongle or USB and start `razertux-gui` (or click the tray
