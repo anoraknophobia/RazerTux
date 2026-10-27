@@ -142,18 +142,27 @@ def daemon_source(report_source: str) -> tuple[str, bool]:
     return f"if{n:02d}_event", False
 
 
+def _clean(text: str) -> str:
+    return "\n".join(_CTRL.sub("?", line) for line in text.split("\n"))
+
+
 def python_snippet(entries: list[dict]) -> str:
     """Ready-to-paste table lines in the style of razertux/hw/button_maps.py."""
     lines = ["# Suggested by tools/import_device_report.py - UNVERIFIED, check each line on hardware.",
              "SUGGESTED: ButtonMap = {"]
+    wheel = sorted({e["button"] for e in entries if e["ev_type"] == E.EV_REL})
     for e in entries:
+        if e["ev_type"] == E.EV_REL:
+            continue  # identify() never looks up EV_REL in the table; wheel/tilt is handled generically
         ev = {E.EV_KEY: "E.EV_KEY", E.EV_REL: "E.EV_REL", E.EV_ABS: "E.EV_ABS"}.get(e["ev_type"], str(e["ev_type"]))
         code = e["code_name"] if e["code_name"] and not e["code_name"].startswith("CODE_") else str(e["code"])
         code = f"E.{code}" if not code.isdigit() else code
         todo = "" if e["source_certain"] else "  # TODO: check the source name"
         lines.append(f"    InputSignal({e['daemon_source']!r}, {ev}, {code}): ButtonId.{ButtonId(e['button']).name},{todo}")
     lines.append("}")
-    return "\n".join(lines) + "\n"
+    if wheel:
+        lines.append(f"# wheel/tilt: handled automatically (directions confirmed: {', '.join(wheel)})")
+    return _clean("\n".join(lines)) + "\n"
 
 
 def _wheel_button(name: str) -> str | None:
@@ -231,7 +240,11 @@ def suggest(report: dict) -> dict:
         plates = tpl.get("plate_buttons", {})
         if plates:
             layout["plate_buttons"] = plates
-        known_specs = {**{k: v for t in plates.values() for k, v in t.items()}, **tpl["buttons"]}
+        known_specs: dict = {}
+        for t in plates.values():  # first plate (the fullest one) wins
+            for k, v in t.items():
+                known_specs.setdefault(k, v)
+        known_specs.update(tpl["buttons"])
         view0 = layout["views"][0]["name"] if layout["views"] else "TODO"
         for button in present:
             if button in known_specs:
@@ -278,8 +291,7 @@ def write_suggestions(sug: dict, outdir: Path, force: bool = False) -> list[Path
     return paths
 
 
-def _clean(text: str) -> str:
-    return _CTRL.sub("?", text)
+
 
 
 def main(argv=None) -> int:

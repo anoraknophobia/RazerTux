@@ -160,12 +160,16 @@ def test_entries_use_daemon_sources_and_snippet_is_valid_python():
     ns = {"E": E, "InputSignal": InputSignal, "ButtonId": ButtonId, "ButtonMap": ButtonMap}
     exec(snippet, ns)  # noqa: S102
     assert ns["SUGGESTED"][InputSignal("if02", E.EV_KEY, E.KEY_1)] == ButtonId.SIDE_1
-    assert ns["SUGGESTED"][InputSignal("mouse", E.EV_REL, E.REL_WHEEL)] == ButtonId.WHEEL_UP
+    assert not any(sig.ev_type == E.EV_REL for sig in ns["SUGGESTED"])
+    assert "EV_REL" not in snippet
+    note = next(ln for ln in snippet.splitlines() if ln.startswith("# wheel/tilt: handled automatically"))
+    assert {"wheel_up", "wheel_down"} <= set(note.split("confirmed: ")[1].rstrip(")").split(", "))
 
 
-def test_plate_buttons_preserved():
-    rep = load("known")
-    rep["buttons"]["template"] = "mmo"
+def test_snippet_strips_control_characters():
+    e = {"signal": "x", "source": "s", "daemon_source": "if02\x1b[31m", "source_certain": True,
+         "ev_type": 1, "code": 2, "code_name": "KEY_1", "button": "side_1"}
+    assert "\x1b" not in imp.python_snippet([e])
 
 
 def test_local_identity_does_not_affect_validation(monkeypatch):
@@ -216,9 +220,12 @@ def test_control_characters_stripped_from_output(tmp_path, capsys):
     assert "\x1b" not in capsys.readouterr().out
 
 
-def test_plate_template_keeps_plate_buttons():
+def test_plate_template_keeps_plate_buttons(monkeypatch):
+    path = ROOT / "razertux/gui/assets/layouts/naga_v2_pro.json"
+    tpl = json.loads(path.read_text())
+    assert tpl["plate_buttons"]
+    monkeypatch.setattr(imp, "_template_file", lambda choice: path)
     rep = load("known")
-    rep["buttons"]["template"] = "mmo"
     lay = imp.suggest(rep)["layout"]
-    tpl = json.loads((ROOT / "razertux/gui/assets/layouts/template_mmo.json").read_text())
-    assert lay.get("plate_buttons", {}) == tpl.get("plate_buttons", {})
+    assert lay["plate_buttons"] == tpl["plate_buttons"]
+    assert "side_1" in lay["buttons"] and lay["buttons"]["side_1"] == tpl["plate_buttons"]["12"]["side_1"]
