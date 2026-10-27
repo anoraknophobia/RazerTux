@@ -48,7 +48,9 @@ class HeaderBar(QWidget):
         self.dpi_label = QLabel()
         self.dpi_label.setObjectName("mutedText")
         self.battery_label = BatteryIndicator()
-        self.add_device_btn = QPushButton(self.tr("Add unknown device"))
+        self.add_device_btn = QPushButton("+  " + self.tr("Add unknown device"))
+        self.add_device_btn.setObjectName("accentButton")  # filled Razer green (theme.py)
+        self.add_device_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.add_device_btn.setToolTip(self.tr(
             "Record a Razer device RazerTux does not support yet and send the report on GitHub"))
         self.add_device_btn.clicked.connect(lambda _=False: slots["record"]())

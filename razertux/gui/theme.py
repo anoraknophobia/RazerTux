@@ -48,6 +48,10 @@ QTreeView, QTableView, QTableWidget {{ background: {FIELD}; color: {TEXT};
 QComboBox, QLineEdit {{ padding: 3px 6px; border-radius: 2px; }}
 QComboBox:focus, QLineEdit:focus {{ border-color: {ACCENT}; }}
 QPushButton#iconButton {{ padding: 2px; }}
+QPushButton#accentButton {{ background: {ACCENT}; color: #000000; border: 1px solid {ACCENT};
+              border-radius: 15px; padding: 6px 16px; font-weight: bold; }}
+QPushButton#accentButton:hover {{ background: #5fe84a; border-color: #5fe84a; }}
+QPushButton#accentButton:pressed {{ background: #36a823; border-color: #36a823; }}
 QComboBox QAbstractItemView {{ background: {PANEL}; border: 1px solid {BORDER}; }}
 /* QSpinBox stays native Fusion (dark palette): QSS would hide its arrows */
 QHeaderView::section {{ background: {PANEL}; color: {MUTED}; border: none;

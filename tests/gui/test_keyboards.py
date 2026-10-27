@@ -129,6 +129,6 @@ def test_add_unknown_device_button_opens_the_recorder(win, monkeypatch):
     monkeypatch.setattr(main_window, "open_recorder",
                         lambda parent, client, device=None: opened.append(device))
     btn = win.header.add_device_btn
-    assert btn.text() == "Add unknown device"
+    assert btn.text() == "+  Add unknown device" and btn.objectName() == "accentButton"
     btn.click()
     assert opened == [None]

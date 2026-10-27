@@ -2,6 +2,11 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.7.2] - 2026-10-27
+
+### Changed
+- "Add unknown device" is now a filled Razer-green button with a plus sign, so it stands out.
+
 ## [0.7.1] - 2026-10-27
 
 ### Added
