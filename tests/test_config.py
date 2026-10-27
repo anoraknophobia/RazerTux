@@ -385,3 +385,22 @@ def test_settings_custom_scroll_roundtrip_and_fallback(tmp_path):
     assert store.load_settings().custom_scroll == {"tension": 40, "steps": 8}
     bad = Settings.from_dict({**s.to_dict(), "custom_scroll": {"tension": 101, "steps": "x"}})
     assert bad.custom_scroll == {"tension": 50, "steps": 90}
+
+
+def test_device_access_default_and_roundtrip():
+    assert Settings().device_access == "razertux"
+    s = Settings(device_access="openrazer")
+    assert Settings.from_dict(s.to_dict()).device_access == "openrazer"
+
+
+def test_device_access_missing_in_old_file():
+    d = Settings().to_dict()
+    del d["device_access"]
+    assert Settings.from_dict(d).device_access == "razertux"
+
+
+def test_unknown_device_access_falls_back():
+    d = Settings().to_dict()
+    d["device_access"] = "polychromatic"
+    assert Settings.from_dict(d).device_access == "razertux"
+    assert Settings(device_access="nonsense").device_access == "razertux"

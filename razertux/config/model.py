@@ -244,6 +244,11 @@ NAGA_MODEL = "naga_v2_pro"
 SCHEMA = 2
 
 
+# Settings.device_access: "razertux" = RazerTux talks to the hardware itself (hidraw);
+# "openrazer" = features the OpenRazer daemon offers go through it
+DEVICE_ACCESS = ("razertux", "openrazer")
+
+
 @dataclass(init=False)
 class Settings:
     """Global settings. `active_profiles` maps device model -> active profile id;
@@ -263,6 +268,7 @@ class Settings:
     last_model: str  # device model the window showed last ("" = none yet)
     osd: bool  # on-screen display on profile / DPI changes
     custom_scroll: dict[str, int]  # Naga "Custom" stage: {"tension": 0-100, "steps": 8-96}
+    device_access: str  # one of DEVICE_ACCESS: who talks to the hardware
 
     def __init__(self, active_profile: str | None = None, low_battery_notify: int = 15,
                  theme: str = "synapse", idle_time: int | None = None,
@@ -270,7 +276,8 @@ class Settings:
                  scroll_stage_names: dict[int, str] | None = None,
                  language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
                  active_profiles: dict[str, str] | None = None, last_model: str = "",
-                 osd: bool = True, custom_scroll: dict[str, int] | None = None):
+                 osd: bool = True, custom_scroll: dict[str, int] | None = None,
+                 device_access: str = "razertux"):
         self.active_profiles = dict(active_profiles or {})
         if active_profile is not None:
             self.active_profiles[NAGA_MODEL] = active_profile
@@ -285,6 +292,7 @@ class Settings:
         self.last_model = last_model
         self.osd = osd
         self.custom_scroll = _custom_scroll(custom_scroll)
+        self.device_access = device_access if device_access in DEVICE_ACCESS else "razertux"
 
     @property
     def active_profile(self) -> str:
@@ -310,7 +318,8 @@ class Settings:
                 "dpi_limit": self.dpi_limit,
                 "last_model": self.last_model,
                 "osd": self.osd,
-                "custom_scroll": dict(self.custom_scroll)}
+                "custom_scroll": dict(self.custom_scroll),
+                "device_access": self.device_access}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Settings:
@@ -329,7 +338,8 @@ class Settings:
                    str(d.get("language", "system")),
                    _dpi_limit(d.get("dpi_limit")), active_profiles=active,
                    last_model=str(d.get("last_model", "")), osd=bool(d.get("osd", True)),
-                   custom_scroll=d.get("custom_scroll"))
+                   custom_scroll=d.get("custom_scroll"),
+                   device_access=str(d.get("device_access", "razertux")))
 
 
 @dataclass
