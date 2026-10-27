@@ -531,7 +531,8 @@
     "no signal": "kein Signal",
     "First the buttons of the picture one by one: press the lit-up button once. The wizard moves on by itself. Then press every other button the device has. Only which signals arrive is stored – no order, no timing, no typed text.": "Zuerst die Tasten im Bild einzeln: Drücke die hervorgehobene Taste einmal. Der Assistent geht von selbst weiter. Danach drückst du jede weitere Taste des Geräts. Gespeichert wird nur, welche Signale ankommen – keine Reihenfolge, keine Zeiten, kein getippter Text.",
     "Press every special button of the device once: macro keys, media keys, profile and mode buttons, wheels. Ordinary typing keys (letters, digits, Enter …) are never stored, only counted. Only which signals arrive is stored – no order, no timing.": "Drücke jede Sondertaste des Geräts einmal: Makrotasten, Medientasten, Profil- und Modustasten, Räder. Normale Schreibtasten (Buchstaben, Ziffern, Enter …) werden nie gespeichert, nur gezählt. Gespeichert wird nur, welche Signale ankommen – keine Reihenfolge, keine Zeiten.",
-    "Clicks on this window's own buttons are ignored.": "Klicks auf die Schaltflächen dieses Fensters werden ignoriert."
+    "Clicks on this window's own buttons are ignored.": "Klicks auf die Schaltflächen dieses Fensters werden ignoriert.",
+    "The RazerTux service has taken the device back (its pause ended), so its buttons would be remapped. Please start the recording again.": "Der RazerTux-Dienst hat das Gerät wieder übernommen (seine Pause ist abgelaufen), seine Tasten wären also umbelegt. Bitte starte die Aufzeichnung erneut."
   },
   "ReadsPage": {
     "Values": "Werte",
@@ -549,7 +550,7 @@
     "It did not": "Hat nicht geleuchtet",
     "Not sure": "Weiß nicht",
     "Yes, run the light test on this device": "Ja, den Lichttest an diesem Gerät ausführen",
-    "Optional: each lighting zone is switched to green for a moment and then off, with the “do not store” flag – nothing is saved on the device. After unplugging and plugging the device in again its previous lighting is back.": "Optional: Jede Leuchtzone wird kurz grün und dann ausgeschaltet, mit dem Merkmal „nicht speichern“ – auf dem Gerät wird nichts gespeichert. Nach Ab- und wieder Anstecken ist die vorherige Beleuchtung zurück."
+    "Optional: each lighting zone is switched to green for a moment and then off, with the “do not store” flag – nothing is saved on the device. A tested zone stays off until you unplug and plug in the device again or restart it; if the RazerTux service manages the device, it re-applies your lighting when you leave this page.": "Optional: Jede Leuchtzone wird kurz grün und dann ausgeschaltet, mit dem Merkmal „nicht speichern“ – auf dem Gerät wird nichts gespeichert. Eine getestete Zone bleibt aus, bis du das Gerät ab- und wieder ansteckst oder neu startest; verwaltet der RazerTux-Dienst das Gerät, stellt er deine Beleuchtung beim Verlassen dieser Seite wieder her."
   },
   "ReviewPage": {
     "Review": "Prüfen",

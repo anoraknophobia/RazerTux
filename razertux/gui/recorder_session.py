@@ -19,6 +19,9 @@ from razertux.recorder.recording import AUTO_STOP
 from razertux.recorder.report import Report, system_section
 
 LISTEN_SECONDS = int(AUTO_STOP)
+# the daemon resumes a paused device after 300 s (PAUSE_TIMEOUT): a pause older than this is
+# renewed before a recording starts and every PAUSE_REFRESH seconds while it runs
+PAUSE_REFRESH = 60.0
 logger = logging.getLogger(__name__)
 
 
@@ -109,6 +112,7 @@ class RecorderSession(QObject):
         self.backend: Backend | None = None
         self.password = False
         self._paused = ""
+        self._paused_at = 0.0  # self.clock() of the last successful pause
         self.last_press = -1e9  # time.monotonic() of the last press on a wizard button
         self.dev: FoundDevice | None = None
         self.select(None)
@@ -224,6 +228,7 @@ class RecorderSession(QObject):
         try:
             if self.client.pause_device(self.model):
                 self._paused = self.model
+                self._paused_at = self.clock()
         except DaemonError:
             pass  # not a device the daemon manages
 
@@ -232,6 +237,37 @@ class RecorderSession(QObject):
         if self._paused:
             self.resume()
             self.pause()
+
+    def keep_paused(self, max_age: float = PAUSE_REFRESH) -> bool:
+        """Before and during a recording: pause (again) so the daemon's deadline is at least
+        300 - max_age seconds away, then ask the daemon. False when the daemon manages the
+        device but reports it is not paused (its grabs and mapping are back)."""
+        if not self._paused:
+            self.pause()
+        elif self.clock() - self._paused_at >= max_age:
+            self.refresh_pause()
+        return self.daemon_paused()
+
+    def daemon_paused(self) -> bool:
+        """False only when the daemon reports this device as not paused."""
+        if not self.model or self.client is None:
+            return True
+        try:
+            status = self.client.status(self.model)
+        except DaemonError:
+            return True  # not a device the daemon manages
+        return status.get("paused", True) is not False
+
+    def reapply_profiles(self) -> None:
+        """After the light test: the daemon applies its profiles again (lighting included), only
+        when it manages this device."""
+        if not self.model or self.client is None:
+            return
+        try:
+            if self.client.status(self.model):
+                self.client.reload()
+        except DaemonError:
+            pass  # not a device the daemon manages
 
     def resume(self) -> None:
         model, self._paused = self._paused, ""

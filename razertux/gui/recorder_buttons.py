@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QListWidget, QPushButton, QSi
 from razertux.gui.labels import button_name
 from razertux.gui.layouts import Layout, by_name, layout_for
 from razertux.gui.mouse_scene import Drawing
-from razertux.gui.recorder_session import guarded
+from razertux.gui.recorder_session import PAUSE_REFRESH, guarded
 from razertux.hw.buttons import ButtonId
 from razertux.recorder.recording import (
     AUTO_STOP, TEMPLATE_CHOICES, GuidedSteps, Recording, Step, load_template,
@@ -116,6 +116,7 @@ class ButtonsPage(QWidget):
         self.phase = "idle"  # idle | guided | free | stopping | done
         self.recording: Recording | None = None
         self.template, self.steps, self._gen, self._t0 = "free", None, 0, 0.0
+        self._pause_checked = 0.0  # session.clock() of the last daemon pause check
         self._results: dict[str, dict] = {}
         self._end_all, self._ending, self._settle_index = False, "", -1
         self._held: list[tuple[float, list]] = []  # BTN_LEFT signals waiting HOLD_MS
@@ -212,10 +213,23 @@ class ButtonsPage(QWidget):
     def start(self) -> None:
         self._results, self._end_all = {}, False
         self.message.setText("")
-        self.session.pause()
         self._begin("guided" if self.steps else "free")
 
+    def _keep_paused(self) -> bool:
+        """Renew the daemon pause (see RecorderSession.keep_paused); stop the recording with a
+        message when the daemon has taken the device back."""
+        self._pause_checked = self.session.clock()
+        if self.session.keep_paused():
+            return True
+        self._on_slot_error(self.tr(
+            "The RazerTux service has taken the device back (its pause ended), so its buttons "
+            "would be remapped. Please start the recording again."))
+        self.session.resume()
+        return False
+
     def _begin(self, phase: str) -> None:
+        if not self._keep_paused():
+            return
         self.phase = phase
         self.recording = Recording(self.session.kind, self.template,
                                    self.steps if phase == "guided" else None, clock=self.session.clock)
@@ -285,6 +299,8 @@ class ButtonsPage(QWidget):
     def tick(self) -> None:
         if self.phase not in ("guided", "free"):
             return
+        if self.session.clock() - self._pause_checked >= PAUSE_REFRESH and not self._keep_paused():
+            return
         if self.recording.expired:
             self.stop(end_all=self.phase == "free")
         else:
@@ -311,8 +327,7 @@ class ButtonsPage(QWidget):
         ending = self._ending if self.phase == "stopping" else self.phase
         self._results[ending] = self.recording.finish(std)
         if ending == "guided" and not self._end_all:
-            self.session.refresh_pause()  # a fresh daemon deadline for the second listen
-            self._begin("free")
+            self._begin("free")  # renews the daemon pause if it is older than PAUSE_REFRESH
         else:
             self._finalize()
 

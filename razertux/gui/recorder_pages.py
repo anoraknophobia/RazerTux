@@ -359,8 +359,9 @@ class LightPage(Page):
         self.title = self.tr("Light test")
         self.lay.addWidget(_label(self.tr(
             "Optional: each lighting zone is switched to green for a moment and then off, with the "
-            "“do not store” flag – nothing is saved on the device. After unplugging and plugging "
-            "the device in again its previous lighting is back.")))
+            "“do not store” flag – nothing is saved on the device. A tested zone stays off until "
+            "you unplug and plug in the device again or restart it; if the RazerTux service "
+            "manages the device, it re-applies your lighting when you leave this page.")))
         self.consent = QCheckBox(self.tr("Yes, run the light test on this device"))
         self.consent.toggled.connect(lambda _on: self._show())
         self.lay.addWidget(self.consent)
@@ -371,6 +372,7 @@ class LightPage(Page):
         self.lay.addStretch(1)
         self.rows: dict[str, _ZoneRow] = {}
         self._zones: list[str] = []
+        self._tested = False  # a zone was lit since the page was entered
 
     def enter(self) -> None:
         zones = list(self.session.opened.get("light_zones", []))
@@ -386,7 +388,7 @@ class LightPage(Page):
 
     @guarded
     def test(self, row: _ZoneRow) -> None:
-        row.lit = True
+        row.lit = self._tested = True
         for rb in row.answers.values():
             rb.setEnabled(True)
         self.session.call(lambda be: be.light(row.zone, "green"))
@@ -405,6 +407,9 @@ class LightPage(Page):
     def leave(self) -> None:
         for row in self.rows.values():
             self._off(row)
+        if self._tested:  # after the queued "off" packets: the daemon lights the device again
+            self._tested = False
+            self.session.worker.submit(lambda: None, lambda _r: self.session.reapply_profiles())
         if not self.consent.isChecked():
             self.session.light = "declined"
         elif not isinstance(self.session.light, dict):

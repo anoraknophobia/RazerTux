@@ -632,3 +632,114 @@ def test_backend_opens_the_unit_chosen_in_the_list(make):
     start_recording(w)
     assert be.bus == "3-2"  # the sysfs USB device name: the helper opens exactly that unit
     assert "3-2" not in json.dumps(dataclasses.asdict(w.session.report()))  # never reported
+
+
+def _da_buttons_page(make, clock):
+    be = FakeBackend(model="death_adder_v2")
+    w = make(device(DA_PID, "Razer DeathAdder V2"), be)
+    w.session.clock = lambda: clock[0]
+    start_recording(w)
+    to_page(w, "buttons")
+    return w, be, w.pages["buttons"]
+
+
+def test_start_late_on_the_page_takes_a_fresh_daemon_pause(make):
+    clock = [1000.0]
+    w, be, page = _da_buttons_page(make, clock)
+    assert pause_calls(w) == [("PauseDevice", ("death_adder_v2",))]
+    clock[0] += 250  # the user read the page for a while: the daemon's 300 s are nearly gone
+    page.start_btn.click()
+    wait_until(be.listening.is_set)
+    assert pause_calls(w)[1:] == [("ResumeDevice", ("death_adder_v2",)), ("PauseDevice", ("death_adder_v2",))]
+    assert ("GetStatus", ("death_adder_v2",)) in w.transport.calls
+
+
+def test_start_right_after_entering_keeps_the_first_pause(make):
+    clock = [1000.0]
+    w, be, page = _da_buttons_page(make, clock)
+    clock[0] += 5
+    page.start_btn.click()
+    wait_until(be.listening.is_set)
+    assert pause_calls(w) == [("PauseDevice", ("death_adder_v2",))]
+
+
+def test_recording_refreshes_the_daemon_pause_every_minute(make):
+    clock = [1000.0]
+    w, be, page = _da_buttons_page(make, clock)
+    page.start_btn.click()
+    wait_until(be.listening.is_set)
+    clock[0] += rw_buttons.PAUSE_REFRESH - 1
+    page.tick()
+    assert len([c for c in pause_calls(w) if c[0] == "PauseDevice"]) == 1  # not yet
+    for _ in range(2):
+        clock[0] += rw_buttons.PAUSE_REFRESH
+        page.tick()
+    pauses = [c for c in pause_calls(w) if c[0] == "PauseDevice"]
+    assert len(pauses) == 3  # page entry + one refresh per minute
+
+
+def test_recording_stops_when_the_daemon_is_no_longer_paused(make):
+    clock = [1000.0]
+    w, be, page = _da_buttons_page(make, clock)
+    page.start_btn.click()
+    wait_until(be.listening.is_set)
+    w.transport.statuses["death_adder_v2"] = {"connected": True, "paused": False}  # e.g. daemon restarted
+    clock[0] += rw_buttons.PAUSE_REFRESH
+    page.tick()
+    wait_until(lambda: page.phase == "done")
+    assert "service" in page.message.text() and "start" in page.message.text()
+    wait_until(lambda: not be.listening.is_set())
+    assert pause_calls(w)[-1] == ("ResumeDevice", ("death_adder_v2",))
+
+
+def test_start_is_refused_when_the_daemon_does_not_pause(make):
+    clock = [1000.0]
+    w, be, page = _da_buttons_page(make, clock)
+    w.transport.statuses["death_adder_v2"] = {"connected": True, "paused": False}
+    clock[0] += 250
+    page.start_btn.click()
+    QApplication.processEvents()
+    assert page.phase == "done" and not be.listening.is_set()
+    assert ("listen", 120, None) not in be.calls
+    assert "service" in page.message.text()
+
+
+def _light_page(make, model="death_adder_v2"):
+    be = FakeBackend(light_zones=("logo",), model=model)
+    w = make(device(DA_PID, "Razer DeathAdder V2"), be)
+    start_recording(w)
+    to_page(w, "buttons")
+    page = w.pages["buttons"]
+    page.start_btn.click()
+    wait_until(be.listening.is_set)
+    page.stop_btn.click()
+    wait_until(lambda: page.phase in ("free", "done"))
+    if page.phase == "free":
+        page.finish_btn.click()
+    wait_until(lambda: page.phase == "done")
+    to_page(w, "light")
+    return w, be, w.pages["light"]
+
+
+def test_light_test_text_says_how_the_lighting_comes_back(make):
+    w, be, light = _light_page(make)
+    text = " ".join(lab.text() for lab in light.findChildren(rw.QLabel))
+    assert "unplug" in text and "restart" in text and "re-applies" in text
+
+
+def test_leaving_the_light_page_after_a_test_asks_the_daemon_to_reapply(make):
+    w, be, light = _light_page(make)
+    light.consent.setChecked(True)
+    light.rows["logo"].test_btn.click()
+    wait_until(lambda: ("light", "logo", "green") in be.calls)
+    reloads_before = w.transport.calls.count(("Reload", ()))
+    w.next_btn.click()  # leaves without an answer: the zone is switched off, then Reload
+    wait_until(lambda: w.transport.calls.count(("Reload", ())) == reloads_before + 1)
+    assert ("light", "logo", "off") in be.calls
+
+
+def test_no_reload_without_a_light_test(make):
+    w, be, light = _light_page(make)
+    w.next_btn.click()
+    pump(0.05)
+    assert ("Reload", ()) not in w.transport.calls
