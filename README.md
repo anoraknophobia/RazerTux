@@ -17,6 +17,12 @@ yet (tested on CachyOS/Arch, KDE Plasma Wayland). It consists of a background se
 (`razertuxd`), a command line tool (`razertux`) and a Qt GUI with a tray icon
 (`razertux-gui`). The GUI is available in English, German, Spanish and French.
 
+> **Works with or without OpenRazer.** RazerTux needs no kernel module. Already using
+> [OpenRazer](https://github.com/openrazer/openrazer) or Polychromatic? Keep them: choose
+> *View → Device access → RazerTux + OpenRazer* and everything OpenRazer offers for your
+> mouse goes through OpenRazer, while RazerTux adds button remapping, macros and profiles on
+> top. See [RazerTux and OpenRazer](#razertux-and-openrazer).
+
 ![Customize: button assignments of the Naga V2 Pro](docs/screenshots/customize.png)
 
 <table>
@@ -37,6 +43,8 @@ yet (tested on CachyOS/Arch, KDE Plasma Wayland). It consists of a background se
 ## Features
 
 - **Buttons**: assignments, key combinations, macros, Hypershift, several profiles per model.
+- **OpenRazer optional**: runs on its own, or together with OpenRazer (*View → Device
+  access*), so OpenRazer tools and RazerTux do not get in each other's way.
 - **Top buttons** (Naga V2 Pro): freely assignable. By default the front one steps the
   scroll wheel stage and the rear one the DPI stage, as under Synapse.
 - **Learn button**: teach RazerTux the signal of a button it does not recognise (press it on the
