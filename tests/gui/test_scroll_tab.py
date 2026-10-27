@@ -25,11 +25,10 @@ def test_six_stages_with_fixed_names(tab):
 def test_custom_stage_is_marked_work_in_progress(tab):
     tab.load(Settings("default"))
     assert [not r.wip.isHidden() for r in tab.rows] == [False] * 5 + [True]
-    assert "WIP" in tab.rows[5].wip.text()
-    assert not tab.rows[5].name.isEnabled() and tab.rows[0].name.isEnabled()
+    assert "WIP" in tab.rows[5].wip.text() and "Synapse" in tab.rows[5].wip.text()
 
 
-def test_click_on_a_stage_requests_it_custom_is_not_selectable(tab, qapp):
+def test_click_on_a_stage_requests_it(tab, qapp):
     from PySide6.QtCore import QPoint, Qt
     from PySide6.QtTest import QTest
     tab.load(Settings("default"))
@@ -38,8 +37,8 @@ def test_click_on_a_stage_requests_it_custom_is_not_selectable(tab, qapp):
     tab.show()
     for slot in (3, 1, 6):
         QTest.mouseClick(tab.rows[slot - 1], Qt.MouseButton.LeftButton, pos=QPoint(10, 10))
-    assert asked == [3, 1]  # "Custom" (6) is work in progress
-    assert tab.rows[0].selectable and not tab.rows[5].selectable
+    assert asked == [3, 1, 6]  # "Custom" too: the mouse uses its stored values
+    assert all(r.selectable for r in tab.rows)
     tab.hide()
 
 

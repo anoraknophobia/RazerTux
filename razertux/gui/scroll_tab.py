@@ -4,7 +4,7 @@ The active stage comes from the daemon status ("scroll_stage", reported by the
 mouse when the front top button cycles it or the daemon reads it at connect;
 -1 = unknown). The stage names are fixed: Synapse's list order (user-verified).
 A click on a stage emits `stageRequested(slot)` (the window asks the daemon to
-switch); "Custom" is not selectable yet. Tension/steps cannot be read or set on
+switch). "Custom" uses the values stored in the mouse (set in Synapse). Tension/steps cannot be read or set on
 Linux, the Synapse presets are shown for reference only."""
 from __future__ import annotations
 
@@ -34,14 +34,14 @@ def _restyle(w: QWidget) -> None:
 
 
 class StageRow(QFrame):
-    """One stage: "Stage n", its fixed name, marker when active; clickable unless WIP."""
+    """One stage: "Stage n", its fixed name, marker when active; click to choose it."""
 
     clicked = Signal(int)
 
     def __init__(self, slot: int, parent: QWidget | None = None):
         super().__init__(parent)
         self.slot = slot
-        self.selectable = slot not in WIP_SLOTS
+        self.selectable = True
         self.setObjectName("stageRow")
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setProperty("active", False)
@@ -49,10 +49,9 @@ class StageRow(QFrame):
         self.title.setObjectName("stageSlot")
         self.title.setMinimumWidth(64)
         self.name = QLabel(STAGE_NAMES[slot])
-        self.wip = QLabel(self.tr("not working yet (WIP)"))
+        self.wip = QLabel(self.tr("values only in Synapse (WIP)"))
         self.wip.setObjectName("mutedText")
         self.wip.setVisible(slot in WIP_SLOTS)
-        self.name.setEnabled(slot not in WIP_SLOTS)
         self.marker = QLabel("● " + self.tr("active"))
         self.marker.setObjectName("stageMarker")
         self.marker.setVisible(False)
@@ -97,7 +96,7 @@ def _tile(caption: str) -> tuple[QFrame, QLabel]:
 
 class ScrollTab(QWidget):
     changed = Signal()
-    stageRequested = Signal(int)  # a stage row was clicked (1-5)
+    stageRequested = Signal(int)  # a stage row was clicked (1-6)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -107,7 +106,8 @@ class ScrollTab(QWidget):
         stages = Card(self.tr("Scroll wheel stages"))
         stages.add(description(self.tr(
             "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to "
-            "switch to it, or use the front top button. “Custom” cannot be chosen here yet.")))
+            "switch to it, or use the front top button. “Custom” uses the values stored in the "
+            "mouse; they can only be changed in Synapse so far.")))
         self.rows: list[StageRow] = []
         for slot in range(1, SCROLL_STAGES + 1):
             row = StageRow(slot)

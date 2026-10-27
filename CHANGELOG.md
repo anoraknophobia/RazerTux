@@ -13,6 +13,8 @@ All notable changes to RazerTux. Each version below becomes a GitHub release wit
 
 ### Added
 - New actions for any button: scroll wheel stage up, down and cycle (Naga V2 Pro).
+- The "Custom" scroll wheel stage can be chosen by click as well. It uses the values stored
+  in the mouse; changing them is only possible in Synapse so far.
 
 ### Fixed
 - The front top button did nothing after the mouse had been used with Synapse.

@@ -238,7 +238,7 @@
     "Off": "Désactivé",
     "Don't change": "Ne pas modifier",
     "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "S'applique au profil. « Ne pas modifier » laisse le réglage de la souris tel quel.",
-    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. “Custom” cannot be chosen here yet.": "La souris a six niveaux de molette, nommés comme dans Synapse. Cliquez sur un niveau pour y passer, ou utilisez le bouton supérieur avant. « Custom » ne peut pas encore être choisi ici."
+    "The mouse has six scroll wheel stages, named as in Synapse. Click a stage to switch to it, or use the front top button. “Custom” uses the values stored in the mouse; they can only be changed in Synapse so far.": "La souris a six niveaux de molette, nommés comme dans Synapse. Cliquez sur un niveau pour y passer, ou utilisez le bouton supérieur avant. « Custom » utilise les valeurs enregistrées dans la souris ; pour l’instant, elles ne se modifient que dans Synapse."
   },
   "StageRow": {
     "Active stage": "Niveau actif",
@@ -246,8 +246,8 @@
     "Remove stage": "Supprimer le niveau",
     "Y": "Y",
     "active": "actif",
-    "not working yet (WIP)": "ne fonctionne pas encore (WIP)",
-    "Click to switch the mouse to this stage": "Cliquez pour passer la souris à ce niveau"
+    "Click to switch the mouse to this stage": "Cliquez pour passer la souris à ce niveau",
+    "values only in Synapse (WIP)": "valeurs uniquement dans Synapse (WIP)"
   },
   "TrayIcon": {
     "Polling rate": "Taux d’interrogation",
