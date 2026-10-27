@@ -118,7 +118,7 @@ def test_hardware_notes_list_unverified_assumptions():
 def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
-    for line in ("pkgname=razertux", "pkgver=0.7.2", "pkgrel=1", "replaces=(naga-config)",
+    for line in ("pkgname=razertux", "pkgver=0.8.0", "pkgrel=1", "replaces=(naga-config)",
                  "conflicts=(naga-config)",
                  "optdepends=('openrazer-daemon: RazerTux + OpenRazer mode')",
                  "provides=()", "install=razertux.install"):
@@ -189,7 +189,7 @@ def test_icon_is_a_scalable_svg_with_the_green_accent():
 def test_entry_points_match_packaging():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert data["project"]["name"] == "razertux"
-    assert data["project"]["version"] == "0.7.2"
+    assert data["project"]["version"] == "0.8.0"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
                        "razertux-gui": "razertux.gui.app:main",
@@ -203,7 +203,7 @@ def test_entry_points_match_packaging():
 
 def test_package_version_matches():
     import razertux
-    assert razertux.__version__ == "0.7.2"
+    assert razertux.__version__ == "0.8.0"
 
 
 def test_pyproject_license_is_spdx_expression():

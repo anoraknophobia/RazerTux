@@ -163,9 +163,9 @@ class Daemon:
             self.notify(summary, body)
 
     def _warn_openrazer(self) -> None:
-        if self._openrazer():
-            logger.warning("OpenRazer driver (razermouse) is loaded and may conflict with "
-                           "RazerTux - please unload or disable it")
+        if self._openrazer() and self.store.load_settings().device_access == "razertux":
+            logger.warning("OpenRazer driver (razermouse) is loaded: both programs write to "
+                           "the mouse - choose View → Device access → RazerTux + OpenRazer")
 
 
 async def open_uinput(factory: Callable[[], Any], *, interval: float = 2.0,

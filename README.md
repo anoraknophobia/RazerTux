@@ -58,8 +58,8 @@ yet (tested on CachyOS/Arch, KDE Plasma Wayland). It consists of a background se
 ## Installation
 
 RazerTux needs Linux with systemd, Python 3.11 or newer and a desktop session (KDE Plasma,
-GNOME, … on Wayland or X11). Uninstall OpenRazer first if you use it: both access the same
-devices and interfere with each other.
+GNOME, … on Wayland or X11). OpenRazer is optional: see
+[RazerTux and OpenRazer](#razertux-and-openrazer).
 
 ### Quick install (all distributions)
 
@@ -219,6 +219,25 @@ sudo pacman -Rns razertux
 
 Run `razertux restore` before uninstalling, while RazerTux is still installed.
 
+## RazerTux and OpenRazer
+
+RazerTux does not need [OpenRazer](https://github.com/openrazer/openrazer), but works with
+it. Choose under **View → Device access**:
+
+- **RazerTux** (default): RazerTux talks to the mouse itself. No kernel module needed.
+  Lighting, DPI and polling rate are set temporarily and the mouse's own values are written
+  back when RazerTux stops.
+- **RazerTux + OpenRazer**: whatever the OpenRazer daemon offers for your mouse (lighting
+  zones, polling rate, battery, power settings, DPI) goes through OpenRazer, so tools like
+  Polychromatic and RazerTux do not fight. OpenRazer stores these values in the mouse
+  permanently. Empty fields in a RazerTux profile leave OpenRazer's settings alone.
+  Button remapping, macros, profiles and the Naga's scroll-wheel stages always stay with
+  RazerTux. On the Naga V2 Pro the DPI stages and the thumb grid lighting also stay with
+  RazerTux. If the OpenRazer daemon stops, RazerTux takes over until it is back.
+
+The option is only selectable while the OpenRazer daemon is running
+(`systemctl --user status openrazer-daemon`).
+
 ## Supported mice
 
 - **Razer Naga V2 Pro**: verified (wireless dongle and USB), full feature set.
@@ -262,7 +281,6 @@ The display can be switched on and off in the tray menu.
   the Naga's top buttons do not react. Without a running service, unplugging and
   replugging the mouse helps.
 - `dbus-next` is deprecated as of Python 3.15; a replacement will be needed then.
-- Running an OpenRazer service in parallel is not supported (package conflict).
 - More hardware details: `docs/hardware-notes.md`.
 
 ## Credits

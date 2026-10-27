@@ -223,3 +223,21 @@ async def test_daemon_without_openrazer_client(tmp_path):
     await d.start()
     assert d.openrazer_available() is False
     await d.shutdown()
+
+
+async def test_conflict_warning_only_in_razertux_mode(tmp_path, caplog):
+    from test_session import RecOut
+
+    from razertux.config.store import ConfigStore
+    from razertux.daemon.main import Daemon
+    store = ConfigStore(tmp_path)
+    store.save_settings(Settings(device_access="openrazer"))
+    d = Daemon(store, RecOut(), openrazer_loaded=lambda: True)
+    with caplog.at_level(logging.WARNING):
+        await d.start()
+    assert "razermouse" not in caplog.text
+    store.save_settings(Settings(device_access="razertux"))
+    with caplog.at_level(logging.WARNING):
+        d._warn_openrazer()
+    assert "Device access" in caplog.text
+    await d.shutdown()

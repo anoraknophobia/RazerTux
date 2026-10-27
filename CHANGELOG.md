@@ -2,6 +2,23 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.8.0] - 2026-10-27
+
+### Added
+- View → Device access: "RazerTux" (as before) or "RazerTux + OpenRazer". In the second mode
+  everything the OpenRazer daemon offers for the mouse (lighting zones, polling rate,
+  battery, power settings, DPI) goes through OpenRazer; button remapping, macros, profiles
+  and the Naga's scroll-wheel stages stay with RazerTux. If OpenRazer stops, RazerTux takes
+  over until it is back.
+
+### Changed
+- RazerTux can be installed next to OpenRazer (no more package conflict; OpenRazer is an
+  optional dependency). The banner now suggests the OpenRazer mode instead of uninstalling.
+
+### Fixed
+- Naga V2 Pro top buttons in driver mode work while OpenRazer's kernel driver is loaded
+  (it rewrites their reports).
+
 ## [0.7.2] - 2026-10-27
 
 ### Changed
