@@ -119,7 +119,8 @@ def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
     for line in ("pkgname=razertux", "pkgver=0.7.2", "pkgrel=1", "replaces=(naga-config)",
-                 "conflicts=(naga-config openrazer-daemon openrazer-driver-dkms)",
+                 "conflicts=(naga-config)",
+                 "optdepends=('openrazer-daemon: RazerTux + OpenRazer mode')",
                  "provides=()", "install=razertux.install"):
         assert line in lines, line
     assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next polkit)" in p
