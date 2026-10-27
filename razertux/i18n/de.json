@@ -218,7 +218,6 @@
   },
   "ScrollTab": {
     "Active stage": "Aktive Stufe",
-    "The mouse has six scroll wheel stages. The names follow the order in Synapse (stage 1 = Ultra-fine … stage 6 = Custom); you can rename them as you like.": "Die Maus hat sechs Mausrad-Stufen. Die Namen folgen der Reihenfolge in Synapse (Stufe 1 = Ultra-fine … Stufe 6 = Custom); du kannst sie beliebig umbenennen.",
     "Scroll wheel stages": "Mausrad-Stufen",
     "No report from the mouse yet – switch once.": "Noch keine Meldung der Maus – einmal umschalten.",
     "Steps": "Rasten",
@@ -239,15 +238,16 @@
     "On": "An",
     "Off": "Aus",
     "Don't change": "Nicht ändern",
-    "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist."
+    "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Gilt für das Profil. „Nicht ändern“ lässt die Einstellung der Maus, wie sie ist.",
+    "The mouse has six scroll wheel stages, named as in Synapse. Switch between them with the front top button; choosing a stage here is not possible yet (the command for it is not known).": "Die Maus hat sechs Mausrad-Stufen, benannt wie in Synapse. Umschalten kannst du mit der vorderen oberen Taste; hier eine Stufe auszuwählen ist noch nicht möglich (der Befehl dafür ist nicht bekannt)."
   },
   "StageRow": {
     "Active stage": "Aktive Stufe",
-    "Enter a name …": "Namen vergeben …",
     "Stage %1": "Stufe %1",
     "Remove stage": "Stufe entfernen",
     "Y": "Y",
-    "active": "aktiv"
+    "active": "aktiv",
+    "not working yet (WIP)": "funktioniert noch nicht (WIP)"
   },
   "TrayIcon": {
     "Polling rate": "Abfragerate",

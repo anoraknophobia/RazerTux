@@ -12,16 +12,25 @@ def tab(qapp):
     return t
 
 
-def test_six_stages_with_names(tab):
-    tab.load(Settings("default"))
+def test_six_stages_with_fixed_names(tab):
+    from PySide6.QtWidgets import QLineEdit
+    tab.load(Settings("default", scroll_stage_names={1: "Fein"}))  # old user names are ignored
     assert [r.title.text() for r in tab.rows] == [f"Stage {n}" for n in range(1, 7)]
-    assert [r.name_edit.text() for r in tab.rows] == ["Ultra-fine", "Standard", "Distinct",
-                                                     "Adaptive", "Smooth Scroll", "Custom"]
+    assert [r.name.text() for r in tab.rows] == ["Ultra-fine", "Standard", "Distinct",
+                                                "Adaptive", "Smooth Scroll", "Custom"]
+    assert tab.findChildren(QLineEdit) == []  # names cannot be edited
     assert tab.changes == []
 
 
-def test_active_stage_highlight_and_big_name(tab):
+def test_custom_stage_is_marked_work_in_progress(tab):
     tab.load(Settings("default"))
+    assert [not r.wip.isHidden() for r in tab.rows] == [False] * 5 + [True]
+    assert "WIP" in tab.rows[5].wip.text()
+    assert not tab.rows[5].name.isEnabled() and tab.rows[0].name.isEnabled()
+
+
+def test_active_stage_highlight_and_big_name(tab):
+    tab.load(Settings("default", scroll_stage_names={2: "Fein"}))
     tab.set_status({"scroll_stage": 6})
     assert [r.property("active") for r in tab.rows] == [False] * 5 + [True]
     assert tab.active_name.text() == "Custom"
@@ -29,9 +38,7 @@ def test_active_stage_highlight_and_big_name(tab):
     tab.set_status({"scroll_stage": 2})
     assert tab.rows[1].property("active") and not tab.rows[5].property("active")
     assert tab.active_name.text() == "Standard"
-    tab.load(Settings("default", scroll_stage_names={}))
-    tab.set_status({"scroll_stage": 2})
-    assert tab.active_name.text() == "Stage 2"  # no name given
+    assert tab.tension_value.text() == "60" and tab.steps_value.text() == "24"
 
 
 def test_unknown_stage(tab):
@@ -42,24 +49,10 @@ def test_unknown_stage(tab):
         assert not any(r.property("active") for r in tab.rows)
 
 
-def test_editing_names_updates_settings(tab):
-    s = Settings("default", scroll_stage_names={6: "Ultra-fine"})
-    tab.load(s)
-    tab.set_status({"scroll_stage": 3})
-    tab.rows[2].name_edit.setText("Distinct")
-    tab.rows[2].name_edit.textEdited.emit("Distinct")
-    assert s.scroll_stage_names == {3: "Distinct", 6: "Ultra-fine"}
-    assert tab.active_name.text() == "Distinct" and tab.changes == [1]
-    tab.rows[5].name_edit.setText("  ")
-    tab.rows[5].name_edit.textEdited.emit("  ")
-    assert s.scroll_stage_names == {3: "Distinct"}  # empty name: removed
-
-
 def test_hint_and_reference(tab):
     names = tab.findChildren(type(tab.hint))
     texts = " ".join(w.text() for w in names)
-    assert "not known" not in texts and "except stage 6" not in texts
-    assert "order" in texts and "rename" in texts
+    assert "rename" not in texts and "not possible yet" in texts
     assert "front top button" in tab.hint.text() and "Razer Synapse" in tab.hint.text()
     assert [p[0] for p in SYNAPSE_PRESETS] == ["Ultra-fine", "Standard", "Distinct",
                                                 "Adaptive", "Smooth Scroll", "Custom"]

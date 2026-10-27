@@ -1,25 +1,29 @@
 """Tab "Scroll wheel": the firmware's six scroll-wheel stages (Synapse style).
 
 The active stage comes from the daemon status ("scroll_stage", reported by the
-mouse when the front top button cycles it; -1 = unknown). Stage names are user
-given and global (Settings.scroll_stage_names); the tab edits the Settings it
-was given in place and emits `changed`. Tension/steps cannot be read or set on
-Linux, the Synapse presets are shown for reference only."""
+mouse when the front top button cycles it; -1 = unknown). The stage names are
+fixed: Synapse's list order (user-verified). No command to choose a stage from
+the host is known, so the stages are shown, not selectable. Tension/steps cannot
+be read or set on Linux, the Synapse presets are shown for reference only."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView, QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+    QAbstractItemView, QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
     QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
-from razertux.config.model import NAGA_MODEL, SCROLL_FEATURES, SCROLL_STAGES, Profile, Settings
+from razertux.config.model import (
+    NAGA_MODEL, SCROLL_FEATURES, SCROLL_STAGES, Profile, Settings, default_stage_names,
+)
 from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, description
 
 # Synapse presets: name, tension, steps (read off Synapse on Windows)
 SYNAPSE_PRESETS = (("Ultra-fine", 65, 96), ("Standard", 60, 24), ("Distinct", 58, 15),
                    ("Adaptive", 75, 24), ("Smooth Scroll", 0, 32), ("Custom", 50, 90))
+STAGE_NAMES = default_stage_names()  # slot -> fixed name (Synapse order)
+WIP_SLOTS = {6}  # "Custom": its tension/steps can only be set in Synapse
 
 
 def _restyle(w: QWidget) -> None:
@@ -29,7 +33,7 @@ def _restyle(w: QWidget) -> None:
 
 
 class StageRow(QFrame):
-    """One stage: "Stufe n", editable name, marker when active."""
+    """One stage: "Stage n", its fixed name, marker when active."""
 
     def __init__(self, slot: int, parent: QWidget | None = None):
         super().__init__(parent)
@@ -40,16 +44,19 @@ class StageRow(QFrame):
         self.title = QLabel(self.tr("Stage %1").replace("%1", str(slot)))
         self.title.setObjectName("stageSlot")
         self.title.setMinimumWidth(64)
-        self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText(self.tr("Enter a name …"))
-        self.name_edit.setMaxLength(40)
+        self.name = QLabel(STAGE_NAMES[slot])
+        self.wip = QLabel(self.tr("not working yet (WIP)"))
+        self.wip.setObjectName("mutedText")
+        self.wip.setVisible(slot in WIP_SLOTS)
+        self.name.setEnabled(slot not in WIP_SLOTS)
         self.marker = QLabel("● " + self.tr("active"))
         self.marker.setObjectName("stageMarker")
         self.marker.setVisible(False)
         lay = QHBoxLayout(self)
         lay.setContentsMargins(16, 10, 16, 10)
         lay.addWidget(self.title)
-        lay.addWidget(self.name_edit, 1)
+        lay.addWidget(self.name, 1)
+        lay.addWidget(self.wip)
         lay.addWidget(self.marker)
 
     def set_active(self, on: bool) -> None:
@@ -84,12 +91,12 @@ class ScrollTab(QWidget):
 
         stages = Card(self.tr("Scroll wheel stages"))
         stages.add(description(self.tr(
-            "The mouse has six scroll wheel stages. The names follow the order in Synapse "
-            "(stage 1 = Ultra-fine … stage 6 = Custom); you can rename them as you like.")))
+            "The mouse has six scroll wheel stages, named as in Synapse. Switch between them "
+            "with the front top button; choosing a stage here is not possible yet (the command "
+            "for it is not known).")))
         self.rows: list[StageRow] = []
         for slot in range(1, SCROLL_STAGES + 1):
             row = StageRow(slot)
-            row.name_edit.textEdited.connect(lambda text, s=slot: self._rename(s, text))
             self.rows.append(row)
             stages.add(row)
         stages.body.addStretch(1)
@@ -214,8 +221,6 @@ class ScrollTab(QWidget):
 
     def load(self, settings: Settings) -> None:
         self.settings = settings
-        for row in self.rows:
-            row.name_edit.setText(settings.scroll_stage_names.get(row.slot, ""))
         self._show_active()
 
     def set_status(self, status: dict) -> None:
@@ -226,8 +231,7 @@ class ScrollTab(QWidget):
         self._show_active()
 
     def _name(self, slot: int) -> str:
-        names = self.settings.scroll_stage_names if self.settings else {}
-        return names.get(slot) or self.tr("Stage %1").replace("%1", str(slot))
+        return STAGE_NAMES.get(slot) or self.tr("Stage %1").replace("%1", str(slot))
 
     def _show_active(self) -> None:
         if self._active < 0:
@@ -241,14 +245,3 @@ class ScrollTab(QWidget):
             preset = next((p for p in SYNAPSE_PRESETS if p[0].casefold() == name.casefold()), None)
         self.tension_value.setText(str(preset[1]) if preset else "–")
         self.steps_value.setText(str(preset[2]) if preset else "–")
-
-    def _rename(self, slot: int, text: str) -> None:
-        if self.settings is None:
-            return
-        name = text.strip()
-        if name:
-            self.settings.scroll_stage_names[slot] = name
-        else:
-            self.settings.scroll_stage_names.pop(slot, None)
-        self._show_active()
-        self.changed.emit()

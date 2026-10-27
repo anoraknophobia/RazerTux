@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.4.3] - 2026-10-27
+
+### Changed
+- Scroll wheel tab: the six stages have fixed names (as in Synapse) and can no longer be
+  renamed. The tab explains that a stage cannot be chosen there yet, because the command for
+  it is not known; switch stages with the front top button.
+- Scroll wheel tab: the "Custom" stage is marked as not working yet (work in progress).
+
 ## [0.4.2] - 2026-10-27
 
 ### Added

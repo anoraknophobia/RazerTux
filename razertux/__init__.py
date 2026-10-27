@@ -4,5 +4,5 @@
 Not an official Razer product; not affiliated with Razer Inc."""
 
 APP_NAME = "RazerTux"
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 PROJECT_URL = "https://github.com/anoraknophobia/RazerTux"  # the About dialog hides the link if this is ever empty

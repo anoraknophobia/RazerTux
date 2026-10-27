@@ -218,7 +218,6 @@
   },
   "ScrollTab": {
     "Active stage": "Nivel activo",
-    "The mouse has six scroll wheel stages. The names follow the order in Synapse (stage 1 = Ultra-fine … stage 6 = Custom); you can rename them as you like.": "El ratón tiene seis niveles de rueda. Los nombres siguen el orden de Synapse (nivel 1 = Ultra-fine … nivel 6 = Custom); puedes cambiarlos como quieras.",
     "Scroll wheel stages": "Niveles de la rueda",
     "No report from the mouse yet – switch once.": "El ratón aún no ha informado: cambia de nivel una vez.",
     "Steps": "Pasos",
@@ -239,15 +238,16 @@
     "On": "Activado",
     "Off": "Desactivado",
     "Don't change": "No cambiar",
-    "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Se aplica al perfil. «No cambiar» deja el ajuste del ratón como está."
+    "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "Se aplica al perfil. «No cambiar» deja el ajuste del ratón como está.",
+    "The mouse has six scroll wheel stages, named as in Synapse. Switch between them with the front top button; choosing a stage here is not possible yet (the command for it is not known).": "El ratón tiene seis niveles de rueda, con los nombres de Synapse. Cambia entre ellos con el botón superior delantero; elegir un nivel aquí aún no es posible (no se conoce el comando)."
   },
   "StageRow": {
     "Active stage": "Nivel activo",
-    "Enter a name …": "Escribe un nombre …",
     "Stage %1": "Nivel %1",
     "Remove stage": "Quitar nivel",
     "Y": "Y",
-    "active": "activo"
+    "active": "activo",
+    "not working yet (WIP)": "aún no funciona (WIP)"
   },
   "TrayIcon": {
     "Polling rate": "Tasa de sondeo",

@@ -218,7 +218,6 @@
   },
   "ScrollTab": {
     "Active stage": "Niveau actif",
-    "The mouse has six scroll wheel stages. The names follow the order in Synapse (stage 1 = Ultra-fine … stage 6 = Custom); you can rename them as you like.": "La souris possède six niveaux de molette. Les noms suivent l’ordre de Synapse (niveau 1 = Ultra-fine … niveau 6 = Custom) ; vous pouvez les renommer librement.",
     "Scroll wheel stages": "Niveaux de la molette",
     "No report from the mouse yet – switch once.": "Aucun signal de la souris pour l’instant – changez de niveau une fois.",
     "Steps": "Crans",
@@ -239,15 +238,16 @@
     "On": "Activé",
     "Off": "Désactivé",
     "Don't change": "Ne pas modifier",
-    "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "S'applique au profil. « Ne pas modifier » laisse le réglage de la souris tel quel."
+    "Applies to the profile. “Don't change” leaves the mouse's setting as it is.": "S'applique au profil. « Ne pas modifier » laisse le réglage de la souris tel quel.",
+    "The mouse has six scroll wheel stages, named as in Synapse. Switch between them with the front top button; choosing a stage here is not possible yet (the command for it is not known).": "La souris a six niveaux de molette, nommés comme dans Synapse. Passez de l’un à l’autre avec le bouton supérieur avant ; choisir un niveau ici n’est pas encore possible (la commande n’est pas connue)."
   },
   "StageRow": {
     "Active stage": "Niveau actif",
-    "Enter a name …": "Saisir un nom …",
     "Stage %1": "Niveau %1",
     "Remove stage": "Supprimer le niveau",
     "Y": "Y",
-    "active": "actif"
+    "active": "actif",
+    "not working yet (WIP)": "ne fonctionne pas encore (WIP)"
   },
   "TrayIcon": {
     "Polling rate": "Taux d’interrogation",

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "razertux"
-version = "0.4.2"
+version = "0.4.3"
 description = "Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro and other Razer mice); not affiliated with Razer Inc."
 requires-python = ">=3.11"
 license = "GPL-2.0-or-later"
