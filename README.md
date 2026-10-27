@@ -58,6 +58,12 @@ After upgrading the package, restart the service as a normal user and restart th
 systemctl --user restart razertuxd.service
 ```
 
+### Update to 0.4.0
+
+The service gained `PauseDevice`/`ResumeDevice` for the recorder, so restart `razertuxd`
+after the upgrade (see above). The package now depends on `polkit` (for the optional
+password mode of the recorder).
+
 ### Update to 0.3.0
 
 The configuration lives in `~/.config/razertux`. On first start it is migrated to schema 2
@@ -74,6 +80,28 @@ Command line: `razertux status` shows the mouse state and `razertux restore` res
 backed-up state. `razertux backup` creates the backup by hand (optional, only needed without
 a running service; it does not overwrite anything either). All three accept `--model` to
 pick a model when several mice are connected.
+
+## Help add your device
+
+Is your Razer device missing, or are some of its buttons not recognized? The built-in
+recorder collects a small, anonymous device report that you can send to the project.
+
+1. Open Help, then "Record device...", or run `razertux-record`.
+2. Choose your device.
+3. Entering your password is optional; it only unlocks extra read-only information.
+4. Press the buttons of the device, one after another.
+5. Optionally run the light test.
+6. Review the report and submit it on GitHub (you need a GitHub account).
+
+Privacy promise: the report contains no serial numbers, no user or host names and no
+paths. Only the distinct button signals are recorded, never typed text. Nothing is
+persisted on the device, and the light test uses NOSTORE only (it is not saved to the
+device and disappears on its own).
+
+### For maintainers
+
+`tools/import_device_report.py` reads a submitted device report and turns it into entries
+for the device database.
 
 ## Language
 
