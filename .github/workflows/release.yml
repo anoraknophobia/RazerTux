@@ -1,0 +1,37 @@
+# A pushed tag vX.Y.Z becomes a GitHub release named "RazerTux X.Y.Z" with the notes of
+# CHANGELOG.md. "Run workflow" (manual) adds releases for older tags that have none yet.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create release for the pushed tag
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 tools/release_notes.py "$TAG" > notes.md
+          gh release create "$TAG" --title "RazerTux ${TAG#v}" --notes-file notes.md --verify-tag
+      - name: Add missing releases for older tags
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for tag in $(git tag --list 'v*' --sort=version:refname); do
+            if gh release view "$tag" >/dev/null 2>&1; then continue; fi
+            python3 tools/release_notes.py "$tag" > notes.md || continue
+            gh release create "$tag" --title "RazerTux ${tag#v}" --notes-file notes.md --verify-tag --latest=false
+          done

@@ -294,3 +294,19 @@ def test_readme_names_the_record_menu_entry_as_the_gui_does():
     gui = (ROOT / "razertux" / "gui" / "main_window.py").read_text()
     assert 'self.tr("Record device…")' in gui
     assert '"Record device…"' in readme and '"Record device..."' not in readme
+
+
+def test_changelog_has_notes_for_the_current_version():
+    import importlib.util
+
+    import razertux
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location("release_notes", root / "tools/release_notes.py")
+    rn = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rn)
+    notes = rn.sections((root / "CHANGELOG.md").read_text(encoding="utf-8"))
+    assert next(iter(notes)) == razertux.__version__  # newest section first = this version
+    assert notes[razertux.__version__].strip()
+    assert rn.main(["v" + razertux.__version__]) == 0 and rn.main(["9.9.9"]) == 1
+    wf = (root / ".github/workflows/release.yml").read_text()
+    assert "tools/release_notes.py" in wf and "tags:" in wf
