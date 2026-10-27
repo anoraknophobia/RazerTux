@@ -2,6 +2,18 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.4.2] - 2026-10-27
+
+### Added
+- `install.sh`: one installer for all distributions. On Arch and derivatives it builds and
+  installs the pacman package; on Debian/Ubuntu, Fedora and openSUSE it installs the
+  dependencies and RazerTux into `/opt/razertux` (untested, work in progress).
+  `./install.sh --uninstall` removes RazerTux again and offers to restore the mouse first.
+- README: step-by-step install, update and uninstall guide for each distribution.
+
+### Removed
+- README: upgrade notes for old versions.
+
 ## [0.4.1] - 2026-10-27
 
 Fixes from the first real device recording (Naga V2 Pro).

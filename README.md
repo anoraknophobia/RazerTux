@@ -50,17 +50,20 @@ devices and interfere with each other.
 3. Unplug the mouse and plug it in again, then open RazerTux from the application menu. The
    tray icon starts automatically from your next login on.
 
-What `install.sh` does depends on the distribution:
+What `install.sh` does depends on the distribution. Only Arch (CachyOS) has been tested so
+far; the other distributions are **untested (work in progress)**. If you try one of them,
+please report how it went in an [issue](https://github.com/anoraknophobia/RazerTux/issues).
 
-- **Arch Linux, CachyOS, EndeavourOS, Manjaro:** builds the pacman package from
+- **Arch Linux, CachyOS, EndeavourOS, Manjaro** (tested): builds the pacman package from
   `packaging/PKGBUILD` and installs it with pacman.
-- **Debian 13+, Ubuntu 24.04+, Linux Mint 22+:** installs the dependencies with `apt` and
-  RazerTux into `/opt/razertux`.
-- **Fedora:** installs the dependencies with `dnf` and RazerTux into `/opt/razertux`.
-- **openSUSE Tumbleweed:** installs the dependencies with `zypper` and RazerTux into
-  `/opt/razertux`.
-- **Other distributions:** installs RazerTux into `/opt/razertux`. Install Python 3.11+ with
-  `venv`, polkit and, where packaged, python-evdev, pyudev, dbus-next and PySide6 first.
+- **Debian 13+, Ubuntu 24.04+, Linux Mint 22+** (untested): installs the dependencies with
+  `apt` and RazerTux into `/opt/razertux`.
+- **Fedora** (untested): installs the dependencies with `dnf` and RazerTux into `/opt/razertux`.
+- **openSUSE Tumbleweed** (untested): installs the dependencies with `zypper` and RazerTux
+  into `/opt/razertux`.
+- **Other distributions** (untested): installs RazerTux into `/opt/razertux`. Install
+  Python 3.11+ with `venv`, polkit and, where packaged, python-evdev, pyudev, dbus-next and
+  PySide6 first.
 
 Outside Arch, Python modules your distribution does not package (for example PySide6 on older
 releases) are downloaded from PyPI into `/opt/razertux`; nothing is installed into the system

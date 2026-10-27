@@ -262,6 +262,8 @@ main() {
   if [ "$family" = arch ]; then
     install_arch
   else
+    warn "The installer has not been tested on this distribution yet (work in progress)."
+    warn "Please report problems or success: https://github.com/anoraknophobia/RazerTux/issues"
     install_generic "$family"
   fi
   start_service
