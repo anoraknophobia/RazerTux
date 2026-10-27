@@ -1547,3 +1547,20 @@ async def test_set_custom_scroll_writes_the_curve_and_activates_custom(tmp_path)
     with pytest.raises(ReadOnly):
         naga(d).set_custom_scroll(40, 90)
     await d.shutdown()
+
+
+async def test_dpi_button_rewritten_by_openrazer_driver_steps_dpi(tmp_path):
+    """Recorded on the Naga with OpenRazer's razermouse bound: TOP_2 arrives as
+    `01 00 52 ...` on the if01 hidraw node and must step the DPI stage like `04 52`."""
+    readers = []
+    d, t = make_daemon(tmp_path, readers=readers)
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    await d.settle()
+    before = [(r.cmd_class, r.cmd_id) for r in t.requests].count((0x04, 0x05))
+    await readers[-1].report(bytes.fromhex("01 00 52" + " 00" * 13))
+    await readers[-1].report(bytes.fromhex("01" + " 00" * 15))
+    await d.settle()
+    after = [(r.cmd_class, r.cmd_id) for r in t.requests].count((0x04, 0x05))
+    assert after == before + 1
+    await d.shutdown()
