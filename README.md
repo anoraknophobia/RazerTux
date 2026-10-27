@@ -11,11 +11,28 @@
 > developer ("vibe coding"). It has an automated test suite, but the code has not been
 > reviewed line by line by a human. Use it at your own risk.
 
-RazerTux is an unofficial Linux replacement for Razer Synapse. It
-supports the Razer Naga V2 Pro and, experimentally, other Razer mice (tested on CachyOS/Arch,
-KDE Plasma Wayland). It consists of a background service (`razertuxd`), a command line tool
-(`razertux`) and a Qt GUI with a tray icon (`razertux-gui`).
-The GUI is available in English, German, Spanish and French (see "Language" below).
+RazerTux is an unofficial Linux replacement for Razer Synapse. It supports the Razer Naga V2
+Pro and, experimentally, other Razer mice; Razer keyboards are recognised but not configured
+yet (tested on CachyOS/Arch, KDE Plasma Wayland). It consists of a background service
+(`razertuxd`), a command line tool (`razertux`) and a Qt GUI with a tray icon
+(`razertux-gui`). The GUI is available in English, German, Spanish and French.
+
+![Customize: button assignments of the Naga V2 Pro](docs/screenshots/customize.png)
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/performance.png" alt="Performance tab"><br>
+      <sub>Performance: DPI and polling rate</sub></td>
+    <td><img src="docs/screenshots/scroll-wheel.png" alt="Scroll wheel tab"><br>
+      <sub>Scroll wheel: stages and the Custom stage</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/lighting.png" alt="Lighting tab"><br>
+      <sub>Lighting: brightness and effects</sub></td>
+    <td><img src="docs/screenshots/macros.png" alt="Macros tab"><br>
+      <sub>Macros: record and edit</sub></td>
+  </tr>
+</table>
 
 ## Features
 
@@ -24,15 +41,18 @@ The GUI is available in English, German, Spanish and French (see "Language" belo
   scroll wheel stage and the rear one the DPI stage, as under Synapse.
 - **Learn button**: teach RazerTux the signal of a button it does not recognise (press it on the
   mouse) and assign it to a button slot. Needs the running service.
-- **Performance**: DPI and DPI stages. A DPI value written permanently is restored to the
-  backed-up value when the service exits cleanly.
-- **Lighting**: logo and thumb pad (the scroll wheel has no LED).
+- **Performance**: DPI, DPI stages and polling rate. A DPI value written permanently is
+  restored to the backed-up value when the service exits cleanly.
+- **Scroll wheel** (Naga V2 Pro): choose the stage by click (Ultra-fine … Custom) and set
+  tension and steps of the "Custom" stage.
+- **Lighting**: brightness and effects for logo and thumb pad (the scroll wheel has no LED).
 - **Power/battery**: charge level, idle time, low-battery warning.
-- **Scroll wheel**: shows the active scroll-wheel stage on the Naga. Changing the stage
-  values or tension needs Synapse on Windows for now.
 - **Multi-device**: several mice at once, each with its own per-model profiles.
+- **Keyboards** (untested): connected Razer keyboards are recognised and can be recorded.
+- **Add unknown device**: a recorder for Razer devices RazerTux does not support yet (see
+  "Help add your device").
 - **On-screen display** when the profile or DPI stage changes (toggle in the tray menu).
-- Light/dark style switch.
+- Razer-style dark look or the system colours (*View → Use system colors*).
 - UI languages: English, German, Spanish and French.
 
 ## Installation
