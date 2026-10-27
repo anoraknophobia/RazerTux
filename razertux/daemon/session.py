@@ -33,6 +33,9 @@ from razertux.engine.mapper import NAGA_DEFAULT_ACTIONS, Mapper
 from razertux.hw.button_maps import InputSignal, map_for
 from razertux.hw.buttons import DRIVER_MODE, NORMAL_MODE, parse_notification
 from razertux.i18n import tr
+from razertux.openrazer.client import OpenRazerClient, OpenRazerError
+from razertux.openrazer.device import OpenRazerDevice
+from razertux.openrazer.routing import RoutedMouse
 from razertux.razer.mouse import RazerMouse, make_mouse
 from razertux.razer.naga_v2_pro import ZONE_LED, NagaV2Pro
 from razertux.razer.probe import ProbeResult, diagnostics, probe
@@ -48,7 +51,7 @@ logger = logging.getLogger("razertux.daemon")
 WIRELESS = ("wireless", "receiver")
 _DISCONNECTED = {"connected": False, "connection": "", "battery": -1, "charging": False,
                  "dpi": -1}
-_HW_ERRORS = (RazerError, OSError, ValueError, IndexError)
+_HW_ERRORS = (RazerError, OSError, ValueError, IndexError, OpenRazerError)
 
 
 class NotConnected(Exception):
@@ -201,7 +204,8 @@ class DeviceSession:
                  on_status: Callable[[], None] | None = None,
                  on_learned: Callable[[InputSignal], None] | None = None,
                  notify: Callable[[str, str], None] | None = None,
-                 warn_openrazer: Callable[[], None] | None = None) -> None:
+                 warn_openrazer: Callable[[], None] | None = None,
+                 openrazer: OpenRazerClient | None = None) -> None:
         self.info = info
         self.model = info.model
         self.store = store
@@ -264,6 +268,12 @@ class DeviceSession:
         self._battery: BatteryMonitor | None = None
         self._poll_failed = False  # last wireless poll got no answer (mouse asleep?)
         self._battery_warn = WarnState()  # survives reconnects: one warning per discharge
+        # "RazerTux + OpenRazer" mode: the mouse behind a per-group router (None while
+        # disconnected); _access is the device_access the routing reflects
+        self._openrazer = openrazer
+        self._routed: RoutedMouse | None = None
+        self._access = "razertux"
+        self._remote_state = "unavailable"  # "ok" | "unknown" | "unavailable"
 
     @property
     def _is_naga_model(self) -> bool:
@@ -302,9 +312,15 @@ class DeviceSession:
         self._spawn(self._removed(path))
 
     async def settle(self) -> None:
-        """Wait for all background work (hotplug handling) to finish."""
-        while self._tasks:
-            await asyncio.gather(*list(self._tasks))
+        """Wait for all background work (hotplug handling, OpenRazer writes) to finish."""
+        while True:
+            if self._tasks:
+                await asyncio.gather(*list(self._tasks))
+                continue
+            remote = self._routed.remote if self._routed is not None else None
+            if remote is None or not remote.busy:
+                return
+            await remote.drain()
 
     async def close(self) -> None:
         """Clean shutdown: write-back, normal mode, release and ungrab."""
@@ -335,6 +351,8 @@ class DeviceSession:
         self.mapper.set_macros(self._macros)
         settings = self._settings_cache = self._settings_source()
         profile = self.store.load_profile(settings.active_profiles.get(self.model, "default"))
+        if not self._paused:
+            await self._sync_access()  # device_access switched: re-route before applying
         await self._use(profile)
         self.apply_power(settings)
         self._on_status()
@@ -416,6 +434,8 @@ class DeviceSession:
         except BaseException:
             self._paused = True
             raise
+        if await self._sync_access():  # device_access switched while paused
+            self._skipped_while_paused = True
         if self._skipped_while_paused and self._mouse is not None:
             self._skipped_while_paused = False
             self._sync_mode(self.profile)
@@ -457,7 +477,7 @@ class DeviceSession:
                 "verified": self.info.verified, "writable": self.writable,
                 "probe_ok": None if self.probe_result is None else self.probe_result.ok,
                 "grabbed": self.router.grabbed, "learning": self._learning,
-                "paused": self._paused}
+                "paused": self._paused, "device_access": self.access()}
 
     def diagnostics(self) -> str:
         if self.probe_result is None or self._pid is None:
@@ -488,7 +508,9 @@ class DeviceSession:
     def _can(self, feature: str) -> bool:
         """The Naga driver keeps its own (verified) commands; others ask the database."""
         m = self._mouse
-        return m is not None and (isinstance(m, NagaV2Pro) or m.supports(feature))
+        if m is None:
+            return False
+        return isinstance(m, NagaV2Pro) or self._target().supports(feature)
 
     def _writes_allowed(self) -> bool:
         """False (nothing is written) when not connected, paused for the device recorder
@@ -515,9 +537,10 @@ class DeviceSession:
                 self._written.add("poll_rate")
             if profile.dpi_stages:
                 self._written |= {"dpi_stages", "dpi"}
-            apply_device_settings(naga, profile, self._absent_zones)
+            apply_device_settings(self._target(), profile, self._absent_zones)
         elif self._mouse is not None:
-            self._written |= apply_generic_settings(self._mouse, profile)
+            self._written |= apply_generic_settings(self._target(), profile)
+        self._drop_owned()
 
     def apply_power(self, settings: Settings) -> None:
         """Idle time and the mouse's low power threshold (both persistent; None = keep).
@@ -535,16 +558,20 @@ class DeviceSession:
             self._written.add(field)
             self._power_applied[field] = value
             try:
-                getattr(m, f"set_{field}")(value)
+                getattr(self._target(), f"set_{field}")(value)
             except Exception as e:
                 logger.warning("%s not set: %s", field, e)
+        self._drop_owned()
 
-    def _write_back(self) -> None:
+    def _write_back(self, only: set[str] | None = None) -> None:
         """Write-back: persistent values we changed go back to the backup's (VARSTORE), so
-        other systems (Windows/Synapse) find the mouse as it was."""
+        other systems (Windows/Synapse) find the mouse as it was. ``only`` limits it to
+        these fields (the others stay marked as written)."""
         if self._mouse is None or not self._write_ok or not self._written:
             return
-        fields = set(self._written)
+        fields = set(self._written) if only is None else self._written & only
+        if not fields:
+            return
         if "dpi_stages" in fields:
             fields.add("dpi")  # writing stages resets the current DPI
         try:
@@ -556,7 +583,7 @@ class DeviceSession:
         failed = restore_backup(self._mouse, backup, fields=fields)
         logger.info("Original values written back: %s%s", ", ".join(sorted(fields - set(failed))),
                     f" (failed: {', '.join(failed)})" if failed else "")
-        self._written.clear()
+        self._written -= fields
 
     def _sync_mode(self, profile: Profile | None) -> None:
         """Naga: driver mode while a profile is active (connect, switch, Reload)."""
@@ -735,12 +762,107 @@ class DeviceSession:
             raise NotConnected(self.model)
         if not self._write_ok:
             raise ReadOnly(self.model)
-        failed = restore_backup(self._mouse, backup)
+        failed = restore_backup(self._target(), backup)
         self._written.clear()
         self._power_applied = {}  # the mouse now holds the backup's values
         # DPI buttons should step through the restored onboard stages
         self._reset_stages(Profile(id="", name=""))
         return failed
+
+    # -- OpenRazer routing (Settings.device_access) -----------------------------------
+
+    def _target(self) -> Any:
+        """What profile/power writes and battery/DPI reads go through."""
+        return self._routed if self._routed is not None else self._mouse
+
+    def _drop_owned(self) -> None:
+        """Fields OpenRazer owns are never written back by RazerTux."""
+        if self._routed is not None:
+            self._written -= self._routed.owned_backup_fields()
+
+    def access(self) -> str:
+        """Effective device access: "razertux", "openrazer", "openrazer-unavailable"
+        (daemon not running / failed) or "openrazer-unknown-device"."""
+        if self._settings().device_access != "openrazer":
+            return "razertux"
+        remote = self._routed.remote if self._routed is not None else None
+        if remote is not None and not remote.failed:
+            return "openrazer"
+        if self._remote_state == "unknown":
+            return "openrazer-unknown-device"
+        return "openrazer-unavailable"
+
+    def openrazer_serial(self) -> str:
+        remote = self._routed.remote if self._routed is not None else None
+        return remote.dev.serial if remote is not None else ""
+
+    async def _find_remote(self, pid: int) -> OpenRazerDevice | None:
+        """The OpenRazer device for the USB PID we are connected through (None in
+        RazerTux mode, without the daemon or for a device it does not know)."""
+        client = self._openrazer
+        if self._settings().device_access != "openrazer" or client is None:
+            self._remote_state = "unavailable"
+            return None
+        if not await client.available():
+            self._remote_state = "unavailable"
+            logger.info("%s: OpenRazer not running - RazerTux manages everything",
+                        self.info.name)
+            return None
+        match = [d for d in await client.devices() if d.pid == pid]
+        if not match:
+            self._remote_state = "unknown"
+            logger.info("%s: unknown to OpenRazer - RazerTux manages everything",
+                        self.info.name)
+            return None
+        remote = OpenRazerDevice(client.bus, match[0], on_failure=self._remote_failed)
+        await remote.refresh()
+        if remote.failed:
+            self._remote_state = "unavailable"
+            return None
+        self._remote_state = "ok"
+        logger.info("%s: OpenRazer device %s used for what it offers", self.info.name,
+                    match[0].path)
+        return remote
+
+    def _remote_failed(self) -> None:
+        """An OpenRazer call failed or timed out: RazerTux takes over everything."""
+        self._remote_state = "unavailable"
+        if self._routed is not None:
+            self._routed.remote = None
+        self._power_applied = {}
+        self._apply_active()
+        self.apply_power(self._settings())
+        self._on_status()
+
+    async def _sync_access(self, force: bool = False) -> bool:
+        """Bring the routing in line with Settings.device_access (force: re-match even if
+        unchanged). True if the routing was rebuilt; the caller applies the profile."""
+        if self._mouse is None or self._routed is None or self._pid is None:
+            return False
+        mode = self._settings().device_access
+        if not force and mode == self._access:
+            return False
+        remote = await self._find_remote(self._pid) if mode == "openrazer" else None
+        if self._mouse is None or self._routed is None:  # disconnected meanwhile
+            return False
+        if remote is not None:
+            # values RazerTux changed that OpenRazer will own: back to the backup's first
+            self._write_back(RoutedMouse(self._mouse, remote, self.model).owned_backup_fields())
+        self._routed.remote = remote
+        self._access = mode
+        self._power_applied = {}
+        return True
+
+    async def reroute(self) -> None:
+        """OpenRazer appeared or vanished: re-match and re-apply (on resume if paused)."""
+        if self._paused:
+            self._skipped_while_paused = True
+            self._access = ""  # force the re-match on resume
+            return
+        if await self._sync_access(force=True):
+            self._apply_active()
+            self.apply_power(self._settings())
+            self._on_status()
 
     async def _removed(self, path: str) -> None:
         await self.router.remove(path)
@@ -800,6 +922,9 @@ class DeviceSession:
         await self.reload()  # fresh configuration, nothing touches the mouse yet
         if superseded():
             return
+        remote = await self._find_remote(pid)  # None unless "RazerTux + OpenRazer" mode
+        if superseded():
+            return
         path = None
         for _ in range(10):  # hidraw nodes may appear after the input nodes
             path = self._find_control((pid,))  # the node we were told about
@@ -818,6 +943,8 @@ class DeviceSession:
             return
         mouse = make_mouse(self.info, self._transport, pid)
         self._pid = pid
+        self._routed = RoutedMouse(mouse, remote, self.model)
+        self._access = self._settings().device_access
         self._probe(mouse)
         self._mouse = mouse
         if self._write_ok:
@@ -847,19 +974,19 @@ class DeviceSession:
             if isinstance(stage, int) and 1 <= stage <= 6:
                 self._set_scroll_stage(stage)
         self._hw = {"connected": True, "connection": self.info.pids.get(pid, ""),
-                    "battery": _safe(mouse.battery, -1) if self._can("battery") else -1,
-                    "charging": bool(_safe(mouse.charging, False)) if self._can("charging")
+                    "battery": _safe(self._routed.battery, -1) if self._can("battery") else -1,
+                    "charging": bool(_safe(self._routed.charging, False)) if self._can("charging")
                     else False,
                     "dpi": -1}
         logger.info("Mouse connected: %s %s", self.info.name, self._hw)
         self._warn_openrazer()
         self._apply_active()
-        dpi = _safe(mouse.dpi, None) if self._can("dpi") else None
+        dpi = _safe(self._routed.dpi, None) if self._can("dpi") else None
         self._hw["dpi"] = dpi[0] if dpi else -1
         self.apply_power(self._settings())
         if self._hw["connection"] in WIRELESS and self._can("battery"):
             self._battery = BatteryMonitor(
-                mouse, 60, self._on_battery,
+                self._routed, 60, self._on_battery,
                 connection=lambda: "wireless" if self._hw["connection"] in WIRELESS
                 else self._hw["connection"],
                 threshold=lambda: self._settings().low_battery_notify,
@@ -891,6 +1018,9 @@ class DeviceSession:
         woke, self._poll_failed = self._poll_failed, False
         if self._mouse is None:
             return
+        remote = self._routed.remote if self._routed is not None else None
+        if remote is not None and not remote.failed:
+            self._spawn(remote.refresh())  # battery/DPI cache for the next poll
         if not woke:
             naga = self._naga
             if naga is None:
@@ -902,7 +1032,7 @@ class DeviceSession:
         self._mode = None
         self._sync_mode(self.profile)
         self._apply_active()
-        dpi = _safe(self._mouse.dpi, None) if self._can("dpi") else None
+        dpi = _safe(self._target().dpi, None) if self._can("dpi") else None
         if dpi and self._hw["dpi"] != dpi[0]:
             self._hw["dpi"] = dpi[0]
             self._on_status()
@@ -943,6 +1073,7 @@ class DeviceSession:
                 close()
         was_connected = self._hw["connected"]
         self._transport = self._mouse = None
+        self._routed = None
         self._write_ok = True
         self._mode = None
         self._hw = dict(_DISCONNECTED)

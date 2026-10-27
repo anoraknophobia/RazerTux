@@ -134,6 +134,10 @@ class OpenRazerDevice:
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
+    @property
+    def busy(self) -> bool:
+        return bool(self._tasks)
+
     async def drain(self) -> None:
         """Wait until every queued write has been sent (or dropped)."""
         while self._tasks:

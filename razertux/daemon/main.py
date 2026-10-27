@@ -19,6 +19,7 @@ from razertux.config.migrate import (
 from razertux.config.model import NAGA_MODEL, Profile
 from razertux.config.store import ConfigStore
 from razertux.devices.db import DeviceInfo, by_pid, load_devices
+from razertux.openrazer.client import OpenRazerClient, SessionBus
 from razertux.i18n import apply_settings, tr
 from razertux.razer.transport import HidrawTransport, find_control_hidraw, find_vendor_hidraw
 
@@ -45,15 +46,19 @@ class Daemon:
                  hidraw_reader: Callable[..., Any] = HidrawReader,
                  openrazer_loaded: Callable[[], bool] = openrazer_loaded,
                  apply_device_settings: Callable[[Profile], None] | None = None,
-                 retry_delay: float = 0.2) -> None:
+                 retry_delay: float = 0.2,
+                 openrazer: OpenRazerClient | None = None) -> None:
         self.store = store
         self.out = out
         self.notify: Callable[[str, str], None] | None = None  # desktop notification
         self._openrazer = openrazer_loaded
+        self.openrazer = openrazer  # OpenRazer daemon client ("RazerTux + OpenRazer" mode)
+        self._openrazer_up = False
         self._session_kw = dict(transport_factory=transport_factory, find_control=find_control,
                                 find_vendor=find_vendor, hidraw_reader=hidraw_reader,
                                 retry_delay=retry_delay,
-                                apply_device_settings=apply_device_settings)
+                                apply_device_settings=apply_device_settings,
+                                openrazer=openrazer)
         self._tasks: set[asyncio.Task] = set()
         self.sessions: dict[str, DeviceSession] = {}
         self.service = Daemon1Service(store, lambda: self.sessions,
@@ -71,9 +76,24 @@ class Daemon:
 
     # -- lifecycle -------------------------------------------------------------
 
+    def openrazer_available(self) -> bool:
+        """The OpenRazer daemon is on the session bus (last known state)."""
+        return self._openrazer_up
+
     async def start(self) -> None:
         self._warn_openrazer()
+        if self.openrazer is not None:
+            self.openrazer.on_availability(self._openrazer_changed)
+            self._openrazer_up = await self.openrazer.available()
         await self.service.reload()
+
+    def _openrazer_changed(self, up: bool) -> None:
+        self._openrazer_up = up
+        logger.info("OpenRazer daemon %s", "started" if up else "stopped")
+        for session in list(self.sessions.values()):
+            self._spawn(session.reroute())
+        for model in list(self.sessions):
+            self.service.notify_status(model)
 
     def on_added(self, source: str, dev: Any) -> bool:
         """Route a new input node to its model's session (created on first sight).
@@ -188,7 +208,7 @@ async def run(config_dir: Path) -> int:
     except OSError as e:
         logger.error("Cannot open /dev/uinput (udev rule installed?): %s", e)
         return 1
-    daemon = Daemon(ConfigStore(config_dir), out)
+    daemon = Daemon(ConfigStore(config_dir), out, openrazer=OpenRazerClient(SessionBus()))
     bus = None
     watcher = DeviceWatcher(daemon.on_added, daemon.on_removed)
     try:
