@@ -135,7 +135,8 @@ install_dependencies() {
       sudo apt-get update -q >/dev/null
       install_each apt python3 python3-venv python3-pip python3-evdev python3-pyudev \
         python3-dbus-next python3-pyside6.qtwidgets python3-pyside6.qtsvg python3-pyside6.qtnetwork \
-        polkitd pkexec policykit-1 libxcb-cursor0 libegl1 libxkbcommon-x11-0 ;;
+        polkitd pkexec policykit-1 \
+        libxcb-cursor0 libegl1 libgl1 libxkbcommon-x11-0 libfontconfig1 libdbus-1-3 libgssapi-krb5-2 ;;
     dnf)
       install_each dnf python3 python3-pip python3-evdev python3-pyudev python3-dbus-next \
         python3-pyside6 polkit xcb-util-cursor ;;
@@ -173,7 +174,8 @@ install_generic() {
   find "$WORK/src" -name __pycache__ -prune -exec rm -rf {} +
   sudo "$OPT/bin/python3" -m pip install --quiet --disable-pip-version-check --no-cache-dir \
     --upgrade "$WORK/src" || die "pip could not install RazerTux (see the messages above)"
-  sudo "$OPT/bin/python3" -c 'import evdev, pyudev, dbus_next, PySide6.QtWidgets, razertux' \
+  local modules='evdev, pyudev, dbus_next, PySide6.QtWidgets, PySide6.QtSvg, PySide6.QtNetwork, razertux'
+  sudo "$OPT/bin/python3" -c "import $modules" \
     || die "RazerTux was installed but cannot be imported (see the messages above)"
 
   say "Installing system files"
@@ -289,7 +291,7 @@ main() {
   if [ "$family" = arch ]; then
     install_arch
   else
-    warn "The installer has not been tested on this distribution yet (work in progress)."
+    warn "RazerTux has not been used with a real mouse on this distribution yet (work in progress)."
     warn "Please report problems or success: https://github.com/anoraknophobia/RazerTux/issues"
     install_generic "$family"
   fi

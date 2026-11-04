@@ -2,6 +2,18 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.8.3] - 2026-11-04
+
+### Fixed
+- `install.sh` on Debian and Ubuntu also installs the libraries the PySide6 from PyPI needs
+  (`libgl1`, `libfontconfig1`, `libdbus-1-3`, `libgssapi-krb5-2`); without them RazerTux
+  did not start on minimal Ubuntu 24.04 systems.
+- `install.sh` checks that Qt's network and SVG modules load, not only the widgets.
+
+### Changed
+- The installer now runs through on Debian 13, Ubuntu 24.04, Fedora and openSUSE Tumbleweed
+  (tested in containers); README and installer messages say so.
+
 ## [0.8.2] - 2026-11-04
 
 ### Fixed
