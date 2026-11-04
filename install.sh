@@ -5,6 +5,9 @@
 #   ./install.sh --uninstall   remove RazerTux (your settings in ~/.config/razertux stay)
 #   ./install.sh --help
 #
+#   Without a download first (newest release; add "-s -- --uninstall" to bash to remove):
+#   curl -fsSL https://raw.githubusercontent.com/anoraknophobia/RazerTux/main/install.sh | bash
+#
 # Run it as your normal user from the unpacked source folder; it asks for your password
 # (sudo) for the system-wide steps.
 #
@@ -15,6 +18,38 @@
 # and the same system files the Arch package has. Files outside /opt/razertux are listed in
 # /opt/razertux/installed-files, which --uninstall uses.
 set -euo pipefail
+
+# -- curl | bash ----------------------------------------------------------------------------
+# Without a source folder next to the script (piped from curl), download the newest release
+# (or RAZERTUX_VERSION, e.g. 0.8.1) into a temporary folder and run its install.sh there,
+# reading answers from the terminal instead of the pipe. This if-block is one command: bash
+# has read all of it before it runs, so nothing after it is read from the pipe.
+if [ ! -f "$(dirname -- "${BASH_SOURCE[0]:-/nonexistent/x}")/packaging/PKGBUILD" ]; then
+  RAZERTUX_REPO="${RAZERTUX_REPO:-https://github.com/anoraknophobia/RazerTux}"
+  command -v curl >/dev/null && command -v tar >/dev/null \
+    || { echo ":: error: curl and tar are needed to download RazerTux" >&2; exit 1; }
+  ver="${RAZERTUX_VERSION:-}"
+  if [ -z "$ver" ]; then
+    ver="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$RAZERTUX_REPO/releases/latest")" \
+      || { echo ":: error: could not look up the newest RazerTux release" >&2; exit 1; }
+    ver="${ver##*/tag/}"
+  fi
+  ver="${ver#v}"
+  [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+    || { echo ":: error: unexpected RazerTux version '$ver'" >&2; exit 1; }
+  tmp="$(mktemp -d)"
+  trap 'rm -rf -- "$tmp"' EXIT
+  printf '\033[1;32m::\033[0m Downloading RazerTux %s\n' "$ver"
+  curl -fsSL "$RAZERTUX_REPO/archive/refs/tags/v$ver.tar.gz" | tar -xz -C "$tmp" --strip-components=1 \
+    || { echo ":: error: could not download RazerTux $ver" >&2; exit 1; }
+  rc=0
+  if (: </dev/tty) 2>/dev/null; then
+    bash "$tmp/install.sh" "$@" </dev/tty || rc=$?
+  else
+    bash "$tmp/install.sh" "$@" || rc=$?
+  fi
+  exit "$rc"
+fi
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG="$SRC/packaging"
@@ -30,7 +65,7 @@ say()  { printf '\033[1;32m::\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m:: warning:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31m:: error:\033[0m %s\n' "$*" >&2; exit 1; }
 
-usage() { sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
 # -- system files (generic install) ---------------------------------------------------------
 # source file in packaging/ | destination | mode. Keep in sync with package() in PKGBUILD

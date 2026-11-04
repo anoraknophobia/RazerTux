@@ -71,6 +71,22 @@ GNOME, … on Wayland or X11). OpenRazer is optional: see
 
 ### Quick install (all distributions)
 
+Open a terminal and run, as your normal user (not with `sudo`):
+
+```
+curl -fsSL https://raw.githubusercontent.com/anoraknophobia/RazerTux/main/install.sh | bash
+```
+
+This downloads the newest release and runs its `install.sh` (described below). To remove
+RazerTux again:
+
+```
+curl -fsSL https://raw.githubusercontent.com/anoraknophobia/RazerTux/main/install.sh |
+  bash -s -- --uninstall
+```
+
+If you prefer to read the script before running it, install from the source instead:
+
 1. Download the source: either `git clone https://github.com/anoraknophobia/RazerTux.git`, or
    the `Source code (tar.gz)` of the newest version under
    [Releases](https://github.com/anoraknophobia/RazerTux/releases), then unpack it.

@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.8.1] - 2026-11-04
+
+### Added
+- One-line install without downloading the source first:
+  `curl -fsSL https://raw.githubusercontent.com/anoraknophobia/RazerTux/main/install.sh | bash`.
+  The script fetches the newest release and runs its installer; `bash -s -- --uninstall`
+  removes RazerTux the same way.
+
 ## [0.8.0] - 2026-10-27
 
 ### Added

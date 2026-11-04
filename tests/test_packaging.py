@@ -1,8 +1,12 @@
+import os
 import re
+import shutil
 import subprocess
 import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 PKG = ROOT / "packaging"
@@ -118,7 +122,7 @@ def test_hardware_notes_list_unverified_assumptions():
 def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
-    for line in ("pkgname=razertux", "pkgver=0.8.0", "pkgrel=1", "replaces=(naga-config)",
+    for line in ("pkgname=razertux", "pkgver=0.8.1", "pkgrel=1", "replaces=(naga-config)",
                  "conflicts=(naga-config)",
                  "optdepends=('openrazer-daemon: RazerTux + OpenRazer mode')",
                  "provides=()", "install=razertux.install"):
@@ -189,7 +193,7 @@ def test_icon_is_a_scalable_svg_with_the_green_accent():
 def test_entry_points_match_packaging():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert data["project"]["name"] == "razertux"
-    assert data["project"]["version"] == "0.8.0"
+    assert data["project"]["version"] == "0.8.1"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
                        "razertux-gui": "razertux.gui.app:main",
@@ -203,7 +207,7 @@ def test_entry_points_match_packaging():
 
 def test_package_version_matches():
     import razertux
-    assert razertux.__version__ == "0.8.0"
+    assert razertux.__version__ == "0.8.1"
 
 
 def test_pyproject_license_is_spdx_expression():
@@ -340,3 +344,25 @@ def test_install_script_rejects_unknown_options():
     root = Path(__file__).resolve().parent.parent
     r = subprocess.run([str(root / "install.sh"), "--bogus"], capture_output=True, text=True)
     assert r.returncode == 2 and "--uninstall" in r.stdout
+
+
+def test_install_script_piped_downloads_the_release_and_runs_it(tmp_path):
+    # `curl ... | bash -s -- ARGS`: no source folder, so the script fetches the release
+    # tarball (here a local file:// "repo") and runs its install.sh with the same arguments.
+    if not shutil.which("curl"):
+        pytest.skip("curl not installed")
+    root = Path(__file__).resolve().parent.parent
+    tree = tmp_path / "RazerTux-1.2.3"
+    (tree / "packaging").mkdir(parents=True)
+    (tree / "packaging/PKGBUILD").write_text("")
+    (tree / "install.sh").write_text('echo "inner $*"\nexit 7\n')
+    tags = tmp_path / "repo/archive/refs/tags"
+    tags.mkdir(parents=True)
+    subprocess.run(["tar", "-czf", str(tags / "v1.2.3.tar.gz"), "-C", str(tmp_path), tree.name],
+                   check=True)
+    env = {**os.environ, "RAZERTUX_REPO": (tmp_path / "repo").as_uri(), "RAZERTUX_VERSION": "v1.2.3"}
+    r = subprocess.run(["bash", "-s", "--", "--uninstall"], input=(root / "install.sh").read_text(),
+                       capture_output=True, text=True, env=env, cwd=tmp_path,
+                       start_new_session=True)  # no terminal: answers come from stdin
+    assert r.returncode == 7, r.stderr
+    assert "Downloading RazerTux 1.2.3" in r.stdout and "inner --uninstall" in r.stdout
