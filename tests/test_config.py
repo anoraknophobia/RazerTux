@@ -257,6 +257,19 @@ def test_settings_new_fields_roundtrip_and_defaults(tmp_path):
     assert (old.theme, old.idle_time, old.low_battery_threshold) == ("synapse", None, None)
 
 
+def test_settings_battery_fields():
+    s = Settings()
+    assert s.battery_osd is True and s.battery_icon is True
+    d = s.to_dict()
+    assert d["battery_osd"] is True and d["battery_icon"] is True
+    assert "low_battery_notify" not in d
+    # before 0.10: a desktop warning at low_battery_notify % (0 = off)
+    assert Settings.from_dict({"active_profile": "x", "low_battery_notify": 0}).battery_osd is False
+    assert Settings.from_dict({"active_profile": "x", "low_battery_notify": 15}).battery_osd is True
+    off = Settings.from_dict({**Settings(battery_osd=False, battery_icon=False).to_dict()})
+    assert (off.battery_osd, off.battery_icon) == (False, False)
+
+
 def test_dpi_cycle_action_roundtrip():
     p = default_profile()
     assert Profile.from_dict(json.loads(json.dumps(p.to_dict()))).standard[ButtonId.TOP_2] \

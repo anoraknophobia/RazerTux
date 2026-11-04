@@ -16,8 +16,8 @@ def test_defaults_leave_mouse_untouched(tab):
     s = Settings("default")
     tab.load(s)
     assert not tab.idle_box.isChecked() and not tab.low_power_box.isChecked()
-    assert tab.warn_box.isChecked() and tab.warn_spin.value() == 15
-    assert (s.idle_time, s.low_battery_threshold, s.low_battery_notify) == (None, None, 15)
+    assert tab.warn_box.isChecked()
+    assert (s.idle_time, s.low_battery_threshold, s.battery_osd) == (None, None, True)
     assert tab.changes == []
 
 
@@ -43,16 +43,14 @@ def test_low_power_threshold(tab):
     assert s.low_battery_threshold == 25
 
 
-def test_warning_level(tab):
-    s = Settings("default", low_battery_notify=0)
+def test_battery_warnings_switch(tab):
+    s = Settings("default", battery_osd=False)
     tab.load(s)
     assert not tab.warn_box.isChecked()
     tab.warn_box.setChecked(True)
-    assert s.low_battery_notify == 15
-    tab.warn_spin.setValue(30)
-    assert s.low_battery_notify == 30
+    assert s.battery_osd is True
     tab.warn_box.setChecked(False)
-    assert s.low_battery_notify == 0
+    assert s.battery_osd is False
 
 
 def test_experimental_battery_mouse_gets_the_warning_only(tab):

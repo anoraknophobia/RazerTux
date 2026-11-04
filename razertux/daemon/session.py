@@ -57,6 +57,9 @@ REMATCH_DELAY = 2.0  # seconds
 REMATCH_TRIES = 5
 
 
+LOW_BATTERY_LOG = 20  # % at which a low battery is logged (not charging)
+
+
 class NotConnected(Exception):
     """The session's mouse is not connected."""
 
@@ -1031,12 +1034,10 @@ class DeviceSession:
         dpi = _safe(self._routed.dpi, None) if self._can("dpi") else None
         self._hw["dpi"] = dpi[0] if dpi else -1
         self.apply_power(self._settings())
-        if self._hw["connection"] in WIRELESS and self._can("battery"):
+        if self._can("battery"):  # wired too: the tray shows the charging level
             self._battery = BatteryMonitor(
                 self._routed, 60, self._on_battery,
-                connection=lambda: "wireless" if self._hw["connection"] in WIRELESS
-                else self._hw["connection"],
-                threshold=lambda: self._settings().low_battery_notify,
+                threshold=lambda: LOW_BATTERY_LOG,
                 notify=self._low_battery, state=self._battery_warn,
                 on_poll=self._after_poll, suspended=lambda: self._paused)
             self._battery.poll()
@@ -1090,16 +1091,8 @@ class DeviceSession:
             self._on_status()
 
     def _low_battery(self, level: int) -> None:
+        # the warning itself is the tray's battery OSD (20/15/10/5 %); the log keeps a trace
         logger.warning("Battery low (%s): %d %%", self.info.name, level)
-        if self._is_naga_model:
-            title = tr("daemon", "Naga V2 Pro: Low battery")
-        else:
-            title = tr("daemon", "{name}: Low battery", name=self.info.name)
-        try:
-            self._notify(title, tr("daemon", "Battery at {level} % – please charge the mouse.",
-                                   level=level))
-        except Exception:
-            logger.exception("Notification not sent")
 
     async def _disconnect(self, reset_mode: bool) -> None:
         if self._battery is not None:

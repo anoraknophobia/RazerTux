@@ -115,7 +115,6 @@ def test_extractor_sees_all_kinds_of_calls():
     assert ("keynames", "Key %1") in found                       # module _tr wrapper
     assert ("ActionDialog", "Key combination") in noops          # QT_TRANSLATE_NOOP table
     assert ("validate", "Left click unreachable") in found       # plain-Python i18n.tr
-    assert ("daemon", "Naga V2 Pro: Low battery") in found
     assert any(ctx == "LightingTab" for ctx, _ in dynamic)
 
 
@@ -244,7 +243,8 @@ async def test_service_reload_switches_daemon_language(tmp_path):
     assert errors and "macros.json" in errors[0] and "corrupt" not in errors[0]
 
 
-async def test_low_battery_notification_is_translated(tmp_path):
+async def test_low_battery_is_logged_not_sent_as_desktop_notification(tmp_path, caplog):
+    # since 0.10 the tray shows battery warnings as OSD; the daemon only logs
     from test_daemon_devices import connected
     d, t = await connected(tmp_path, product=0x00A8, settings=Settings("default", language="en"))
     await d.service.reload()
@@ -253,20 +253,8 @@ async def test_low_battery_notification_is_translated(tmp_path):
     t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
     t.responses[(0x07, 0x84)] = bytes([0, 0])
     d.sessions["naga_v2_pro"]._battery.poll()
-    assert sent == [("Naga V2 Pro: Low battery", "Battery at 10 % – please charge the mouse.")]
-    await d.shutdown()
-
-
-async def test_low_battery_notification_in_german(tmp_path):
-    from test_daemon_devices import connected
-    d, t = await connected(tmp_path, product=0x00A8, settings=Settings("default", language="de"))
-    await d.service.reload()
-    sent = []
-    d.notify = lambda title, body: sent.append((title, body))
-    t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
-    t.responses[(0x07, 0x84)] = bytes([0, 0])
-    d.sessions["naga_v2_pro"]._battery.poll()
-    assert sent == [("Naga V2 Pro: Akku schwach", "Akkustand 10 % – bitte die Maus laden.")]
+    assert sent == []
+    assert "Battery low" in caplog.text
     await d.shutdown()
 
 

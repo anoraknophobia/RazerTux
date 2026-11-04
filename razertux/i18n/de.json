@@ -193,7 +193,6 @@
     "About RazerTux": "Über RazerTux",
     "Record device…": "Gerät aufzeichnen …"
   },
-  "MouseView": {},
   "PerformanceTab": {
     "%1 – %2, steps of %3": "%1 – %2, Schritte von %3",
     "Polling Rate": "Abfragerate",
@@ -213,13 +212,13 @@
   "PowerTab": {
     "%1 min": "%1 min",
     "Battery warning": "Akku-Warnung",
-    "Desktop notification in wireless mode, once per discharge (again only after charging).": "Desktop-Benachrichtigung im Funkbetrieb, einmal je Entladung (erneut erst nach dem Laden).",
     "These settings apply to all profiles. Unchecked: the mouse keeps its own value.": "Diese Einstellungen gelten für alle Profile. Nicht angehakt: Die Maus behält ihren eigenen Wert.",
     "Power saving (wireless)": "Energiesparen im Funkbetrieb",
     "Low power mode": "Energiesparmodus",
     "In wireless mode, enter low power mode when the battery is below (%)": "Im Funkbetrieb Energiesparmodus, wenn der Akku unter (%) liegt",
     "Go to sleep after inactivity (minutes)": "Ruhezustand nach Inaktivität (Minuten)",
-    "Warn when the battery is below": "Warnung bei Akku unter"
+    "Battery warnings on screen (from 20 %, every 5 %)": "Akku-Warnungen auf dem Bildschirm (ab 20 %, alle 5 %)",
+    "On-screen message with the battery level, not while charging.": "Bildschirm-Meldung mit dem Akkustand, nicht während des Ladens."
   },
   "ScrollTab": {
     "Active stage": "Aktive Stufe",
@@ -292,14 +291,11 @@
     "start only the tray icon (window hidden)": "nur Tray-Symbol starten (Fenster versteckt)"
   },
   "daemon": {
-    "Battery at {level} % – please charge the mouse.": "Akkustand {level} % – bitte die Maus laden.",
     "No readable backup at {path}: {error}": "Keine lesbare Sicherung unter {path}: {error}",
     "Mouse is read-only": "Maus ist schreibgeschützt",
     "Mouse not connected": "Maus nicht verbunden",
-    "Naga V2 Pro: Low battery": "Naga V2 Pro: Akku schwach",
     "Unknown device: {model}": "Unbekanntes Gerät: {model}",
     "Unknown profile: {profile}": "Unbekanntes Profil: {profile}",
-    "{name}: Low battery": "{name}: Akku schwach",
     "RazerTux service (Razer mice)": "RazerTux-Dienst (Razer-Mäuse)",
     "verbose log": "ausführliches Protokoll",
     "configuration directory (default: ~/.config/razertux)": "Konfigurationsordner (Standard: ~/.config/razertux)"

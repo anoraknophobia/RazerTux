@@ -1,4 +1,4 @@
-"""BatteryMonitor: polling only when wireless, change callback, one-shot warning."""
+"""BatteryMonitor: polling (wireless and wired), change callback, one-shot warning."""
 import asyncio
 
 from razertux.daemon.battery import BatteryMonitor, notify_desktop
@@ -17,11 +17,11 @@ class FakeDev:
         return self.is_charging
 
 
-def make(level=80, charging=False, connection="wireless", threshold=15):
+def make(level=80, charging=False, threshold=15):
     dev = FakeDev(level, charging)
     changes, notes = [], []
     mon = BatteryMonitor(dev, interval_s=60, on_change=lambda b, c: changes.append((b, c)),
-                         connection=lambda: connection, threshold=lambda: threshold,
+                         threshold=lambda: threshold,
                          notify=notes.append)
     return mon, dev, changes, notes
 
@@ -60,10 +60,11 @@ def test_no_warning_while_charging_or_when_disabled():
     assert notes == []
 
 
-def test_wired_does_not_query():
-    mon, dev, changes, notes = make(level=5, connection="wired")
+def test_wired_is_polled_too():
+    # on the cable the battery charges: the tray icon shows the level with a bolt
+    mon, dev, changes, _ = make(level=50, charging=True)
     mon.poll()
-    assert dev.reads == 0 and changes == [] and notes == []
+    assert dev.reads == 1 and changes == [(50, True)]
 
 
 def test_on_change_only_when_value_changes():
@@ -161,8 +162,6 @@ def test_on_poll_reports_each_reading_ok_or_failed():
     dev.battery = ok_battery
     mon.poll()
     assert seen == [True, False, True]
-    BatteryMonitor(dev, on_poll=seen.append, connection=lambda: "wired").poll()
-    assert len(seen) == 3  # wired: no reading, no callback
 
 
 def test_no_query_while_suspended():

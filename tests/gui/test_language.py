@@ -22,7 +22,7 @@ def store(tmp_path):
     s = ConfigStore(tmp_path)
     s.save_profile(default_profile())
     s.save_profile(Profile(id="p2", name="Zwei"))
-    s.save_settings(Settings(active_profile="p2", theme="system", low_battery_notify=20))
+    s.save_settings(Settings(active_profile="p2", theme="system", battery_osd=False))
     return s
 
 
@@ -116,7 +116,7 @@ def test_controller_saves_and_offers_restart(store):
     c.restartRequested.connect(lambda: restarts.append(1))
     c.set_language("es")
     s = store.load_settings()
-    assert (s.language, s.theme, s.low_battery_notify, s.active_profile) == ("es", "system", 20, "p2")
+    assert (s.language, s.theme, s.battery_osd, s.active_profile) == ("es", "system", False, "p2")
     assert changed == ["es"] and asked == [1] and restarts == [1]
     c._ask_restart = lambda: False
     c.set_language("es")  # unchanged: nothing happens

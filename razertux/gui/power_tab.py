@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QGridLayout, QHBoxLayout, QLabel, QSlider, QSpinBox, QWidget,
+    QCheckBox, QGridLayout, QHBoxLayout, QLabel, QSlider, QWidget,
 )
 
 from razertux.config.model import (
@@ -16,7 +16,6 @@ from razertux.devices.db import DeviceInfo
 from razertux.gui.widgets import Card, description
 
 DEFAULT_IDLE_MIN = 5
-DEFAULT_WARN = 15
 
 
 def _slider(lo: int, hi: int) -> QSlider:
@@ -50,18 +49,10 @@ class PowerTab(QWidget):
                           f"{LOW_POWER_MIN} %", f"{LOW_POWER_MAX} %"))
 
         self.warn_card = warn = Card(self.tr("Battery warning"))
-        warn.add(description(self.tr("Desktop notification in wireless mode, once per discharge "
-                                     "(again only after charging).")))
-        self.warn_box = QCheckBox(self.tr("Warn when the battery is below"))
-        self.warn_spin = QSpinBox()
-        self.warn_spin.setRange(5, 50)
-        self.warn_spin.setSuffix(" %")
-        self.warn_spin.setValue(DEFAULT_WARN)
-        row = QHBoxLayout()
-        row.addWidget(self.warn_box)
-        row.addWidget(self.warn_spin)
-        row.addStretch(1)
-        warn.add(row)
+        warn.add(description(self.tr("On-screen message with the battery level, not while "
+                                     "charging.")))
+        self.warn_box = QCheckBox(self.tr("Battery warnings on screen (from 20 %, every 5 %)"))
+        warn.add(self.warn_box)
 
         note = description(self.tr("These settings apply to all profiles. Unchecked: the mouse "
                                    "keeps its own value."))
@@ -78,7 +69,7 @@ class PowerTab(QWidget):
 
         for box in (self.idle_box, self.low_power_box, self.warn_box):
             box.toggled.connect(self._commit)
-        for w in (self.idle_slider, self.low_power_slider, self.warn_spin):
+        for w in (self.idle_slider, self.low_power_slider):
             w.valueChanged.connect(self._commit)
 
     @staticmethod
@@ -94,7 +85,7 @@ class PowerTab(QWidget):
 
     def set_device(self, info: DeviceInfo) -> None:
         """Sleep timer and low power mode are global and written only to verified mice
-        (the Naga V2 Pro); an experimental battery mouse gets the desktop warning only."""
+        (the Naga V2 Pro); an experimental battery mouse gets the battery warnings only."""
         own = info.verified and "battery" in info.features
         self.idle_card.setVisible(own and "idle_time" in info.features)
         self.low_card.setVisible(own and "low_battery_threshold" in info.features)
@@ -107,8 +98,7 @@ class PowerTab(QWidget):
         self.idle_slider.setValue(min(max(minutes, 1), IDLE_MAX_S // 60))
         self.low_power_box.setChecked(settings.low_battery_threshold is not None)
         self.low_power_slider.setValue(settings.low_battery_threshold or LOW_POWER_MIN)
-        self.warn_box.setChecked(settings.low_battery_notify > 0)
-        self.warn_spin.setValue(settings.low_battery_notify or DEFAULT_WARN)
+        self.warn_box.setChecked(settings.battery_osd)
         self._show()
         self._quiet = False
 
@@ -117,7 +107,6 @@ class PowerTab(QWidget):
         self.low_power_value.setText(f"{self.low_power_slider.value()} %")
         self.idle_slider.setEnabled(self.idle_box.isChecked())
         self.low_power_slider.setEnabled(self.low_power_box.isChecked())
-        self.warn_spin.setEnabled(self.warn_box.isChecked())
 
     def _commit(self, *_: object) -> None:
         self._show()
@@ -127,5 +116,5 @@ class PowerTab(QWidget):
         s.idle_time = self.idle_slider.value() * 60 if self.idle_box.isChecked() else None
         s.low_battery_threshold = (self.low_power_slider.value()
                                    if self.low_power_box.isChecked() else None)
-        s.low_battery_notify = self.warn_spin.value() if self.warn_box.isChecked() else 0
+        s.battery_osd = self.warn_box.isChecked()
         self.changed.emit()

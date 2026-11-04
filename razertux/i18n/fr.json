@@ -193,7 +193,6 @@
     "About RazerTux": "À propos de RazerTux",
     "Record device…": "Enregistrer un appareil…"
   },
-  "MouseView": {},
   "PerformanceTab": {
     "%1 – %2, steps of %3": "%1 – %2, par pas de %3",
     "Polling Rate": "Taux d’interrogation",
@@ -213,13 +212,13 @@
   "PowerTab": {
     "%1 min": "%1 min",
     "Battery warning": "Alerte batterie",
-    "Desktop notification in wireless mode, once per discharge (again only after charging).": "Notification de bureau en mode sans fil, une fois par décharge (à nouveau seulement après recharge).",
     "These settings apply to all profiles. Unchecked: the mouse keeps its own value.": "Ces paramètres s’appliquent à tous les profils. Non coché : la souris conserve sa propre valeur.",
     "Power saving (wireless)": "Économie d’énergie (sans fil)",
     "Low power mode": "Mode basse consommation",
     "In wireless mode, enter low power mode when the battery is below (%)": "En mode sans fil, passer en basse consommation quand la batterie est sous (%)",
     "Go to sleep after inactivity (minutes)": "Mise en veille après inactivité (minutes)",
-    "Warn when the battery is below": "Alerter quand la batterie est sous"
+    "Battery warnings on screen (from 20 %, every 5 %)": "Alertes de batterie à l’écran (dès 20 %, tous les 5 %)",
+    "On-screen message with the battery level, not while charging.": "Message à l’écran avec le niveau de batterie, pas pendant la charge."
   },
   "ScrollTab": {
     "Active stage": "Niveau actif",
@@ -292,14 +291,11 @@
     "start only the tray icon (window hidden)": "démarrer uniquement l’icône de la zone de notification (fenêtre masquée)"
   },
   "daemon": {
-    "Battery at {level} % – please charge the mouse.": "Batterie à {level} % – veuillez recharger la souris.",
     "No readable backup at {path}: {error}": "Aucune sauvegarde lisible dans {path} : {error}",
     "Mouse is read-only": "La souris est en lecture seule",
     "Mouse not connected": "Souris non connectée",
-    "Naga V2 Pro: Low battery": "Naga V2 Pro : batterie faible",
     "Unknown device: {model}": "Appareil inconnu : {model}",
     "Unknown profile: {profile}": "Profil inconnu : {profile}",
-    "{name}: Low battery": "{name} : batterie faible",
     "RazerTux service (Razer mice)": "Service RazerTux (souris Razer)",
     "verbose log": "journal détaillé",
     "configuration directory (default: ~/.config/razertux)": "dossier de configuration (par défaut : ~/.config/razertux)"

@@ -35,7 +35,7 @@ from razertux.gui.scroll_tab import ScrollTab
 from razertux.hw.buttons import ButtonId
 from razertux.recorder.discover import list_razer_devices
 
-POWER_FIELDS = ("low_battery_notify", "idle_time", "low_battery_threshold",  # GUI-owned settings
+POWER_FIELDS = ("battery_osd", "idle_time", "low_battery_threshold",  # GUI-owned settings
                 "scroll_stage_names", "dpi_limit")
 
 

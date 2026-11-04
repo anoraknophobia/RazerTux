@@ -1266,28 +1266,27 @@ async def test_wireless_connect_starts_battery_monitor(tmp_path):
     assert naga(d)._battery is None
 
 
-async def test_wired_connect_has_no_battery_monitor(tmp_path):
-    d, t = await connected(tmp_path)
-    assert naga(d)._battery is None
+async def test_wired_connect_polls_the_battery_too(tmp_path):
+    d, t = await connected(tmp_path)  # on the cable: the tray shows level + charging
+    assert naga(d)._battery is not None
     await d.shutdown()
 
 
-async def test_low_battery_sends_desktop_notification(tmp_path):
+async def test_low_battery_is_logged_once_without_desktop_notification(tmp_path, caplog):
     d, t = await connected(tmp_path, product=0x00A8)
     sent = []
     d.notify = lambda title, body: sent.append((title, body))
-    t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 % < default 15
+    t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 % < 20
     t.responses[(0x07, 0x84)] = bytes([0, 0])   # not charging
     naga(d)._battery.poll()
     naga(d)._battery.poll()
-    assert len(sent) == 1 and "10" in sent[0][1]
+    assert sent == []  # the tray's battery OSD warns since 0.10
+    assert caplog.text.count("Battery low") == 1
     await d.shutdown()
 
 
-async def test_low_battery_not_repeated_after_reconnect(tmp_path):
+async def test_low_battery_not_logged_again_after_reconnect(tmp_path, caplog):
     d, t = await connected(tmp_path, product=0x00A8)
-    sent = []
-    d.notify = lambda title, body: sent.append(body)
     t.responses[(0x07, 0x80)] = bytes([0, 25])  # ~10 %
     t.responses[(0x07, 0x84)] = bytes([0, 0])
     naga(d)._battery.poll()
@@ -1296,7 +1295,7 @@ async def test_low_battery_not_repeated_after_reconnect(tmp_path):
     d.on_added("mouse", FakeDev("/dev/input/event18", product=0x00A8))
     await d.settle()
     naga(d)._battery.poll()
-    assert len(sent) == 1
+    assert caplog.text.count("Battery low") == 1
     await d.shutdown()
 
 

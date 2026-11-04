@@ -258,7 +258,8 @@ class Settings:
     stages (slot 1-6). `idle_time` (seconds) and `low_battery_threshold` (percent, the mouse's
     own low power mode) are written to the mouse; None = leave the mouse as is."""
     active_profiles: dict[str, str]
-    low_battery_notify: int
+    battery_osd: bool  # battery warnings as OSD at 20/15/10/5 %
+    battery_icon: bool  # battery icon in the tray
     theme: str
     idle_time: int | None
     low_battery_threshold: int | None
@@ -270,18 +271,19 @@ class Settings:
     custom_scroll: dict[str, int]  # Naga "Custom" stage: {"tension": 0-100, "steps": 8-96}
     device_access: str  # one of DEVICE_ACCESS: who talks to the hardware
 
-    def __init__(self, active_profile: str | None = None, low_battery_notify: int = 15,
+    def __init__(self, active_profile: str | None = None, battery_osd: bool = True,
                  theme: str = "synapse", idle_time: int | None = None,
                  low_battery_threshold: int | None = None,
                  scroll_stage_names: dict[int, str] | None = None,
                  language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
                  active_profiles: dict[str, str] | None = None, last_model: str = "",
                  osd: bool = True, custom_scroll: dict[str, int] | None = None,
-                 device_access: str = "razertux"):
+                 device_access: str = "razertux", battery_icon: bool = True):
         self.active_profiles = dict(active_profiles or {})
         if active_profile is not None:
             self.active_profiles[NAGA_MODEL] = active_profile
-        self.low_battery_notify = low_battery_notify
+        self.battery_osd = bool(battery_osd)
+        self.battery_icon = bool(battery_icon)
         self.theme = theme
         self.idle_time = idle_time
         self.low_battery_threshold = low_battery_threshold
@@ -308,7 +310,8 @@ class Settings:
                 # a 0.2.x process still running after the update reads this key
                 # strictly (unknown keys are ignored there)
                 "active_profile": self.active_profile,
-                "low_battery_notify": self.low_battery_notify,
+                "battery_osd": self.battery_osd,
+                "battery_icon": self.battery_icon,
                 "theme": self.theme,
                 "idle_time": self.idle_time,
                 "low_battery_threshold": self.low_battery_threshold,
@@ -332,14 +335,19 @@ class Settings:
             active = {str(k): str(v) for k, v in d["active_profiles"].items()}
         else:  # schema 1
             active = {NAGA_MODEL: d["active_profile"]}
-        return cls(None, d.get("low_battery_notify", 15),
+        if "battery_osd" in d:
+            battery_osd = bool(d["battery_osd"])
+        else:  # before 0.10: one desktop warning at low_battery_notify % (0 = off)
+            battery_osd = d.get("low_battery_notify", 15) != 0
+        return cls(None, battery_osd,
                    d.get("theme", "synapse"), d.get("idle_time"),
                    d.get("low_battery_threshold"), stage_names,
                    str(d.get("language", "system")),
                    _dpi_limit(d.get("dpi_limit")), active_profiles=active,
                    last_model=str(d.get("last_model", "")), osd=bool(d.get("osd", True)),
                    custom_scroll=d.get("custom_scroll"),
-                   device_access=str(d.get("device_access", "razertux")))
+                   device_access=str(d.get("device_access", "razertux")),
+                   battery_icon=bool(d.get("battery_icon", True)))
 
 
 @dataclass

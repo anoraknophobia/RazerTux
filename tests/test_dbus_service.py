@@ -254,10 +254,10 @@ async def test_activate_keeps_settings_saved_by_gui(tmp_path):
     d, svc, store, bus = make(tmp_path)
     await svc.reload()
     store.save_settings(Settings(active_profile="default", theme="system",
-                                 low_battery_notify=30))  # GUI saved meanwhile
+                                 battery_osd=False))  # GUI saved meanwhile
     await call(svc, "ActivateProfile", NAGA, "game")
     s = store.load_settings()
-    assert (s.active_profile, s.theme, s.low_battery_notify) == ("game", "system", 30)
+    assert (s.active_profile, s.theme, s.battery_osd) == ("game", "system", False)
 
 
 # -- PauseDevice / ResumeDevice -----------------------------------------------------------

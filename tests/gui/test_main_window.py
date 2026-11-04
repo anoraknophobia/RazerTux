@@ -259,7 +259,7 @@ def test_power_settings_dirty_and_saved_without_clobbering(env):
     assert ("Reload", ()) in transport.calls and not w.is_dirty
     w.power_tab.warn_box.setChecked(False)
     w.revert()
-    assert w.settings.low_battery_notify == 15 and w.power_tab.warn_box.isChecked()
+    assert w.settings.battery_osd is True and w.power_tab.warn_box.isChecked()
 
 
 def test_battery_label_wired_and_charging(env):

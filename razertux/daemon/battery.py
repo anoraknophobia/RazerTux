@@ -1,4 +1,4 @@
-"""Battery polling (wireless only) and the one-shot low battery desktop warning."""
+"""Battery polling (wireless and wired) and the one-shot low battery callback."""
 from __future__ import annotations
 
 import asyncio
@@ -21,7 +21,7 @@ class WarnState:
 
 class BatteryMonitor:
     """Polls battery level and charging state every `interval_s` while the mouse is
-    connected over the wireless dongle (wired: no queries at all).
+    connected (wireless or on the cable, where it charges).
 
     on_change(level, charging) runs whenever a reading differs from the last one.
     notify(level) runs once when the level drops below threshold() (0 = off) while
@@ -32,7 +32,6 @@ class BatteryMonitor:
 
     def __init__(self, dev: Any, interval_s: float = 60,
                  on_change: Callable[[int, bool], None] | None = None, *,
-                 connection: Callable[[], str] = lambda: "wireless",
                  threshold: Callable[[], int] = lambda: 15,
                  notify: Callable[[int], None] | None = None,
                  state: WarnState | None = None,
@@ -43,7 +42,6 @@ class BatteryMonitor:
         self._on_poll = on_poll or (lambda ok: None)
         self.interval_s = interval_s
         self._on_change = on_change or (lambda b, c: None)
-        self._connection = connection
         self._threshold = threshold
         self._notify = notify or (lambda b: None)
         self._last: tuple[int, bool] | None = None
@@ -51,8 +49,8 @@ class BatteryMonitor:
         self._task: asyncio.Task | None = None
 
     def poll(self) -> None:
-        """Take one reading (no-op when wired); never raises on device errors."""
-        if self._connection() != "wireless" or self._suspended():
+        """Take one reading; never raises on device errors."""
+        if self._suspended():
             return
         try:
             level, charging = int(self.dev.battery()), bool(self.dev.charging())

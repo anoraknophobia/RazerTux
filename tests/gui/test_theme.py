@@ -14,10 +14,10 @@ def restore_style(qapp):
 
 def test_save_theme_keeps_other_settings(tmp_path):
     store = ConfigStore(tmp_path)
-    store.save_settings(Settings("p2", 20, idle_time=300))
+    store.save_settings(Settings("p2", False, idle_time=300))
     theme.save_theme(store, "system")
     s = store.load_settings()
-    assert (s.theme, s.active_profile, s.low_battery_notify, s.idle_time) == ("system", "p2", 20, 300)
+    assert (s.theme, s.active_profile, s.battery_osd, s.idle_time) == ("system", "p2", False, 300)
 
 
 def test_apply_synapse_and_back_to_system(restore_style):
