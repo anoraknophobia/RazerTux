@@ -1,29 +1,20 @@
 # RazerTux
 
-> **Not an official Razer product; not affiliated with Razer Inc.**
-> "Razer" and "Naga" are trademarks of Razer Inc.; RazerTux uses no Razer logos.
->
+**An unofficial Linux replacement for Razer Synapse**: buttons, macros, profiles, DPI,
+lighting and battery for Razer mice, with a tray icon. English, German, Spanish and French.
+
+> **Not an official Razer product; not affiliated with Razer Inc.** "Razer" and "Naga" are
+> trademarks of Razer Inc.; RazerTux uses no Razer logos.
 > Project: <https://github.com/anoraknophobia/RazerTux>
-
-> **Work in progress – vibe coded.** RazerTux is a hobby project and still under
-> development; expect bugs and changes. It was written almost entirely by an AI coding
-> assistant (Claude Code) under the direction of its maintainer, not by an experienced
-> developer ("vibe coding"). It has an automated test suite, but the code has not been
-> reviewed line by line by a human. Use it at your own risk.
-
-RazerTux is an unofficial Linux replacement for Razer Synapse. It supports the Razer Naga V2
-Pro and, experimentally, other Razer mice; Razer keyboards are recognised but not configured
-yet (tested on CachyOS/Arch, KDE Plasma Wayland). It consists of a background service
-(`razertuxd`), a command line tool (`razertux`) and a Qt GUI with a tray icon
-(`razertux-gui`). The GUI is available in English, German, Spanish and French.
-
-> **Works with or without OpenRazer.** RazerTux needs no kernel module. Already using
-> [OpenRazer](https://github.com/openrazer/openrazer) or Polychromatic? Keep them: choose
-> *View → Device access → RazerTux + OpenRazer* and everything OpenRazer offers for your
-> mouse goes through OpenRazer, while RazerTux adds button remapping, macros and profiles on
-> top. See [RazerTux and OpenRazer](#razertux-and-openrazer).
+>
+> **Work in progress – vibe coded.** A hobby project, written almost entirely by an AI coding
+> assistant (Claude Code) under the direction of its maintainer. It has an automated test
+> suite, but no line-by-line human review. Expect bugs; use it at your own risk.
 
 ![Customize: button assignments of the Naga V2 Pro](docs/screenshots/customize.png)
+
+<details>
+<summary>More screenshots</summary>
 
 <table>
   <tr>
@@ -40,36 +31,9 @@ yet (tested on CachyOS/Arch, KDE Plasma Wayland). It consists of a background se
   </tr>
 </table>
 
-## Features
-
-- **Buttons**: assignments, key combinations, macros, Hypershift, several profiles per model.
-- **OpenRazer optional**: runs on its own, or together with OpenRazer (*View → Device
-  access*), so OpenRazer tools and RazerTux do not get in each other's way.
-- **Top buttons** (Naga V2 Pro): freely assignable. By default the front one steps the
-  scroll wheel stage and the rear one the DPI stage, as under Synapse.
-- **Learn button**: teach RazerTux the signal of a button it does not recognise (press it on the
-  mouse) and assign it to a button slot. Needs the running service.
-- **Performance**: DPI, DPI stages and polling rate. A DPI value written permanently is
-  restored to the backed-up value when the service exits cleanly.
-- **Scroll wheel** (Naga V2 Pro): choose the stage by click (Ultra-fine … Custom) and set
-  tension and steps of the "Custom" stage.
-- **Lighting**: brightness and effects for logo and thumb pad (the scroll wheel has no LED).
-- **Power/battery**: charge level, idle time, low-battery warning.
-- **Multi-device**: several mice at once, each with its own per-model profiles.
-- **Keyboards** (untested): connected Razer keyboards are recognised and can be recorded.
-- **Add unknown device**: a recorder for Razer devices RazerTux does not support yet (see
-  "Help add your device").
-- **On-screen display** when the profile or DPI stage changes (toggle in the tray menu).
-- Razer-style dark look or the system colours (*View → Use system colors*).
-- UI languages: English, German, Spanish and French.
+</details>
 
 ## Installation
-
-RazerTux needs Linux with systemd, Python 3.11 or newer and a desktop session (KDE Plasma,
-GNOME, … on Wayland or X11). OpenRazer is optional: see
-[RazerTux and OpenRazer](#razertux-and-openrazer).
-
-### Quick install (all distributions)
 
 Open a terminal and run, as your normal user (not with `sudo`):
 
@@ -77,61 +41,32 @@ Open a terminal and run, as your normal user (not with `sudo`):
 curl -fsSL https://raw.githubusercontent.com/anoraknophobia/RazerTux/main/install.sh | bash
 ```
 
-This downloads the newest release and runs its `install.sh` (described below). To remove
-RazerTux again:
+Then unplug the mouse, plug it in again and open **RazerTux** from the application menu.
 
-```
-curl -fsSL https://raw.githubusercontent.com/anoraknophobia/RazerTux/main/install.sh |
-  bash -s -- --uninstall
-```
+- **Update:** run the same command again.
+- **Uninstall:** the same command with `bash -s -- --uninstall` at the end. It offers to
+  restore the mouse's original settings first; your profiles stay in `~/.config/razertux`.
 
-If you prefer to read the script before running it, install from the source instead:
+| Distribution | Status |
+|---|---|
+| Arch, CachyOS, EndeavourOS, Manjaro | tested with a real mouse |
+| Debian 13+, Ubuntu 24.04+, Linux Mint 22+ | installer tested in a container |
+| Fedora, openSUSE Tumbleweed | installer tested in a container |
+| Debian 12, Ubuntu 22.04, openSUSE Leap 15 | not supported (Python older than 3.11) |
+| Distributions without systemd | not supported |
 
-1. Download the source: either `git clone https://github.com/anoraknophobia/RazerTux.git`, or
-   the `Source code (tar.gz)` of the newest version under
-   [Releases](https://github.com/anoraknophobia/RazerTux/releases), then unpack it.
-2. Open a terminal in that folder and run, as your normal user (not with `sudo`):
-
-   ```
-   ./install.sh
-   ```
-
-   The script asks for your password when it needs administrator rights.
-3. Unplug the mouse and plug it in again, then open RazerTux from the application menu. The
-   tray icon starts automatically from your next login on.
-
-What `install.sh` does depends on the distribution. Only Arch (CachyOS) has been tested with
-a real mouse so far. On Debian, Ubuntu, Fedora and openSUSE the installer runs through in a
-container (install, start of the app, uninstall), but nobody has used RazerTux there with a
-mouse yet (**work in progress**). If you try one of them, please report how it went in an
+Tried it on a distribution that is not tested yet? Please tell us how it went in an
 [issue](https://github.com/anoraknophobia/RazerTux/issues).
 
-- **Arch Linux, CachyOS, EndeavourOS, Manjaro** (tested): builds the pacman package from
-  `packaging/PKGBUILD` and installs it with pacman.
-- **Debian 13+, Ubuntu 24.04+, Linux Mint 22+** (container-tested): installs the
-  dependencies with `apt` and RazerTux into `/opt/razertux`.
-- **Fedora** (container-tested): installs the dependencies with `dnf` and RazerTux into
-  `/opt/razertux`.
-- **openSUSE Tumbleweed** (container-tested): installs the dependencies with `zypper` and
-  RazerTux into `/opt/razertux`.
-- **Other distributions** (untested): installs RazerTux into `/opt/razertux`. Install
-  Python 3.11+ with `venv`, polkit and, where packaged, python-evdev, pyudev, dbus-next and
-  PySide6 first.
+<details>
+<summary>Install from the source, manual install on Arch, what gets installed</summary>
 
-Outside Arch, Python modules your distribution does not package (for example PySide6 on older
-releases) are downloaded from PyPI into `/opt/razertux`; nothing is installed into the system
-Python. Besides `/opt/razertux` the script installs the same files as the Arch package: the
-udev rule (`/etc/udev/rules.d/70-razertux.rules`), the user service
-(`/etc/systemd/user/razertuxd.service`), the D-Bus service file, the menu entry, the tray
-autostart (`/etc/xdg/autostart/razertux-tray.desktop`), the icon, the commands in
-`/usr/local/bin` and the recorder's polkit helper. The list is kept in
-`/opt/razertux/installed-files`.
+**From the source** (if you want to read the script first): `git clone` this repository or
+download `Source code (tar.gz)` from
+[Releases](https://github.com/anoraknophobia/RazerTux/releases), then run `./install.sh` in
+that folder (`./install.sh --uninstall` removes it again).
 
-Older releases (Debian 12, Ubuntu 22.04, openSUSE Leap 15) ship Python older than 3.11 and
-are not supported. Distributions without systemd are not supported either (you can still start
-`razertuxd` yourself).
-
-### Manual install on Arch
+**Manual install on Arch:**
 
 ```
 cd packaging
@@ -139,43 +74,37 @@ makepkg -si
 systemctl --user enable --now razertuxd.service
 ```
 
-Build dependencies (`makedepends`): `python-build`, `python-installer`, `python-wheel`,
-`python-setuptools`.
+Build dependencies: `python-build`, `python-installer`, `python-wheel`, `python-setuptools`.
 
-The service starts with the graphical session (`graphical-session.target`) and is also
-started on demand via D-Bus (`io.github.razertux`). If you copied a udev rule to
-`/etc/udev/rules.d/` by hand earlier, please remove it; the package installs
-`70-razertux.rules` to `/usr/lib/udev/rules.d/`.
+**What gets installed:** on Arch a pacman package. Elsewhere the dependencies come from the
+distribution's package manager, RazerTux itself goes into `/opt/razertux` (Python modules
+the distribution lacks come from PyPI; the system Python is not touched). Both install a
+udev rule, a systemd user service (`razertuxd`), a D-Bus service file, the menu entry, the
+tray autostart, the icon and the recorder's polkit helper. Outside Arch the list is kept in
+`/opt/razertux/installed-files`.
 
-## Upgrading
+After updating some other way, restart the service:
+`systemctl --user restart razertuxd.service`.
 
-Download the new version and run `./install.sh` again (on Arch you can also run
-`makepkg -si` in `packaging/`). The script restarts the service and the tray. If you
-upgraded another way, restart them yourself or log out and back in:
+</details>
 
-```
-systemctl --user restart razertuxd.service
-```
+## Supported devices
 
-What changed in each version: see [Releases](https://github.com/anoraknophobia/RazerTux/releases)
-or `CHANGELOG.md`.
+| Device | Status |
+|---|---|
+| Razer Naga V2 Pro (dongle and USB) | verified, full feature set |
+| 88 other Razer mice (OpenRazer database) | experimental: untested, no guarantee |
+| 107 Razer keyboards (OpenRazer database) | recognised only, not configurable yet |
 
-## Getting started
+On experimental mice RazerTux first only reads and backs up the device state before
+anything is written; which settings are available depends on the model. Keyboards appear
+with a picture of their size; RazerTux never reads what you type.
 
-1. Connect the mouse via wireless dongle or USB and start `razertux-gui` (or click the tray
-   icon). On first connect the service automatically backs up the mouse's initial state to
-   `~/.config/razertux/mouse-backup.json` (an existing backup is never overwritten).
-2. Create a profile and set buttons, DPI and lighting. You can switch profiles in the tray.
-
-Command line: `razertux status` shows the mouse state and `razertux restore` restores the
-backed-up state. `razertux backup` creates the backup by hand (optional, only needed without
-a running service; it does not overwrite anything either). All three accept `--model` to
-pick a model when several mice are connected.
-
-## Help add your device
+## Your mouse or keyboard is missing?
 
 Is your Razer device missing, or are some of its buttons not recognized? The built-in
-recorder collects a small, anonymous device report that you can send to the project.
+recorder collects a small, anonymous device report that you can send to the project. This
+is the way to get your device supported.
 
 1. Click **"Add unknown device"** at the top right (or Help → "Record device…"), or run
    `razertux-record`.
@@ -185,141 +114,87 @@ recorder collects a small, anonymous device report that you can send to the proj
 5. Optionally run the light test.
 6. Review the report and submit it on GitHub (you need a GitHub account).
 
-Privacy promise: the report contains no serial numbers, no user or host names and no
-paths. Only the distinct button signals are recorded, never typed text. Nothing is
-persisted on the device, and the light test uses NOSTORE only (it is not saved to the
-device and disappears on its own).
+**Privacy:** the report contains no serial numbers, no user or host names and no paths.
+Only the distinct button signals are recorded, never typed text. Nothing is saved on the
+device; the light test uses NOSTORE only and disappears on its own.
 
-### For maintainers
+**Something does not work on a supported device?** Choose **"Copy diagnostics"** in the app
+and paste the text into an [issue](https://github.com/anoraknophobia/RazerTux/issues).
+
+<details>
+<summary>For maintainers</summary>
 
 `tools/import_device_report.py` reads a submitted device report and turns it into entries
 for the device database.
 
-## Language
+</details>
 
-*View → Language* (also in the tray menu): system language, English, German, Spanish,
-French. "System language" uses the language of the system and falls back to English if it
-is not supported. The GUI switches to a new language after a restart ("Restart now" restarts
-it immediately); the service switches immediately (battery warning, configuration errors).
-The setting is stored as `"language"` in `~/.config/razertux/settings.json`.
+## Features
 
-English is the source language. Translations are JSON files in `razertux/i18n/<lang>.json`
-(`{"context": {"English text": "translation"}}`); `tests/test_i18n.py` checks that every
-text is translated and the placeholders match.
+- **Buttons:** assignments, key combinations, macros, Hypershift, several profiles per model.
+  The Naga's top buttons are freely assignable (default: scroll stage and DPI stage).
+- **Learn button:** teach RazerTux a button it does not recognise by pressing it.
+- **Performance:** DPI, DPI stages and polling rate.
+- **Scroll wheel** (Naga V2 Pro): stage by click (Ultra-fine … Custom), tension and steps of
+  the Custom stage.
+- **Lighting** for logo and thumb pad, **battery** level, idle time and low-battery warning.
+- **Several mice at once**, each with its own profiles.
+- **On-screen display** when the profile or DPI stage changes (toggle in the tray menu).
+- Razer-style dark look or system colours (*View → Use system colors*); language under
+  *View → Language*.
 
-## Restoring the original state
+## Usage
 
-```
-razertux restore
-```
+On first connect the service backs up the mouse's original state automatically to
+`~/.config/razertux/mouse-backup.json` (an existing backup is never overwritten). Then
+create a profile in the app; switch profiles from the tray.
 
-(or "Restore original state" in the tray) writes the backed-up values back: DPI, DPI stages,
-polling rate, brightness and the power settings (idle time, low-battery threshold). Effects
-and colors are not included; the mouse resets them itself when unplugged and plugged in
-again. Use `razertux status` to compare the result against the backup. The backup is stored
-in `~/.config/razertux/mouse-backup.json`.
+Command line:
 
-## Uninstalling
+- `razertux status`: mouse state compared with the backup
+- `razertux restore`: write the backed-up state back (also in the tray: "Restore original
+  state"). Covers DPI, DPI stages, polling rate, brightness and power settings; effects and
+  colours reset themselves when the mouse is replugged.
+- `razertux backup`: create the backup by hand (optional, only needed without a running
+  service; it does not overwrite anything either).
 
-In the RazerTux source folder:
-
-```
-./install.sh --uninstall
-```
-
-It first offers to restore the mouse's original settings from the backup, then stops the
-service and removes RazerTux (on Arch with `pacman -Rns razertux`, elsewhere everything the
-installer put on the system). Your profiles and the mouse backup stay in
-`~/.config/razertux`; delete that folder to remove them too:
-
-```
-rm -r ~/.config/razertux
-```
-
-By hand on Arch:
-
-```
-razertux restore
-systemctl --user disable --now razertuxd.service
-sudo pacman -Rns razertux
-```
-
-Run `razertux restore` before uninstalling, while RazerTux is still installed.
+All accept `--model` when several mice are connected.
 
 ## RazerTux and OpenRazer
 
-RazerTux does not need [OpenRazer](https://github.com/openrazer/openrazer), but works with
-it. Choose under **View → Device access**:
+RazerTux needs no kernel module and does not need
+[OpenRazer](https://github.com/openrazer/openrazer), but works with it. Choose under
+**View → Device access**:
 
-- **RazerTux** (default): RazerTux talks to the mouse itself. No kernel module needed.
-  Lighting, DPI and polling rate are set temporarily and the mouse's own values are written
-  back when RazerTux stops. This also works with OpenRazer installed, as long as no other
-  tool (e.g. Polychromatic) changes the same settings.
-- **RazerTux + OpenRazer**: whatever the OpenRazer daemon offers for your mouse (lighting
-  zones, polling rate, battery, power settings, DPI) goes through OpenRazer, so tools like
-  Polychromatic and RazerTux do not fight. OpenRazer stores these values in the mouse
-  permanently. Empty fields in a RazerTux profile leave OpenRazer's settings alone.
-  Button remapping, macros, profiles and the Naga's scroll-wheel stages always stay with
-  RazerTux. On the Naga V2 Pro the DPI stages and the thumb grid lighting also stay with
-  RazerTux. If the OpenRazer daemon stops, RazerTux takes over until it is back.
-
-The option is only selectable while the OpenRazer daemon is running
-(`systemctl --user status openrazer-daemon`).
-
-## Supported mice
-
-- **Razer Naga V2 Pro**: verified (wireless dongle and USB), full feature set.
-- **All other Razer mice from the OpenRazer database** (88 models / 117 USB product IDs, see
-  `razertux/devices/openrazer_mice.json`): **experimental**. RazerTux first only reads (read
-  probe) and backs up the device state before anything is written. On these mice, DPI,
-  polling rate and similar settings are available depending on the model; these mice are
-  untested, so there is no guarantee.
-- Reporting problems: choose **"Copy diagnostics"** in the GUI and paste the text into a
-  GitHub issue (<https://github.com/anoraknophobia/RazerTux/issues>).
-- The database comes from OpenRazer (GPL-2.0), see `OPENRAZER-NOTICE` (installed to
-  `/usr/share/licenses/razertux/`). The udev rule `70-razertux.rules` is generated from it
-  with `python tools/import_openrazer.py --udev`.
-
-## Keyboards (untested)
-
-Razer keyboards from the OpenRazer database (107 models) are recognised: a connected one
-appears in the device bar with a picture of a typical keyboard of its size (full size,
-tenkeyless, 75 % or 60 %, guessed from the model name) and a button **"Record this keyboard
-…"**. RazerTux cannot configure keyboards yet and has not been tested with one. It never
-reads what you type: there is no key assignment for keyboards, and the device recorder only
-keeps which special keys exist (ordinary typing keys are counted, never stored). Recording
-your keyboard is the way to get it supported.
-
-## Laser graphics
-
-The mouse views with button labels ("laser" lines) are original drawings (SVG templates in
-the package). No Razer images or logos are used.
-
-## On-screen display (OSD)
-
-When the profile or the DPI stage changes, RazerTux briefly shows a confirmation on screen.
-The display can be switched on and off in the tray menu.
+- **RazerTux** (default): RazerTux talks to the mouse itself and sets lighting, DPI and
+  polling rate temporarily; the mouse's own values come back when RazerTux stops.
+- **RazerTux + OpenRazer** (only while the OpenRazer daemon runs): everything OpenRazer
+  offers for the mouse (lighting, polling rate, battery, power, DPI) goes through OpenRazer,
+  so tools like Polychromatic and RazerTux do not fight. Buttons, macros, profiles and the
+  Naga's scroll-wheel stages always stay with RazerTux.
 
 ## Known limits
 
 - Bluetooth: normal input only, no configuration. Use the wireless dongle or USB.
-- Scroll-wheel stage values: only the "Custom" stage can be changed (stages 1–5 are fixed in
-  the mouse).
-- `kill -9` on the service skips the cleanup. systemd restarts the service; until then
-  the Naga's top buttons do not react. Without a running service, unplugging and
-  replugging the mouse helps.
+- Scroll wheel: only the "Custom" stage can be changed; stages 1–5 are fixed in the mouse.
+- `kill -9` on the service skips the cleanup; until systemd restarts it, the Naga's top
+  buttons do not react (replugging the mouse helps).
 - `dbus-next` is deprecated as of Python 3.15; a replacement will be needed then.
 - More hardware details: `docs/hardware-notes.md`.
 
-## Credits
+## Contributing
 
-Much of the knowledge about the HID protocol of Razer mice, and the device data, comes from
-[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0). Many thanks to the OpenRazer
-project. The app icon (penguin) is an original drawing.
+Translations are JSON files in `razertux/i18n/<lang>.json`
+(`{"context": {"English text": "translation"}}`); `tests/test_i18n.py` checks that every text
+is translated. Changes per version:
+[Releases](https://github.com/anoraknophobia/RazerTux/releases) or `CHANGELOG.md`.
 
-## License
+## Credits and license
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version (GPL-2.0-or-later). See `LICENSE` for the GPL-2.0 text.
+Much of the knowledge about the HID protocol of Razer mice, and the device database, comes
+from [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0), see `OPENRAZER-NOTICE`.
+Many thanks to the OpenRazer project. The mouse drawings with button labels and the app icon
+(penguin) are original drawings; no Razer images or logos are used.
+
+RazerTux is free software under the GNU General Public License, version 2 or (at your option)
+any later version (GPL-2.0-or-later). See `LICENSE`.

@@ -108,7 +108,7 @@ def test_openrazer_notice_is_packaged():
 
 def test_readme_documents_new_sections():
     r = (ROOT / "README.md").read_text()
-    for h in ("## Supported mice", "## Laser graphics", "## On-screen display (OSD)"):
+    for h in ("## Installation", "## Supported devices", "## Your mouse or keyboard is missing?"):
         assert h in r, h
     assert "Copy diagnostics" in r
     assert r.startswith("# RazerTux")
@@ -219,7 +219,7 @@ def test_pyproject_license_is_spdx_expression():
 
 def test_readme_has_no_manual_backup_step():
     readme = (ROOT / "README.md").read_text()
-    steps = readme.split("## Getting started")[1].split("## ")[0]
+    steps = readme.split("## Usage")[1].split("## ")[0]
     assert not re.search(r"^\d+\..*razertux backup", steps, re.M)  # no numbered step
     assert "automatically" in steps and "optional" in steps
 
@@ -287,7 +287,7 @@ def test_record_helper_wrapper_and_policy():
 
 def test_readme_help_add_your_device():
     r = (ROOT / "README.md").read_text(encoding="utf-8")
-    sec = r.split("## Help add your device")[1].split("\n## ")[0]
+    sec = r.split("## Your mouse or keyboard is missing?")[1].split("\n## ")[0]
     assert len(re.findall(r"^\d\. ", sec, re.M)) == 6
     for needle in ("Record device", "razertux-record", "GitHub account", "NOSTORE",
                    "serial", "tools/import_device_report.py", "For maintainers"):
