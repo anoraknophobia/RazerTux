@@ -126,8 +126,10 @@ with a picture of their size; RazerTux never reads what you type.
 Only the distinct button signals are recorded, never typed text. Nothing is saved on the
 device; the light test uses NOSTORE only and disappears on its own.
 
-**Something does not work on a supported device?** Choose **"Copy diagnostics"** in the app
-and paste the text into an [issue](https://github.com/anoraknophobia/RazerTux/issues).
+**Something does not work on a supported device?** Open a [bug report][bug-report]; the
+form asks for everything needed, including the text from **"Copy diagnostics"** in the app.
+
+[bug-report]: https://github.com/anoraknophobia/RazerTux/issues/new?template=bug-report.yml
 
 <details>
 <summary>For maintainers</summary>

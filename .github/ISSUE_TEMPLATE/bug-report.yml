@@ -1,0 +1,67 @@
+name: Bug report
+description: Something in RazerTux does not work as expected
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Is your device not supported at all? Please use the
+        **Device report** template instead (the app's "Add unknown device" button fills it in).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        1. Open the Customize tab and assign key F1 to side button 1
+        2. Press side button 1
+        Expected: F1. Got: nothing.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: RazerTux version
+      description: Shown under Help → About RazerTux.
+      placeholder: "0.9.2"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and connection
+      placeholder: "Razer Naga V2 Pro, wireless dongle"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Distribution and desktop
+      placeholder: "CachyOS, KDE Plasma 6 (Wayland)"
+    validations:
+      required: true
+  - type: dropdown
+    id: openrazer
+    attributes:
+      label: OpenRazer
+      description: Is OpenRazer installed, and which mode is chosen under View → Device access?
+      options:
+        - Not installed
+        - Installed, mode "RazerTux"
+        - Installed, mode "RazerTux + OpenRazer"
+        - Don't know
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Click "Copy diagnostics" in the app and paste the text here (it contains no serial number).
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: Service log
+      description: "Output of: journalctl --user -u razertuxd --since \"-30 min\" --no-pager"
+      render: text
