@@ -281,3 +281,78 @@ def test_daemon_error_in_slot_does_not_escape(setup):
     client.devices = boom
     client.profileChanged.emit(NAGA, "default")
     assert shown == [("default", "PROFIL", None)]
+
+
+# -- battery warnings ------------------------------------------------------------
+
+from razertux.gui.osd import BatterySteps  # noqa: E402
+
+
+def _run(steps, *readings):
+    """readings: level or (level, charging); returns the levels that showed an OSD."""
+    shown = []
+    for r in readings:
+        level, charging = r if isinstance(r, tuple) else (r, False)
+        if steps.update(level, charging):
+            shown.append(level)
+    return shown
+
+
+def test_battery_steps_every_five_from_twenty():
+    assert _run(BatterySteps(), 25, 21, 20, 19, 16, 15, 11, 10, 6, 5, 3) == [20, 15, 10, 5]
+
+
+def test_battery_steps_first_reading_below_a_step_shows_once():
+    assert _run(BatterySteps(), 12, 12, 11, 10, 5) == [12, 10, 5]
+
+
+def test_battery_steps_silent_while_charging_and_rearm_after_charging():
+    s = BatterySteps()
+    assert _run(s, 20, (15, True), (16, True)) == [20]
+    assert _run(s, 15, 10) == [15, 10]  # charging re-armed every step
+
+
+def test_battery_steps_rearm_needs_plus_five():
+    s = BatterySteps()
+    assert _run(s, 20, 24, 20) == [20]
+    assert _run(s, 25, 20) == [20]
+
+
+def battery(level, charging=False, connected=True):
+    return {"connected": connected, "battery": level, "charging": charging}
+
+
+def test_battery_osd_names_the_device(setup):
+    ctl, client, t, shown, _ = setup
+    client.statusChanged.emit(NAGA, battery(21))
+    assert shown == []
+    client.statusChanged.emit(NAGA, battery(20))
+    assert shown == [("20 %", "BATTERY", "Razer Naga V2 Pro")]
+    client.statusChanged.emit(NAGA, battery(19))
+    client.statusChanged.emit(NAGA, battery(15, charging=True))
+    assert len(shown) == 1
+
+
+def test_battery_osd_follows_its_own_setting(setup):
+    ctl, client, t, shown, store = setup
+    ctl.set_enabled(False)  # profile/DPI OSD off: battery warnings stay on
+    client.statusChanged.emit(NAGA, battery(20))
+    assert shown == [("20 %", "BATTERY", "Razer Naga V2 Pro")]
+    s = store.load_settings()
+    s.battery_osd = False  # e.g. the Power tab saved it
+    store.save_settings(s)
+    client.statusChanged.emit(NAGA, battery(15))
+    assert len(shown) == 1
+
+
+def test_battery_osd_ignores_unknown_level_and_disconnect(setup):
+    ctl, client, t, shown, _ = setup
+    client.statusChanged.emit(NAGA, battery(-1))
+    client.statusChanged.emit(NAGA, battery(10, connected=False))
+    assert shown == []
+
+
+def test_battery_kind_text(qapp):
+    w = OsdWindow()
+    w.kind = "BATTERY"
+    assert w._kind_text() == "BATTERY"

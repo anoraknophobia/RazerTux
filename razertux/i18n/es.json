@@ -423,7 +423,8 @@
   },
   "OsdWindow": {
     "DPI": "DPI",
-    "PROFILE": "PERFIL"
+    "PROFILE": "PERFIL",
+    "BATTERY": "BATERÍA"
   },
   "cli": {
     "Service version does not match – please restart the RazerTux service (systemctl --user restart razertuxd) or log in again": "La versión del servicio no coincide: reinicia el servicio de RazerTux (systemctl --user restart razertuxd) o vuelve a iniciar sesión",

@@ -82,7 +82,8 @@ class OsdWindow(QWidget):
         return QColor(ACCENT)
 
     def _kind_text(self) -> str:
-        return {"DPI": self.tr("DPI"), "PROFIL": self.tr("PROFILE")}.get(self.kind, self.kind)
+        return {"DPI": self.tr("DPI"), "PROFIL": self.tr("PROFILE"),
+                "BATTERY": self.tr("BATTERY")}.get(self.kind, self.kind)
 
     def _value_font(self) -> QFont:
         font = QFont(self.font())
@@ -152,8 +153,32 @@ class OsdWindow(QWidget):
         p.end()
 
 
+BATTERY_STEPS = (20, 15, 10, 5)
+REARM_MARGIN = 5
+
+
+class BatterySteps:
+    """When to show a battery warning: once per step (20/15/10/5 %) and discharge.
+
+    Below a step that was not shown yet -> show the actual level and mark every step
+    at or above it. A step re-arms while charging or once the level is back at
+    step + REARM_MARGIN. Nothing is shown while charging."""
+
+    def __init__(self) -> None:
+        self.warned: set[int] = set()
+
+    def update(self, level: int, charging: bool) -> bool:
+        if charging:
+            self.warned.clear()
+            return False
+        self.warned = {s for s in self.warned if level < s + REARM_MARGIN}
+        due = [s for s in BATTERY_STEPS if level <= s and s not in self.warned]
+        self.warned.update(s for s in BATTERY_STEPS if level <= s)
+        return bool(due)
+
+
 class OsdController:
-    """Turns profile and DPI changes of the daemon into OSD messages.
+    """Turns profile and DPI changes and low battery levels of the daemon into OSD messages.
 
     The first profile / DPI report per model is only a baseline (start-up, daemon
     restart, device appearing). A profile change shows one OSD; DPI changes within
@@ -169,6 +194,7 @@ class OsdController:
         self.window = OsdWindow()
         self._profile: dict[str, str] = {}
         self._dpi: dict[str, int] = {}          # absent = next status is the baseline
+        self._battery: dict[str, BatterySteps] = {}  # survives reconnects (like the old warning)
         self._quiet_until: dict[str | None, float] = {}   # model (None = all) -> time
         client.profileChanged.connect(self._on_profile)
         client.statusChanged.connect(self._on_status)
@@ -209,16 +235,27 @@ class OsdController:
         now = self._now()
         return now < max(self._quiet_until.get(model, 0.0), self._quiet_until.get(None, 0.0))
 
-    def _show(self, value: str, kind: str, model: str) -> None:
+    def _show(self, value: str, kind: str, model: str, always_name: bool = False) -> None:
         self.window.theme = self._theme_name()
         device = None
         try:
             devices = self.client.devices()
         except DaemonError:
             devices = []
-        if sum(1 for d in devices if d[3]) >= 2:
+        if always_name or sum(1 for d in devices if d[3]) >= 2:
             device = next((d[1] for d in devices if d[0] == model), None)
         self.window.show_message(value, kind, device)
+
+    def _on_battery(self, model: str, status: dict) -> None:
+        """Battery warning at 20/15/10/5 %; its own setting (Power tab), independent of
+        the profile/DPI OSD switch. Always names the device."""
+        level = int(status.get("battery", -1))
+        if level < 0:
+            return
+        steps = self._battery.setdefault(model, BatterySteps())
+        if steps.update(level, bool(status.get("charging", False))) \
+                and self.store.load_settings().battery_osd:
+            self._show(f"{level} %", "BATTERY", model, always_name=True)
 
     def _on_profile(self, model: str, profile_id: str) -> None:
         last = self._profile.get(model)
@@ -236,6 +273,7 @@ class OsdController:
         if not status.get("connected", False):
             self._dpi.pop(model, None)   # next status after (re)connecting is a baseline
             return
+        self._on_battery(model, status)
         dpi = int(status.get("dpi", -1))
         if dpi < 0:
             return
