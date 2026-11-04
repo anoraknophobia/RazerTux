@@ -11,6 +11,10 @@ lighting and battery for Razer mice, with a tray icon. English, German, Spanish 
 > assistant (Claude Code) under the direction of its maintainer. It has an automated test
 > suite, but no line-by-line human review. Expect bugs; use it at your own risk.
 
+> [!TIP]
+> **Your Razer mouse or keyboard is missing?** Record it with the built-in recorder in a few
+> minutes and send the report: [here is how](#your-mouse-or-keyboard-is-missing).
+
 ![Customize: button assignments of the Naga V2 Pro](docs/screenshots/customize.png)
 
 <details>
@@ -102,9 +106,13 @@ with a picture of their size; RazerTux never reads what you type.
 
 ## Your mouse or keyboard is missing?
 
-Is your Razer device missing, or are some of its buttons not recognized? The built-in
-recorder collects a small, anonymous device report that you can send to the project. This
-is the way to get your device supported.
+> [!IMPORTANT]
+> **Help add your device!** Is your Razer device missing, or are some of its buttons not
+> recognized? The built-in recorder collects a small, anonymous device report that you can
+> send to the project. This is the way to get your device supported:
+> [open a device report][device-report].
+
+[device-report]: https://github.com/anoraknophobia/RazerTux/issues/new?template=device-report.yml
 
 1. Click **"Add unknown device"** at the top right (or Help → "Record device…"), or run
    `razertux-record`.
