@@ -27,7 +27,7 @@ def test_menu_when_up(tray):
     assert texts[-3:] == ["Open window", "Restore original state", "Quit"]
     radios = {a.text(): a.isChecked() for a in tr.menu.actions()
               if a.isCheckable() and a.text() not in ("Use system colors", "On-screen display",
-                                                               "Battery icon")}
+                                                               "Battery icon", "Check for updates")}
     assert radios == {"Standard": False, "Zwei": True}
 
 
@@ -293,3 +293,22 @@ def test_battery_icon_toggle_in_menu(tray):
     assert seen == [False]
     tr.set_battery_icon_checked(False)
     assert not next(a for a in tr.menu.actions() if a.text() == "Battery icon").isChecked()
+
+
+def test_update_entry_and_switch(tray):
+    tr, _ = tray
+    assert not any(t.startswith("Update available") for t in tr.menu_texts())
+    opened, switched = [], []
+    tr.updateRequested.connect(lambda: opened.append(1))
+    tr.updateCheckRequested.connect(switched.append)
+    tr.set_update("0.11.0")
+    first = tr.menu.actions()[0]
+    assert first.text() == "Update available: 0.11.0"
+    first.trigger()
+    assert opened == [1]
+    check = next(a for a in tr.menu.actions() if a.text() == "Check for updates")
+    assert check.isCheckable() and check.isChecked()
+    check.trigger()
+    assert switched == [False]
+    tr.set_update_check_checked(False)
+    assert not next(a for a in tr.menu.actions() if a.text() == "Check for updates").isChecked()

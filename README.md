@@ -152,6 +152,8 @@ for the device database.
   at 20, 15, 10 and 5 %.
 - **Several mice at once**, each with its own profiles.
 - **On-screen display** when the profile or DPI stage changes (toggle in the tray menu).
+- **Update notice:** once a day RazerTux asks GitHub for a newer release and shows it in
+  the tray with the update command (switch off: tray menu → *Check for updates*).
 - Razer-style dark look or system colours (*View → Use system colors*); language under
   *View → Language*.
 

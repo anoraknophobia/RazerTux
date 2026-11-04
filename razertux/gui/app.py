@@ -36,6 +36,7 @@ def main(argv: list[str] | None = None) -> int:
     if "-h" in argv or "--help" in argv:
         i18n.apply_settings(ConfigStore(default_config_dir()).load_settings())
     args = parse_args(argv)
+    from PySide6.QtCore import QCoreApplication
     from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
     from razertux.gui.battery_icon import BatteryTray
@@ -48,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     from razertux.gui.recorder_wizard import open_recorder
     from razertux.gui.theme import ThemeController
     from razertux.gui.tray import TrayIcon, app_icon
+    from razertux.gui.updates import UpdateChecker, UpdateDialog
 
     from razertux.gui.single_instance import InstanceServer, notify_running, wait_until_gone
 
@@ -89,6 +91,32 @@ def main(argv: list[str] | None = None) -> int:
         tray.set_battery_icon_checked(on)
 
     tray.batteryIconRequested.connect(set_battery_icon)
+    updates = UpdateChecker(store)
+    tray.set_update_check_checked(updates.enabled)
+    update_dialog: list[UpdateDialog] = []  # the open one, kept alive
+
+    def show_update() -> None:
+        if updates.latest is None:
+            return
+        if update_dialog:
+            update_dialog[0].close()
+        update_dialog[:] = [UpdateDialog(*updates.latest, parent=window)]
+        update_dialog[0].show()
+
+    def set_update_check(on: bool) -> None:
+        updates.set_enabled(on)
+        tray.set_update_check_checked(on)
+        if not on:
+            tray.set_update(None)
+
+    updates.updateAvailable.connect(lambda version, _url: tray.set_update(version))
+    updates.notify.connect(lambda version: tray.showMessage(
+        APP_NAME, QCoreApplication.translate("UpdateDialog", "RazerTux %1 is available.")
+        .replace("%1", version)))
+    tray.messageClicked.connect(show_update)
+    tray.updateRequested.connect(show_update)
+    tray.updateCheckRequested.connect(set_update_check)
+    updates.start()
     language = LanguageController(store, dialog_parent=window)
     for view in (window, tray):
         view.set_language_checked(language.name)

@@ -46,6 +46,8 @@ class TrayIcon(QSystemTrayIcon):
     languageRequested = Signal(str)  # Settings.language
     osdRequested = Signal(bool)  # Settings.osd
     batteryIconRequested = Signal(bool)  # Settings.battery_icon
+    updateCheckRequested = Signal(bool)  # Settings.update_check
+    updateRequested = Signal()  # "Update available" clicked
     recordRequested = Signal()  # "Record device…" (the device recorder wizard)
 
     def __init__(self, client: DaemonClient, parent: QObject | None = None,
@@ -57,6 +59,8 @@ class TrayIcon(QSystemTrayIcon):
         self._language = "system"
         self._osd = True
         self._battery_icon = True
+        self._update_check = True
+        self._update: str | None = None  # newer version on GitHub
         self._language_menu: QMenu | None = None
         self.setToolTip(APP_NAME)
         self.menu = QMenu()
@@ -94,6 +98,14 @@ class TrayIcon(QSystemTrayIcon):
         self._battery_icon = on
         self.rebuild_menu()
 
+    def set_update_check_checked(self, on: bool) -> None:
+        self._update_check = on
+        self.rebuild_menu()
+
+    def set_update(self, version: str | None) -> None:
+        self._update = version
+        self.rebuild_menu()
+
     def set_language_checked(self, name: str) -> None:
         self._language = name
         self.rebuild_menu()
@@ -124,6 +136,10 @@ class TrayIcon(QSystemTrayIcon):
                 pass
             self._language_menu = None
         m.clear()
+        if self._update:
+            m.addAction(self.tr("Update available: %1").replace("%1", self._update)).triggered.connect(
+                lambda _=False: self.updateRequested.emit())
+            m.addSeparator()
         flat = True
         try:
             flat = self._add_daemon_entries(m)
@@ -143,6 +159,10 @@ class TrayIcon(QSystemTrayIcon):
         battery.setCheckable(True)
         battery.setChecked(self._battery_icon)
         battery.triggered.connect(lambda on: self.batteryIconRequested.emit(on))
+        updates = m.addAction(self.tr("Check for updates"))
+        updates.setCheckable(True)
+        updates.setChecked(self._update_check)
+        updates.triggered.connect(lambda on: self.updateCheckRequested.emit(on))
         self._language_menu = add_language_menu(m, self._language, self.languageRequested.emit)
         m.addAction(self.tr("Record device…")).triggered.connect(lambda _=False: self.recordRequested.emit())
         m.addAction(self.tr("Open window")).triggered.connect(lambda _=False: self.showWindowRequested.emit())

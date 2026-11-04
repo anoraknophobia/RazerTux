@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.11.0] - 2026-11-04
+
+### Added
+- Update notice: at start and once a day RazerTux asks GitHub for the newest release. A
+  newer one shows a tray message (once per version) and "Update available" in the tray
+  menu, which opens the update command to copy and a link to what is new. Tray menu:
+  "Check for updates" switches it off.
+
 ## [0.10.0] - 2026-11-04
 
 ### Added

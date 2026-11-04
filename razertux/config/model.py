@@ -260,6 +260,8 @@ class Settings:
     active_profiles: dict[str, str]
     battery_osd: bool  # battery warnings as OSD at 20/15/10/5 %
     battery_icon: bool  # battery icon in the tray
+    update_check: bool  # ask GitHub daily for a newer release
+    update_notified: str  # newest version the user was told about (tray message once)
     theme: str
     idle_time: int | None
     low_battery_threshold: int | None
@@ -278,12 +280,15 @@ class Settings:
                  language: str = "system", dpi_limit: int = DEFAULT_DPI_LIMIT,
                  active_profiles: dict[str, str] | None = None, last_model: str = "",
                  osd: bool = True, custom_scroll: dict[str, int] | None = None,
-                 device_access: str = "razertux", battery_icon: bool = True):
+                 device_access: str = "razertux", battery_icon: bool = True,
+                 update_check: bool = True, update_notified: str = ""):
         self.active_profiles = dict(active_profiles or {})
         if active_profile is not None:
             self.active_profiles[NAGA_MODEL] = active_profile
         self.battery_osd = bool(battery_osd)
         self.battery_icon = bool(battery_icon)
+        self.update_check = bool(update_check)
+        self.update_notified = str(update_notified)
         self.theme = theme
         self.idle_time = idle_time
         self.low_battery_threshold = low_battery_threshold
@@ -312,6 +317,8 @@ class Settings:
                 "active_profile": self.active_profile,
                 "battery_osd": self.battery_osd,
                 "battery_icon": self.battery_icon,
+                "update_check": self.update_check,
+                "update_notified": self.update_notified,
                 "theme": self.theme,
                 "idle_time": self.idle_time,
                 "low_battery_threshold": self.low_battery_threshold,
@@ -347,7 +354,9 @@ class Settings:
                    last_model=str(d.get("last_model", "")), osd=bool(d.get("osd", True)),
                    custom_scroll=d.get("custom_scroll"),
                    device_access=str(d.get("device_access", "razertux")),
-                   battery_icon=bool(d.get("battery_icon", True)))
+                   battery_icon=bool(d.get("battery_icon", True)),
+                   update_check=bool(d.get("update_check", True)),
+                   update_notified=str(d.get("update_notified", "")))
 
 
 @dataclass

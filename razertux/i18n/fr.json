@@ -284,7 +284,9 @@
     "Cannot restore": "Restauration impossible",
     "On-screen display": "Affichage à l'écran",
     "Record device…": "Enregistrer un appareil…",
-    "Battery icon": "Icône de batterie"
+    "Battery icon": "Icône de batterie",
+    "Check for updates": "Rechercher des mises à jour",
+    "Update available: %1": "Mise à jour disponible : %1"
   },
   "app": {
     "Configuration for the Razer Naga V2 Pro": "Configuration de la Razer Naga V2 Pro",
@@ -593,5 +595,14 @@
     "No": "Non",
     "Yes": "Oui",
     "Wireless devices usually have one. RazerTux then shows the battery level in the tray and warns when it runs low.": "Les appareils sans fil en ont généralement une. RazerTux affiche alors le niveau de batterie dans la barre système et prévient quand il est bas."
+  },
+  "UpdateDialog": {
+    "Close": "Fermer",
+    "Copied": "Copié",
+    "Copy": "Copier",
+    "RazerTux %1 is available.": "RazerTux %1 est disponible.",
+    "To update, run this command in a terminal as your normal user (it asks for your password):": "Pour mettre à jour, exécutez cette commande dans un terminal en tant qu’utilisateur normal (elle demande votre mot de passe) :",
+    "Update available": "Mise à jour disponible",
+    "What is new": "Nouveautés"
   }
 }
