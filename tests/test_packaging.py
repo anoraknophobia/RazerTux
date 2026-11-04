@@ -366,3 +366,18 @@ def test_install_script_piped_downloads_the_release_and_runs_it(tmp_path):
                        start_new_session=True)  # no terminal: answers come from stdin
     assert r.returncode == 7, r.stderr
     assert "Downloading RazerTux 1.2.3" in r.stdout and "inner --uninstall" in r.stdout
+
+
+def test_aur_pkgbuild_matches_the_local_package():
+    root = Path(__file__).resolve().parent.parent
+    aur = (root / "packaging/aur/PKGBUILD").read_text()
+    local = (root / "packaging/PKGBUILD").read_text()
+    import razertux
+    assert f"pkgver={razertux.__version__}" in aur
+    for key in ("depends=", "makedepends=", "optdepends=", "install=", "license="):
+        line = next(x for x in local.splitlines() if x.startswith(key))
+        assert line in aur.splitlines(), key
+    # same files installed (the AUR build reads them from the release's packaging/)
+    files = re.findall(r'install -Dm(\d+) "\$p/([^"]+)" "([^"]+)"', local)
+    aur_files = re.findall(r'install -Dm(\d+) "\$p/([^"]+)" "([^"]+)"', aur)
+    assert files and files == aur_files
