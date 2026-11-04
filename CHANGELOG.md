@@ -2,6 +2,12 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.8.4] - 2026-11-04
+
+### Changed
+- Shorter README: installation and "Your mouse or keyboard is missing?" come first,
+  supported distributions and devices are tables, details are collapsible.
+
 ## [0.8.3] - 2026-11-04
 
 ### Fixed
