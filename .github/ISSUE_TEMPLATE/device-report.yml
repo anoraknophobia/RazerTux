@@ -23,6 +23,15 @@ body:
       description: Human readable summary produced by the recorder.
     validations:
       required: true
+  - type: dropdown
+    id: battery
+    attributes:
+      label: Battery
+      description: Does the device have a battery (wireless)?
+      options:
+        - "Yes"
+        - "No"
+        - "Don't know"
   - type: textarea
     id: report
     attributes:

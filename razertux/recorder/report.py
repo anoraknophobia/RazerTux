@@ -23,6 +23,8 @@ _EVDEV_NODES = {"mouse", "keyboard", "consumer", "system", "other", "misc"}
 _DEVICE_KEYS = {"vid", "pid", "usb_manufacturer", "usb_product", "bcdDevice", "kind", "db_model", "connection"}
 # the user's answer to "What kind of device is this?" for devices the database does not know (R-4)
 USER_KINDS = frozenset({"mouse", "keyboard", "keypad", "headset", "other"})
+# the user's answer to "Does the device have a battery?" -> label of the issue form dropdown
+HAS_BATTERY = {"yes": "Yes", "no": "No", "unknown": "Don't know"}
 _SYSTEM_KEYS = {"razertux", "kernel", "distro"}
 _BUTTON_KEYS = {"template", "results", "signals", "standard_keys_seen", "duplicates", "timed_out", "stopped_at"}
 _TOP = ("schema", "version", "device", "system", "interfaces", "buttons", "reads", "light", "notes")
@@ -243,6 +245,8 @@ def _sanitize(data):
                 device[k] = v
     if isinstance(dev.get("user_kind"), str) and dev["user_kind"] in USER_KINDS:
         device["user_kind"] = dev["user_kind"]
+    if isinstance(dev.get("has_battery"), str) and dev["has_battery"] in HAS_BATTERY:
+        device["has_battery"] = dev["has_battery"]
     sysd = {}
     for k in _SYSTEM_KEYS:
         v = _scalar(_d(data.get("system")).get(k, _DROP), 64) if k in _d(data.get("system")) else _DROP
@@ -313,6 +317,7 @@ def summary_text(report: Report) -> str:
         + (f" (user says: {dev['user_kind']})" if dev.get("user_kind") else "")
         + f"  Connection: {dev.get('connection', '?')}",
         f"Database model: {dev.get('db_model') or 'not in database'}",
+        f"Battery: {dev.get('has_battery', '?')}",
         f"RazerTux {sysd.get('razertux', '?')}, kernel {sysd.get('kernel', '?')}, {sysd.get('distro', '?')}",
         f"Interfaces: {len(d['interfaces'])}",
     ]
@@ -359,6 +364,8 @@ def issue_url(report: Report, repo: str = "anoraknophobia/RazerTux",
     def build(summary: str, notes: str, js: str | None) -> str:
         q = {"template": "device-report.yml", "title": f"[device] {name}", "device": name,
              "summary": summary, "notes": notes}
+        if dev.get("has_battery") in HAS_BATTERY:
+            q["battery"] = HAS_BATTERY[dev["has_battery"]]
         if js is not None:
             q["report"] = js
         return base + "?" + "&".join(f"{k}={quote(v, safe=',:' if k == 'report' else '')}" for k, v in q.items())

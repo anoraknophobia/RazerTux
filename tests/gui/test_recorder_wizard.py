@@ -181,6 +181,12 @@ def test_known_mouse_full_flow(make, tmp_path):
     light.rows["logo"].answers["yes"].click()
     wait_until(lambda: ("light", "logo", "off") in be.calls)
     w.next_btn.click()
+    assert w.page_name == "battery"
+    battery = w.pages["battery"]
+    assert set(battery.buttons) == {"yes", "no", "unknown"}
+    assert w.next_btn.isEnabled()  # optional: unanswered means "unknown"
+    battery.buttons["no"].click()
+    w.next_btn.click()
     assert w.page_name == "review"
     w.pages["review"].notes.setPlainText("Bought in 2024")
     data = json.loads(w.pages["review"].json_view.toPlainText())
@@ -192,6 +198,7 @@ def test_known_mouse_full_flow(make, tmp_path):
     assert data["reads"]["firmware"]["value"] == "1.2.3"
     assert data["light"] == {"logo": "yes"}
     assert data["device"]["db_model"] == "death_adder_v2" and data["system"]["kernel"]
+    assert data["device"]["has_battery"] == "no"
     w.next_btn.click()
     assert w.page_name == "send"
     assert not w.next_btn.isVisible() or not w.next_btn.isEnabled()
@@ -775,3 +782,21 @@ def test_buttons_intro_asks_for_short_pauses(make):
     to_page(w, "buttons")
     text = w.pages["buttons"].intro.text()
     assert "wait until" in text and "press it again" in text
+
+
+def test_battery_page_preselects_yes_when_the_device_reports_a_level(make):
+    be = FakeBackend(reads=("firmware", "battery"), light_zones=())
+    w = make(device(DA_PID, "Razer DeathAdder V2"), be)
+    start_recording(w)
+    w.session.reads = {"battery": {"status": "ok", "value": 80}}
+    w.go("battery")
+    assert w.pages["battery"].buttons["yes"].isChecked()
+    assert w.session.report().device["has_battery"] == "yes"
+
+
+def test_battery_unanswered_is_unknown(make):
+    w = make(device(DA_PID, "Razer DeathAdder V2"), FakeBackend(light_zones=()))
+    start_recording(w)
+    w.go("battery")
+    assert not any(b.isChecked() for b in w.pages["battery"].buttons.values())
+    assert w.session.report().device["has_battery"] == "unknown"

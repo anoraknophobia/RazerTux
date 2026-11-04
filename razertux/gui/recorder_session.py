@@ -124,6 +124,7 @@ class RecorderSession(QObject):
         self.info = db.by_pid_any(dev.pid) if dev is not None else None
         self.kind_answer: str | None = None  # Ruling R-4: asked when the database does not know it
         self.template_choice: str | None = None
+        self.has_battery: str | None = None  # "yes" | "no" | "unknown" (battery page)
         self.opened: dict = {}
         self.buttons: dict = {}
         self.reads: dict = {}
@@ -282,6 +283,7 @@ class RecorderSession(QObject):
         device = report_device(self.dev)
         if self.db_kind is None and self.kind is not None:
             device["user_kind"] = self.kind  # the user's answer (Ruling R-4); "kind" stays as discovered
+        device["has_battery"] = self.has_battery or "unknown"
         return Report(device=device, system=system_section(), interfaces=report_interfaces(self.dev),
                       buttons=dict(self.buttons), reads=dict(self.reads), light=self.light,
                       notes=self.notes)

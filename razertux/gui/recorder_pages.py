@@ -27,6 +27,9 @@ KIND_ANSWERS = {"mouse": QT_TRANSLATE_NOOP("KindPage", "Mouse"),
                 "headset": QT_TRANSLATE_NOOP("KindPage", "Headset"),
                 "other": QT_TRANSLATE_NOOP("KindPage", "Other"),
                 "unknown": QT_TRANSLATE_NOOP("KindPage", "I don't know")}
+BATTERY_ANSWERS = {"yes": QT_TRANSLATE_NOOP("BatteryPage", "Yes"),
+                   "no": QT_TRANSLATE_NOOP("BatteryPage", "No"),
+                   "unknown": QT_TRANSLATE_NOOP("BatteryPage", "I don't know")}
 TEMPLATE_NAMES = {"ergo": QT_TRANSLATE_NOOP("TemplatePage", "Ergonomic (right hand)"),
                   "ambi": QT_TRANSLATE_NOOP("TemplatePage", "Symmetric"),
                   "compact": QT_TRANSLATE_NOOP("TemplatePage", "Compact"),
@@ -243,6 +246,40 @@ class KindPage(Page):
             for rb in self.buttons.values():
                 rb.setChecked(False)
             self.group.setExclusive(True)
+
+
+class BatteryPage(Page):
+    """Does the device have a battery? Optional; preselected "yes" when it reported a level."""
+
+    def __init__(self, session, parent=None):
+        super().__init__(session, parent)
+        self.title = self.tr("Battery")
+        self.lay.addWidget(_label(self.tr("Does the device have a battery?"), "cardTitle"))
+        self.lay.addWidget(_label(self.tr(
+            "Wireless devices usually have one. RazerTux then shows the battery level in the "
+            "tray and warns when it runs low.")))
+        self.group = QButtonGroup(self)
+        self.buttons: dict[str, QRadioButton] = {}
+        for key, text in BATTERY_ANSWERS.items():
+            rb = QRadioButton(QCoreApplication.translate("BatteryPage", text))
+            rb.toggled.connect(lambda on, key=key: on and self._pick(key))
+            self.group.addButton(rb)
+            self.buttons[key] = rb
+            self.lay.addWidget(rb)
+        self.lay.addStretch(1)
+
+    def _pick(self, key: str) -> None:
+        self.session.has_battery = key
+        self.changed.emit()
+
+    def enter(self) -> None:
+        answer = self.session.has_battery
+        if answer is None and self.session.reads.get("battery", {}).get("status") == "ok":
+            answer = "yes"  # the device answered the battery read
+        self.group.setExclusive(False)
+        for key, rb in self.buttons.items():
+            rb.setChecked(key == answer)
+        self.group.setExclusive(True)
 
 
 class TemplatePage(Page):

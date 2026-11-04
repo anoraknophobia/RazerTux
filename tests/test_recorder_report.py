@@ -82,7 +82,7 @@ def test_url_fields_match_yaml():
     q = parse_qs(urlparse(url).query)
     assert full
     assert set(q) - {"template", "title"} <= ids
-    assert {"device", "summary", "report", "notes"} == ids
+    assert {"device", "summary", "battery", "report", "notes"} == ids
     assert q["template"] == ["device-report.yml"] and q["title"][0].startswith("[device] ")
     assert urlparse(url).path == "/anoraknophobia/RazerTux/issues/new"
 
@@ -219,6 +219,20 @@ def test_user_kind_whitelisted_and_in_summary():
         r.device["user_kind"] = bad
         assert "user_kind" not in sanitize(r)["device"]
 
+
+
+def test_has_battery_whitelisted_in_summary_and_url():
+    r = make()
+    r.device["has_battery"] = "yes"
+    assert sanitize(r)["device"]["has_battery"] == "yes"
+    assert "Battery: yes" in summary_text(r)
+    q = parse_qs(urlparse(issue_url(r)[0]).query)
+    assert q["battery"] == ["Yes"]
+    for bad in ("maybe", 1, True):
+        r.device["has_battery"] = bad
+        assert "has_battery" not in sanitize(r)["device"]
+    r.device.pop("has_battery")
+    assert "battery" not in parse_qs(urlparse(issue_url(r)[0]).query)
 
 
 def test_sanitize_sorts_every_signal_list():

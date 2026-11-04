@@ -585,5 +585,13 @@
   },
   "BatteryIcon": {
     "charging": "en charge"
+  },
+  "BatteryPage": {
+    "Battery": "Batterie",
+    "Does the device have a battery?": "L’appareil a-t-il une batterie ?",
+    "I don't know": "Je ne sais pas",
+    "No": "Non",
+    "Yes": "Oui",
+    "Wireless devices usually have one. RazerTux then shows the battery level in the tray and warns when it runs low.": "Les appareils sans fil en ont généralement une. RazerTux affiche alors le niveau de batterie dans la barre système et prévient quand il est bas."
   }
 }

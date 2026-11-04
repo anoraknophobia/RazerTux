@@ -23,8 +23,8 @@ from razertux import APP_NAME
 from razertux.gui.dbus_client import DaemonClient
 from razertux.gui.recorder_buttons import SETTLE_MS, ButtonsPage
 from razertux.gui.recorder_pages import (
-    ChoosePage, DevicePage, KindPage, LightPage, PermissionPage, ReadsPage, ReviewPage, SendPage,
-    TemplatePage,
+    BatteryPage, ChoosePage, DevicePage, KindPage, LightPage, PermissionPage, ReadsPage, ReviewPage,
+    SendPage, TemplatePage,
 )
 from razertux.gui.recorder_session import RecorderSession, default_backend, guarded
 from razertux.recorder.backend import BackendError, HelperBackend
@@ -34,7 +34,8 @@ from razertux.recorder.report import issue_url, sanitize
 logger = logging.getLogger(__name__)
 __all__ = ["RecorderWizard", "open_recorder", "main", "BackendError"]
 
-ORDER = ("choose", "permission", "device", "kind", "template", "buttons", "reads", "light", "review", "send")
+ORDER = ("choose", "permission", "device", "kind", "template", "buttons", "reads", "light", "battery",
+         "review", "send")
 STYLE = """
 QWidget#recSide { background: #151515; border-right: 1px solid #2e2e2e; }
 QLabel#recStep { color: #8a8a8a; padding: 4px 10px; border-radius: 11px; }
@@ -65,7 +66,8 @@ class RecorderWizard(QWidget):
             "permission": PermissionPage(s, password_availability or HelperBackend.availability),
             "device": DevicePage(s), "kind": KindPage(s), "template": TemplatePage(s),
             "buttons": ButtonsPage(s, settle_ms), "reads": ReadsPage(s), "light": LightPage(s),
-            "review": ReviewPage(s), "send": SendPage(s, self.submit, self.save),
+            "battery": BatteryPage(s), "review": ReviewPage(s),
+            "send": SendPage(s, self.submit, self.save),
         }
         self.devices_list = self.pages["choose"].list
         self.page_name = "choose"
