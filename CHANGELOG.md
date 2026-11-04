@@ -2,6 +2,12 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.8.2] - 2026-11-04
+
+### Fixed
+- `install.sh` no longer warns that OpenRazer interferes with RazerTux; both work together
+  since 0.8.0.
+
 ## [0.8.1] - 2026-11-04
 
 ### Added

@@ -156,13 +156,6 @@ check_python() {
     || die "python3 cannot create virtual environments (install python3-venv / python3-pip)"
 }
 
-warn_openrazer() {
-  if lsmod 2>/dev/null | grep -q '^razermouse' || command -v openrazer-daemon >/dev/null; then
-    warn "OpenRazer is installed. It accesses the same devices and interferes with RazerTux;"
-    warn "please uninstall it (or at least unload the razermouse driver)."
-  fi
-}
-
 # -- generic install -----------------------------------------------------------------------
 install_generic() {
   local family="$1" src dest mode cmd
@@ -293,7 +286,6 @@ main() {
   if [ -z "${RAZERTUX_NO_SERVICE:-}" ] && ! command -v systemctl >/dev/null; then
     die "systemd is required: the service runs as a systemd user service"
   fi
-  warn_openrazer
   if [ "$family" = arch ]; then
     install_arch
   else
