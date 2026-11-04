@@ -147,7 +147,9 @@ for the device database.
 - **Performance:** DPI, DPI stages and polling rate.
 - **Scroll wheel** (Naga V2 Pro): stage by click (Ultra-fine … Custom), tension and steps of
   the Custom stage.
-- **Lighting** for logo and thumb pad, **battery** level, idle time and low-battery warning.
+- **Lighting** for logo and thumb pad; idle time.
+- **Battery icon** in the tray with the level (tooltip names the device), on-screen warnings
+  at 20, 15, 10 and 5 %.
 - **Several mice at once**, each with its own profiles.
 - **On-screen display** when the profile or DPI stage changes (toggle in the tray menu).
 - Razer-style dark look or system colours (*View → Use system colors*); language under

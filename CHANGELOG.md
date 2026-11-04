@@ -2,6 +2,21 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.10.0] - 2026-11-04
+
+### Added
+- Battery icon in the tray for every connected device with a battery: level as a number,
+  green / orange from 20 % / red from 10 %, a bolt while charging. The tooltip names the
+  device. Tray menu: "Battery icon" switches it off.
+- Battery warnings as on-screen display at 20, 15, 10 and 5 % (not while charging), with
+  the device name. Power tab: "Battery warnings on screen".
+- The device recorder asks whether the device has a battery; the device report form has
+  a "Battery" field.
+
+### Changed
+- The battery level is also read on the cable (shown with the charging bolt).
+- The one-time desktop notification at 15 % is replaced by the on-screen warnings.
+
 ## [0.9.2] - 2026-11-04
 
 ### Fixed
