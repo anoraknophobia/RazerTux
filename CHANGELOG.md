@@ -2,6 +2,13 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.9.0] - 2026-11-04
+
+### Changed
+- D-Bus library switched from `dbus-next` to its maintained fork `dbus-fast`
+  (Arch: `python-dbus-fast`). `dbus-next` no longer loads on Python 3.15, so the
+  service would not have started after the Python 3.15 update.
+
 ## [0.8.4] - 2026-11-04
 
 ### Changed

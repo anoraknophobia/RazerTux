@@ -100,7 +100,7 @@ class BatteryMonitor:
 async def notify_desktop(bus: Any, summary: str, body: str,
                          icon: str = "battery-caution") -> None:
     """Show a desktop notification via org.freedesktop.Notifications."""
-    from dbus_next import Message
+    from dbus_fast import Message
 
     await bus.call(Message(
         destination="org.freedesktop.Notifications",

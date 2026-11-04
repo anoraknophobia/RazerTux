@@ -199,9 +199,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 async def run(config_dir: Path) -> int:
-    from dbus_next import BusType
-    from dbus_next.aio import MessageBus
-    from dbus_next.constants import NameFlag, RequestNameReply
+    from dbus_fast import BusType
+    from dbus_fast.aio import MessageBus
+    from dbus_fast.constants import NameFlag, RequestNameReply
 
     from .uinput_out import UinputOutput
 

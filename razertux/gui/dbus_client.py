@@ -2,7 +2,7 @@
 
 Transport note: PySide6 (6.12) QtDBus cannot demarshal the daemon's container
 replies (a(ss), a{sv}) - QDBusArgument reading is unusable from Python. The
-real transport therefore uses dbus-next on a private asyncio thread; results
+real transport therefore uses dbus-fast on a private asyncio thread; results
 and signals reach the GUI thread through Qt signals, so the Qt event loop is
 never blocked by or entangled with asyncio. DaemonClient only needs the tiny
 Transport interface (call/start/callbacks), which tests replace with a fake.
@@ -42,7 +42,7 @@ class DaemonError(Exception):
 
 
 def _plain(v: Any) -> Any:
-    """Strip dbus-next Variants."""
+    """Strip dbus-fast Variants."""
     if hasattr(v, "signature") and hasattr(v, "value"):
         return _plain(v.value)
     if isinstance(v, dict):
@@ -52,8 +52,8 @@ def _plain(v: Any) -> Any:
     return v
 
 
-class DBusNextTransport(QObject):
-    """Transport over dbus-next on a background thread."""
+class DBusTransport(QObject):
+    """Transport over dbus-fast on a background thread."""
 
     signalReceived = Signal(str, object)
     ownerChanged = Signal(bool)
@@ -84,8 +84,8 @@ class DBusNextTransport(QObject):
             self._loop.close()
 
     async def _connect(self) -> Any:
-        from dbus_next import BusType
-        from dbus_next.aio import MessageBus
+        from dbus_fast import BusType
+        from dbus_fast.aio import MessageBus
         if self._lock is None:
             self._lock = asyncio.Lock()
         async with self._lock:  # no duplicate concurrent connects
@@ -95,7 +95,7 @@ class DBusNextTransport(QObject):
         return self._bus
 
     def _on_message(self, msg: Any) -> None:
-        from dbus_next import MessageType
+        from dbus_fast import MessageType
         if msg.message_type != MessageType.SIGNAL:
             return
         if msg.interface == INTERFACE:
@@ -104,7 +104,7 @@ class DBusNextTransport(QObject):
             self.ownerChanged.emit(bool(msg.body[2]))
 
     async def _watch(self) -> None:
-        from dbus_next import Message
+        from dbus_fast import Message
         try:
             bus = await self._connect()
             for rule in (f"type='signal',interface='{INTERFACE}'",
@@ -116,7 +116,7 @@ class DBusNextTransport(QObject):
             pass
 
     async def _call(self, member: str, signature: str, args: tuple) -> list:
-        from dbus_next import DBusError, Message, MessageType
+        from dbus_fast import DBusError, Message, MessageType
         try:
             bus = await self._connect()
             reply = await asyncio.wait_for(bus.call(Message(
@@ -157,7 +157,7 @@ class DaemonClient(QObject):
 
     def __init__(self, transport: Any | None = None, parent: QObject | None = None):
         super().__init__(parent)
-        self._t = transport if transport is not None else DBusNextTransport()
+        self._t = transport if transport is not None else DBusTransport()
         self._available: bool | None = None
         self._mismatch = False
         if hasattr(self._t, "signalReceived"):

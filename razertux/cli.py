@@ -50,8 +50,8 @@ class ModelError(Exception):
 
 async def _daemon_call_async(member: str, *args):
     """Call a Daemon1 method; None if the daemon is not on the bus."""
-    from dbus_next import BusType, DBusError, InterfaceNotFoundError, Message
-    from dbus_next.aio import MessageBus
+    from dbus_fast import BusType, DBusError, InterfaceNotFoundError, Message
+    from dbus_fast.aio import MessageBus
 
     from .daemon.dbus_service import BUS_NAME, INTERFACE, OBJECT_PATH
 
@@ -60,7 +60,7 @@ async def _daemon_call_async(member: str, *args):
     except Exception:  # no session bus / bad address: behave as "daemon not running"
         bus = None
     if bus is None:
-        # dbus-next leaks the half-open socket when its constructor fails
+        # a failed bus constructor can leave a half-open socket to the GC
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
             gc.collect()

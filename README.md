@@ -187,7 +187,6 @@ RazerTux needs no kernel module and does not need
 - Scroll wheel: only the "Custom" stage can be changed; stages 1–5 are fixed in the mouse.
 - `kill -9` on the service skips the cleanup; until systemd restarts it, the Naga's top
   buttons do not react (replugging the mouse helps).
-- `dbus-next` is deprecated as of Python 3.15; a replacement will be needed then.
 - More hardware details: `docs/hardware-notes.md`.
 
 ## Contributing

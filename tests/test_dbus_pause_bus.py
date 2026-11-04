@@ -6,8 +6,8 @@ import shutil
 import subprocess
 
 import pytest
-from dbus_next import Message, MessageType
-from dbus_next.aio import MessageBus
+from dbus_fast import Message, MessageType
+from dbus_fast.aio import MessageBus
 from test_dbus_service import DA, NAGA, grabbed, make
 
 from razertux.daemon.dbus_service import INTERFACE, OBJECT_PATH
@@ -29,7 +29,7 @@ def private_bus():
 async def close(bus):
     bus.disconnect()
     await bus.wait_for_disconnect()
-    bus._stream.close()  # dbus-next leaves these to the GC (ResourceWarning)
+    bus._stream.close()  # not closed by disconnect(); avoid a ResourceWarning
     bus._sock.close()
 
 

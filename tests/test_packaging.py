@@ -122,12 +122,12 @@ def test_hardware_notes_list_unverified_assumptions():
 def test_pkgbuild_names_and_relations():
     p = _read("PKGBUILD")
     lines = p.splitlines()
-    for line in ("pkgname=razertux", "pkgver=0.8.4", "pkgrel=1", "replaces=(naga-config)",
+    for line in ("pkgname=razertux", "pkgver=0.9.0", "pkgrel=1", "replaces=(naga-config)",
                  "conflicts=(naga-config)",
                  "optdepends=('openrazer-daemon: RazerTux + OpenRazer mode')",
                  "provides=()", "install=razertux.install"):
         assert line in lines, line
-    assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-next polkit)" in p
+    assert "depends=(python python-evdev pyside6 python-pyudev python-dbus-fast polkit)" in p
     assert "license=('GPL-2.0-or-later')" in p and "arch=('any')" in p
     assert [l for l in lines if l.startswith("url=")] == ["url='https://github.com/anoraknophobia/RazerTux'"]
     rest = "\n".join(l for l in lines if not l.startswith(("replaces=", "conflicts=")))
@@ -193,7 +193,7 @@ def test_icon_is_a_scalable_svg_with_the_green_accent():
 def test_entry_points_match_packaging():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert data["project"]["name"] == "razertux"
-    assert data["project"]["version"] == "0.8.4"
+    assert data["project"]["version"] == "0.9.0"
     scripts = data["project"]["scripts"]
     assert scripts == {"razertux": "razertux.cli:main", "razertuxd": "razertux.daemon.main:main",
                        "razertux-gui": "razertux.gui.app:main",
@@ -207,7 +207,7 @@ def test_entry_points_match_packaging():
 
 def test_package_version_matches():
     import razertux
-    assert razertux.__version__ == "0.8.4"
+    assert razertux.__version__ == "0.9.0"
 
 
 def test_pyproject_license_is_spdx_expression():

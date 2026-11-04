@@ -1,13 +1,13 @@
-"""Daemon1 D-Bus service tested directly (no real bus): methods via dbus-next's
+"""Daemon1 D-Bus service tested directly (no real bus): methods via dbus-fast's
 method table, signals via a fake bus registered on the interface. Real sessions
 (no mouse connected), so activation really lands in the right DeviceSession."""
 import inspect
 import json
 
 import pytest
-from dbus_next import DBusError
-from dbus_next.service import ServiceInterface
-from dbus_next.signature import SignatureTree
+from dbus_fast import DBusError
+from dbus_fast.service import ServiceInterface
+from dbus_fast.signature import SignatureTree
 from test_daemon_devices import RecOut
 
 from razertux.config.model import KeyAction, Profile, Settings
@@ -52,7 +52,7 @@ def make(tmp_path):
     d._session(load_devices()[DA])
     svc = d.service
     bus = FakeBus()
-    ServiceInterface._add_bus(svc, bus)
+    ServiceInterface._add_bus(svc, bus, lambda iface, method: None)  # no method handlers needed
     return d, svc, store, bus
 
 

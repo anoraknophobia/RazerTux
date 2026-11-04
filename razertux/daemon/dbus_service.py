@@ -1,20 +1,17 @@
-"""D-Bus interface io.github.razertux.Daemon1 (session bus, dbus-next): device-aware,
+"""D-Bus interface io.github.razertux.Daemon1 (session bus, dbus-fast): device-aware,
 every call names the device model.
 
-No `from __future__ import annotations` here: dbus-next reads the D-Bus
+No `from __future__ import annotations` here: dbus-fast reads the D-Bus
 signatures from the (string) annotations.
 """
 import asyncio
 import logging
-import warnings
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-from dbus_next import DBusError, Message, MessageFlag, MessageType, Variant
-from dbus_next.service import ServiceInterface
-from dbus_next.service import method as _dbus_method
-from dbus_next.service import signal as _dbus_signal
+from dbus_fast import DBusError, Message, MessageFlag, MessageType, Variant
+from dbus_fast.service import ServiceInterface, method, signal
 
 from razertux.backup import load_backup
 from razertux.config.store import ConfigStore
@@ -36,21 +33,6 @@ RETRY_DELAY = 5.0  # seconds before a failed auto-resume is tried again
 
 def openrazer_loaded() -> bool:
     return Path("/sys/module/razermouse").exists()
-
-
-def _quiet(decorator_factory):
-    """dbus-next's @method/@signal call typing.no_type_check_decorator,
-    deprecated since Python 3.13 (removed in 3.15); silence just that."""
-    def factory(*args, **kwargs):
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*no_type_check_decorator",
-                                    category=DeprecationWarning)
-            return decorator_factory(*args, **kwargs)
-    return factory
-
-
-method = _quiet(_dbus_method)
-signal = _quiet(_dbus_signal)
 
 
 class Daemon1Service(ServiceInterface):
@@ -133,7 +115,7 @@ class Daemon1Service(ServiceInterface):
     async def attach(self, bus: Any) -> None:
         """Watch the bus so a recorder that dies cannot leave a device unmapped.
 
-        dbus-next hands a ServiceInterface method no sender. PauseDevice and
+        dbus-fast hands a ServiceInterface method no sender. PauseDevice and
         ResumeDevice calls to our path are therefore answered here, in a message
         handler (which sees msg.sender and runs before dispatch); the decorated
         methods below stay for introspection and direct use. NameOwnerChanged

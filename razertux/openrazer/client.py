@@ -59,15 +59,15 @@ async def _timed(coro: Any) -> Any:
 
 
 class SessionBus:
-    """Bus on a dbus-next session bus connection (opened on first use)."""
+    """Bus on a dbus-fast session bus connection (opened on first use)."""
 
     def __init__(self) -> None:
         self._bus: Any = None
         self._owner_cbs: dict[str, list[Callable[[bool], None]]] = {}
 
     async def _connect(self) -> Any:
-        from dbus_next import BusType, Message
-        from dbus_next.aio import MessageBus
+        from dbus_fast import BusType, Message
+        from dbus_fast.aio import MessageBus
         if self._bus is None or not self._bus.connected:
             self._bus = await _timed(MessageBus(bus_type=BusType.SESSION).connect())
             self._bus.add_message_handler(self._on_message)
@@ -89,7 +89,7 @@ class SessionBus:
 
     async def _raw(self, destination: str, path: str, interface: str, member: str,
                    signature: str = "", args: tuple = ()) -> list:
-        from dbus_next import Message, MessageType
+        from dbus_fast import Message, MessageType
         try:
             bus = await self._connect()
             reply = await _timed(bus.call(Message(
@@ -108,7 +108,7 @@ class SessionBus:
         return await self._raw(OPENRAZER_BUS_NAME, path, interface, member, signature, args)
 
     async def introspect(self, path: str) -> dict[str, set[str]]:
-        from dbus_next.introspection import Node
+        from dbus_fast.introspection import Node
         xml, = await self._raw(OPENRAZER_BUS_NAME, path, "org.freedesktop.DBus.Introspectable",
                                "Introspect")
         node = Node.parse(xml)
@@ -125,7 +125,7 @@ class SessionBus:
     def on_owner_changed(self, name: str, cb: Callable[[bool], None]) -> None:
         self._owner_cbs.setdefault(name, []).append(cb)
         if self._bus is not None and self._bus.connected:
-            from dbus_next import Message
+            from dbus_fast import Message
             asyncio.get_running_loop().create_task(self._add_match(Message, name))
 
 

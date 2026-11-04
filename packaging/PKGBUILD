@@ -2,13 +2,13 @@
 # RazerTux – not an official Razer product; not affiliated with Razer Inc.
 # Builds from the local git checkout (one directory above packaging/); no network needed.
 pkgname=razertux
-pkgver=0.8.4
+pkgver=0.9.0
 pkgrel=1
 pkgdesc='Unofficial Linux replacement for Razer Synapse (Razer Naga V2 Pro and other Razer mice)'
 arch=('any')
 url='https://github.com/anoraknophobia/RazerTux'
 license=('GPL-2.0-or-later')
-depends=(python python-evdev pyside6 python-pyudev python-dbus-next polkit)
+depends=(python python-evdev pyside6 python-pyudev python-dbus-fast polkit)
 makedepends=(python-build python-installer python-wheel python-setuptools)
 replaces=(naga-config)
 conflicts=(naga-config)

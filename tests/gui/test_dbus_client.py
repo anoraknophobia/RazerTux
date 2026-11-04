@@ -81,9 +81,9 @@ def test_refresh_publishes_status_and_active_profile(qapp):
 
 
 def test_real_transport_invalid_bus_address_is_unavailable(qapp, monkeypatch):
-    from razertux.gui.dbus_client import DBusNextTransport
+    from razertux.gui.dbus_client import DBusTransport
     monkeypatch.setenv("DBUS_SESSION_BUS_ADDRESS", "bogus:nothing")
-    t = DBusNextTransport()
+    t = DBusTransport()
     t.start()
     c = DaemonClient(t)
     try:
@@ -164,7 +164,7 @@ def test_version_mismatch_clears_when_daemon_answers(qapp):
 
 
 class _Bus:
-    """dbus-next bus whose service has only the old interface."""
+    """dbus-fast bus whose service has only the old interface."""
 
     connected = True
 
@@ -172,14 +172,14 @@ class _Bus:
         self.error = error
 
     async def call(self, msg):
-        from dbus_next import Message, MessageType
+        from dbus_fast import Message, MessageType
         return Message(message_type=MessageType.ERROR, error_name=self.error, reply_serial=1,
                        signature="s", body=["no such thing"])
 
 
 def _real_call(error):
-    from razertux.gui.dbus_client import DBusNextTransport
-    t = DBusNextTransport()
+    from razertux.gui.dbus_client import DBusTransport
+    t = DBusTransport()
 
     async def connect():
         return _Bus(error)

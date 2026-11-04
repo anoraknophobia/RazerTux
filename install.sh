@@ -134,18 +134,18 @@ install_dependencies() {
     apt)
       sudo apt-get update -q >/dev/null
       install_each apt python3 python3-venv python3-pip python3-evdev python3-pyudev \
-        python3-dbus-next python3-pyside6.qtwidgets python3-pyside6.qtsvg python3-pyside6.qtnetwork \
+        python3-dbus-fast python3-pyside6.qtwidgets python3-pyside6.qtsvg python3-pyside6.qtnetwork \
         polkitd pkexec policykit-1 \
         libxcb-cursor0 libegl1 libgl1 libxkbcommon-x11-0 libfontconfig1 libdbus-1-3 libgssapi-krb5-2 ;;
     dnf)
-      install_each dnf python3 python3-pip python3-evdev python3-pyudev python3-dbus-next \
+      install_each dnf python3 python3-pip python3-evdev python3-pyudev python3-dbus-fast \
         python3-pyside6 polkit xcb-util-cursor ;;
     zypper)
-      install_each zypper python3 python3-pip python3-evdev python3-pyudev python3-dbus-next \
+      install_each zypper python3 python3-pip python3-evdev python3-pyudev python3-dbus-fast \
         python3-pyside6 polkit libxcb-cursor0 ;;
     other)
       warn "Unknown distribution: please install Python >= 3.11, python3-venv, polkit and (if"
-      warn "available as packages) python-evdev, pyudev, dbus-next and PySide6 yourself." ;;
+      warn "available as packages) python-evdev, pyudev, dbus-fast and PySide6 yourself." ;;
   esac
 }
 
@@ -174,7 +174,7 @@ install_generic() {
   find "$WORK/src" -name __pycache__ -prune -exec rm -rf {} +
   sudo "$OPT/bin/python3" -m pip install --quiet --disable-pip-version-check --no-cache-dir \
     --upgrade "$WORK/src" || die "pip could not install RazerTux (see the messages above)"
-  local modules='evdev, pyudev, dbus_next, PySide6.QtWidgets, PySide6.QtSvg, PySide6.QtNetwork, razertux'
+  local modules='evdev, pyudev, dbus_fast, PySide6.QtWidgets, PySide6.QtSvg, PySide6.QtNetwork, razertux'
   sudo "$OPT/bin/python3" -c "import $modules" \
     || die "RazerTux was installed but cannot be imported (see the messages above)"
 
