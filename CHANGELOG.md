@@ -2,6 +2,16 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.9.2] - 2026-11-04
+
+### Fixed
+- With OpenRazer's driver loaded, the front top button of the Naga V2 Pro also typed a
+  "+" (and the rear one an arrow-up key) besides its RazerTux action.
+- A side key no longer stays pressed system-wide when the Naga's magnetic side plate
+  loses contact while the key is held: RazerTux releases held side buttons when the mouse
+  reports the plate gone. (If side keys only work sometimes, clean the plate's contacts.)
+- No more "Bad file descriptor" tracebacks in the log when the service stops (0.9.0).
+
 ## [0.9.1] - 2026-11-04
 
 ### Fixed

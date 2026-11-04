@@ -30,7 +30,7 @@ from razertux.config.model import (
 from razertux.config.store import ModelStore
 from razertux.devices.db import DeviceInfo
 from razertux.engine.mapper import NAGA_DEFAULT_ACTIONS, Mapper
-from razertux.hw.button_maps import InputSignal, map_for
+from razertux.hw.button_maps import NAGA_V2_PRO_IGNORED, InputSignal, map_for
 from razertux.hw.buttons import DRIVER_MODE, NORMAL_MODE, parse_notification
 from razertux.i18n import tr
 from razertux.openrazer.client import OpenRazerClient, OpenRazerError
@@ -397,6 +397,7 @@ class DeviceSession:
     def _refresh_map(self) -> None:
         learned = self.device_settings.learned
         self.router.set_map(map_for(self.info, learned, self.device_settings.plate))
+        self.router.set_ignored(NAGA_V2_PRO_IGNORED if self._is_naga_model else frozenset())
         self.mapper.set_defaults({b: s.code for b, s in learned.items()
                                   if s.ev_type == E.EV_KEY})  # the key it sends
 
@@ -620,6 +621,10 @@ class DeviceSession:
             kind, value = note
             if kind == "scroll_stage":
                 self._set_scroll_stage(value)
+            elif kind == "side_plate":
+                if value == 0:  # no contact: releases of keys held now never arrive
+                    logger.info("Side plate has no contact - releasing held side buttons")
+                    await self.router.release_side_buttons()
             elif not DPI_MIN <= value <= DPI_MAX:
                 self._fix_invalid_dpi(value)
             elif self._hw["dpi"] != value:

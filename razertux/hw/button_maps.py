@@ -29,6 +29,12 @@ NAGA_V2_PRO: ButtonMap = {
     **_key_table("if02", _SIDE_KEYS),
     **_key_table("mouse", _MOUSE_KEYS),
 }
+# With OpenRazer's razermouse driver bound, the top buttons' vendor report (read from
+# hidraw) is also turned into a keyboard report, so the if01 node sends these keys
+# (HID 0x57 keypad plus, 0x52 up, 0x68-0x6B F13-F16). They are duplicates: dropped.
+NAGA_V2_PRO_IGNORED: frozenset[InputSignal] = frozenset(
+    InputSignal("if01", E.EV_KEY, code)
+    for code in (E.KEY_KPPLUS, E.KEY_UP, E.KEY_F13, E.KEY_F14, E.KEY_F15, E.KEY_F16))
 # Naga V2 Pro side plates. UNVERIFIED ASSUMPTION (the plates are no longer available to
 # test): the 6-key plate sends the same codes as keys 1-6 of the 12-key plate and the
 # 2-key plate those of keys 1-2. If a key turns out different, "Learn button" fixes it.

@@ -95,6 +95,15 @@ async def test_profile_switch_releases_held_keys():
     assert out.log == [(E.KEY_X, 1)]
 
 
+async def test_held_buttons_lists_pressed_buttons():
+    m, _out, _ = mk({B.SIDE_8: KeyAction(E.KEY_8)})
+    await m.handle(B.SIDE_8, 1)
+    await m.handle(B.LEFT, 1)
+    assert set(m.held_buttons()) == {B.SIDE_8, B.LEFT}
+    await m.handle(B.SIDE_8, 0)
+    assert m.held_buttons() == [B.LEFT]
+
+
 async def test_release_all_resets_hypershift():
     m, out, _ = mk({B.TOP_1: HypershiftAction(), B.SIDE_1: KeyAction(E.KEY_F1)},
                    {B.SIDE_1: KeyAction(E.KEY_F2)})

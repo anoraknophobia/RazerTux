@@ -141,9 +141,16 @@ def test_parse_dpi():
     assert parse_notification(bytes.fromhex("05020320 0640".replace(" ", ""))) == ("dpi", 800)
 
 
+def test_parse_side_plate():
+    # recorded on the Naga V2 Pro: `05 0e 03` with the 12-key plate attached, `05 0e 00`
+    # while it lost contact (dirty magnets), keys pressed meanwhile were never released
+    assert parse_notification(bytes([0x05, 0x0E, 0x03]) + bytes(13)) == ("side_plate", 3)
+    assert parse_notification(bytes([0x05, 0x0E, 0x00]) + bytes(13)) == ("side_plate", 0)
+    assert parse_notification(bytes([0x05, 0x0E])) is None  # truncated
+
+
 @pytest.mark.parametrize("report", [
     bytes([0x05, 0x31, 0xC1, 1, 1, 1]),  # periodic
-    bytes([0x05, 0x0E, 0, 0]),
     bytes([0x04, 0x57]) + bytes(14),     # top button (driver mode)
     bytes([0x04, 0x00]) + bytes(14),
     bytes([0x05, 0x3A]),                 # truncated

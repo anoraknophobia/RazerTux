@@ -23,6 +23,8 @@ from razertux.daemon.devices import (
 )
 from razertux.daemon.main import Daemon, build_parser
 from razertux.daemon.uinput_out import UinputOutput, capabilities
+from razertux.devices.db import load_devices
+from razertux.hw.button_maps import NAGA_V2_PRO_IGNORED
 from razertux.hw.buttons import DRIVER_MODE, NORMAL_MODE, ButtonId
 from razertux.razer import transport as tr
 from razertux.razer.naga_v2_pro import NagaV2Pro
@@ -80,6 +82,15 @@ class FakeMapper:
 
     async def release_all(self):
         self.released += 1
+
+    def held_buttons(self):
+        held = []
+        for button, value in self.calls:
+            if value == 1 and button not in held:
+                held.append(button)
+            elif value == 0 and button in held:
+                held.remove(button)
+        return held
 
 
 async def settle(dev):
@@ -398,6 +409,49 @@ async def test_router_close_ungrabs_and_closes():
     r.add("if02", dev)
     await r.close()
     assert dev.ungrabbed and dev.closed and mapper.released == 1
+
+
+async def test_router_drops_top_button_keys_rewritten_by_openrazer():
+    # With razermouse bound the top buttons' vendor report also becomes a keyboard
+    # report: if01 sends KEY_KPPLUS / KEY_UP. The vendor reader handles the button; the
+    # key must not reach the system (a "+" was typed on every press).
+    mapper, out = FakeMapper(), RecordingOutput()
+    r = InputRouter(mapper, out)
+    r.set_ignored(NAGA_V2_PRO_IGNORED)
+    dev = FakeDev("/dev/input/event21", [
+        ev(E.EV_KEY, E.KEY_KPPLUS, 1), ev(E.EV_SYN, 0, 0),
+        ev(E.EV_KEY, E.KEY_KPPLUS, 0), ev(E.EV_SYN, 0, 0),
+        ev(E.EV_KEY, E.KEY_UP, 1), ev(E.EV_KEY, E.KEY_UP, 0), ev(E.EV_SYN, 0, 0),
+        ev(E.EV_KEY, E.KEY_A, 1), ev(E.EV_SYN, 0, 0),
+    ])
+    r.add("if01", dev)
+    await settle(dev)
+    assert mapper.calls == []
+    assert out.log == [(E.KEY_A, 1)]
+    await r.close()
+
+
+async def test_router_learning_skips_ignored_keys():
+    mapper, out = FakeMapper(), RecordingOutput()
+    r = InputRouter(mapper, out)
+    r.set_ignored(NAGA_V2_PRO_IGNORED)
+    learned = []
+    r.learn(learned.append)
+    dev = FakeDev("/dev/input/event21", [ev(E.EV_KEY, E.KEY_KPPLUS, 1),
+                                         ev(E.EV_KEY, E.KEY_KPPLUS, 0)])
+    r.add("if01", dev)
+    await settle(dev)
+    assert learned == [] and out.log == []
+    await r.close()
+
+
+async def test_router_releases_held_side_buttons_only():
+    mapper, out = FakeMapper(), RecordingOutput()
+    r = InputRouter(mapper, out)
+    await mapper.handle(ButtonId.LEFT, 1)  # e.g. dragging
+    await mapper.handle(ButtonId.SIDE_8, 1)
+    await r.release_side_buttons()
+    assert mapper.held_buttons() == [ButtonId.LEFT]
 
 
 async def test_router_vendor_reports_top_buttons():
@@ -1336,6 +1390,30 @@ async def test_notifications_update_status_and_persist(tmp_path, remap):
     # known after a restart, even before the mouse connects
     d2, _ = make_daemon(tmp_path)
     assert d2.hw_status()["scroll_stage"] == 6
+
+
+async def test_side_plate_detach_releases_a_held_side_key(tmp_path):
+    # the plate lost contact while side key 8 was down: the mouse never sends its release
+    readers = []
+    d, _ = make_daemon(tmp_path, readers=readers)
+    d.store.save_profile(_remap_profile("default"))
+    await d.start()
+    d.on_added("mouse", FakeDev("/dev/input/event18"))
+    side = FakeDev("/dev/input/event20", [ev(E.EV_KEY, E.KEY_8, 1), ev(E.EV_SYN, 0, 0)])
+    d.on_added("if02", side)
+    await d.settle()
+    await settle(side)
+    session = next(iter(d.sessions.values()))
+    assert ButtonId.SIDE_8 in session.mapper.held_buttons()
+    await readers[-1].report([0x05, 0x0E, 0x00] + [0] * 13)
+    assert ButtonId.SIDE_8 not in session.mapper.held_buttons()
+    await d.shutdown()
+
+
+def test_naga_session_ignores_openrazer_top_button_keys(tmp_path):
+    d, _ = make_daemon(tmp_path)
+    session = d._session(load_devices()["naga_v2_pro"])
+    assert NAGA_V2_PRO_IGNORED <= session.router.ignored
 
 
 async def test_corrupt_state_file_means_unknown_stage(tmp_path):

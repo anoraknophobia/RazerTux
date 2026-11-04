@@ -62,7 +62,11 @@ the value via `razertux status` or by visual inspection. Record the result here.
     `05 85`, `06 86`. Slot 6 is "Ultra-fine" (confirmed by the user); the mapping of the
     other slots to Synapse names is unknown.
   - DPI changed: `05 02 <x hi> <x lo> <y hi> <y lo>` (e.g. `05 02 09 c4 09 c4` = 2500).
-  - Ignored: `05 31 ...` (periodic), `05 0e ...`.
+  - Side plate contact: `05 0e <plate>` - `03` with the 12-key plate attached, `00` while
+    it has no contact (2026-11-04: dirty magnets made it flicker while pressing; keys held
+    during `00` never got a release, so key 8 stuck system-wide). Held side buttons are
+    released on `00`. Values for the 6- and 2-key plates are unknown.
+  - Ignored: `05 31 ...` (periodic).
 - **Driver mode (0x03):** TOP_1/TOP_2 send `04 57` / `04 52` (release `04 00`); the
   firmware then does **not** step any stages. The wheel haptics stay as they are (checked by
   the user).
@@ -132,6 +136,9 @@ the last slot in `~/.config/razertux/state.json`.
   rewrites the 16-byte `04 <code>` report into a keyboard report `01 00 <code> ...`
   (codes 0x20-0x23 become 0x68-0x6B; 0x52/0x57 stay). Recorded: TOP_2 press
   `01 00 52 00 ...`, release `01 00 00 ...`. `identify_vendor` reads that form back.
+  Because it is a keyboard report now, the if01 evdev node also sends the keys (TOP_1:
+  KEY_KPPLUS, i.e. a "+" typed on every press; TOP_2: KEY_UP; 0x68-0x6B: F13-F16). These
+  are dropped (`NAGA_V2_PRO_IGNORED`).
 - D-Bus objects: `/org/razer` (`razer.devices.getDevices`, `razer.daemon.version`),
   `/org/razer/device/<serial>` with interfaces `razer.device.dpi` (`getDPI ai`,
   `setDPI qq`, `getDPIStages (ya(qq))`, `setDPIStages ya(qq)`, `maxDPI i`),

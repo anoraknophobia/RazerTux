@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import logging
 import signal
 import sys
@@ -243,9 +244,16 @@ async def run(config_dir: Path) -> int:
         return 0
     finally:
         watcher.stop()
+        if bus is not None:
+            # stop answering first: a reply to a call that arrives during the shutdown
+            # would be sent on the closed socket (EBADF tracebacks with dbus-fast)
+            with contextlib.suppress(Exception):
+                bus.unexport(OBJECT_PATH, daemon.service)
         await daemon.shutdown()
         if bus is not None:
             bus.disconnect()
+            with contextlib.suppress(Exception):
+                await bus.wait_for_disconnect()
 
 
 def main(argv: list[str] | None = None) -> int:

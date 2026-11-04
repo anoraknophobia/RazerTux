@@ -84,6 +84,10 @@ class Mapper:
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
+    def held_buttons(self) -> list[ButtonId]:
+        """Buttons currently down (press order)."""
+        return list(self._active)
+
     async def release_all(self) -> None:
         tasks = self._reset()
         if tasks:

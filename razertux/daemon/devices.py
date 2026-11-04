@@ -223,6 +223,7 @@ class InputRouter:
         self._bg: set[asyncio.Task] = set()
         self._learn: Callable[[InputSignal], Any] | None = None
         self._swallow: set[tuple[str, int]] = set()  # (source, code) of a learned key
+        self._ignored: frozenset[InputSignal] = frozenset()  # keys dropped outright
 
     @property
     def paths(self) -> set[str]:
@@ -235,6 +236,21 @@ class InputRouter:
 
     def set_map(self, button_map: ButtonMap) -> None:
         self._map = dict(button_map)
+
+    @property
+    def ignored(self) -> frozenset[InputSignal]:
+        return self._ignored
+
+    def set_ignored(self, signals: frozenset[InputSignal]) -> None:
+        """Key events that are dropped (not mapped, learned or forwarded)."""
+        self._ignored = frozenset(signals)
+
+    async def release_side_buttons(self) -> None:
+        """Release held side buttons (the side plate lost contact, so their release
+        never comes); other buttons stay down."""
+        for button in self._mapper.held_buttons():
+            if button.value.startswith("side_"):
+                await self._mapper.handle(button, 0)
 
     def add(self, source: str, dev: Any) -> bool:
         """Start reading (and grab if grabbing is on); False if the grab failed
@@ -390,6 +406,8 @@ class InputRouter:
                 return False
             return pending
         if t == E.EV_MSC:
+            return pending
+        if t == E.EV_KEY and self._ignored and InputSignal(source, t, code) in self._ignored:
             return pending
         if t == E.EV_KEY and (self._learn is not None or self._swallow):
             if await self._learned(source, code, value):
