@@ -158,10 +158,12 @@ def test_source_from_links_generic_names():
 # -- watcher ---------------------------------------------------------------
 
 class UdevDev:
-    def __init__(self, props, action=None):
+    def __init__(self, props, action=None, sys_path=None):
         self.properties = props
         self.device_node = props.get("DEVNAME")
         self.action = action
+        self.sys_path = sys_path or "/sys/devices/x/input/input1/" + str(
+            self.device_node).rsplit("/", 1)[-1]
 
 
 def test_watcher_scan_adds_naga_and_skips_virtual():
@@ -192,6 +194,26 @@ def test_watcher_udev_events_add_and_remove():
     w.handle_udev(UdevDev(p, "remove"))
     assert added == [("mouse", "/dev/input/event18")]
     assert removed == ["/dev/input/event18"]
+
+
+def test_watcher_keeps_a_reused_node_when_the_old_removal_arrives_late():
+    # OpenRazer's razermouse driver loads on first plug and rebinds the mouse: the new
+    # nodes reuse the event numbers, and udev may deliver "add new" before "remove old".
+    added, removed = [], []
+    w = DeviceWatcher(lambda s, d: added.append((s, d.path)), removed.append,
+                      list_devices=list, open_device=FakeDev)
+    p = _props("02", devname="/dev/input/event20", links=BY_ID + "if02-event-kbd")
+    old = "/sys/devices/usb7/7-1:1.2/input/input28/event20"
+    new = "/sys/devices/usb7/7-1:1.2/input/input32/event20"
+    w.handle_udev(UdevDev(p, "add", old))
+    w.handle_udev(UdevDev(p, "add", new))  # same path, new device: replaces the old one
+    w.handle_udev(UdevDev(p, "remove", old))  # late removal of the old device: ignored
+    assert added == [("if02", "/dev/input/event20"), ("if02", "/dev/input/event20")]
+    assert removed == []
+    w.handle_udev(UdevDev(p, "add", new))  # duplicate event for the same device
+    assert len(added) == 2
+    w.handle_udev(UdevDev(p, "remove", new))
+    assert removed == ["/dev/input/event20"]
 
 
 class Later:

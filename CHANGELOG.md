@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.9.1] - 2026-11-04
+
+### Fixed
+- Buttons did nothing (and a held side-button key could get stuck system-wide) when
+  the mouse was plugged in for the first time after boot with OpenRazer installed:
+  OpenRazer's driver rebinds the mouse, the new input nodes reuse the old names, and
+  the late removal of the old nodes made RazerTux let go of the new ones.
+
 ## [0.9.0] - 2026-11-04
 
 ### Changed

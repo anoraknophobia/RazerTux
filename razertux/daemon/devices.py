@@ -93,6 +93,10 @@ def classify(props: Mapping[str, str], known_pids: set[int]) -> tuple[int, str] 
     return None
 
 
+def _sys_path(udev_dev: Any) -> str | None:
+    return getattr(udev_dev, "sys_path", None)
+
+
 def _list_input_devices():
     return pyudev.Context().list_devices(subsystem="input")
 
@@ -121,7 +125,7 @@ class DeviceWatcher:
         self._retry_delay = retry_delay
         self._call_later = call_later
         self._stopped = False
-        self._known: dict[str, str] = {}
+        self._known: dict[str, str] = {}  # node path -> sys_path of the device behind it
         self._monitor: pyudev.Monitor | None = None
 
     def scan(self) -> None:
@@ -150,7 +154,9 @@ class DeviceWatcher:
                 self._add(udev_dev)
             elif udev_dev.action == "remove":
                 path = udev_dev.device_node
-                if path in self._known:
+                # a node path can be reused before the old device's removal arrives
+                # (driver rebind): only the device we hold may remove it
+                if path in self._known and self._known[path] == _sys_path(udev_dev):
                     del self._known[path]
                     self._on_removed(path)
         except Exception:
@@ -169,8 +175,8 @@ class DeviceWatcher:
             return
         found = classify(dict(udev_dev.properties), self._pids)
         path = udev_dev.device_node
-        if found is None or path in self._known:
-            return
+        if found is None or self._known.get(path, "-") == _sys_path(udev_dev):
+            return  # not ours, or already added (a known path with a new device replaces it)
         source = found[1]
         try:
             dev = self._open(path)
@@ -183,7 +189,7 @@ class DeviceWatcher:
         if dev.name in VIRTUAL_NAMES:
             dev.close()
             return
-        self._known[path] = source
+        self._known[path] = _sys_path(udev_dev)
         logger.info("Razer device found: %s (%s, %#06x)", path, source, found[0])
         try:
             ok = self._on_added(source, dev)
