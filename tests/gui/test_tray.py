@@ -26,7 +26,8 @@ def test_menu_when_up(tray):
     assert "Battery: 80 %" in texts
     assert texts[-3:] == ["Open window", "Restore original state", "Quit"]
     radios = {a.text(): a.isChecked() for a in tr.menu.actions()
-              if a.isCheckable() and a.text() not in ("Use system colors", "On-screen display")}
+              if a.isCheckable() and a.text() not in ("Use system colors", "On-screen display",
+                                                               "Battery icon")}
     assert radios == {"Standard": False, "Zwei": True}
 
 
@@ -280,3 +281,15 @@ def test_daemon_vanishing_mid_rebuild_does_not_interleave_a_second_rebuild(tray)
     texts = tr.menu_texts()
     assert texts.count("Quit") == 1 and texts.count("Open window") == 1
     assert texts[0] == "Service is not running"
+
+
+def test_battery_icon_toggle_in_menu(tray):
+    tr, _ = tray
+    seen = []
+    tr.batteryIconRequested.connect(seen.append)
+    act = next(a for a in tr.menu.actions() if a.text() == "Battery icon")
+    assert act.isCheckable() and act.isChecked()
+    act.trigger()
+    assert seen == [False]
+    tr.set_battery_icon_checked(False)
+    assert not next(a for a in tr.menu.actions() if a.text() == "Battery icon").isChecked()

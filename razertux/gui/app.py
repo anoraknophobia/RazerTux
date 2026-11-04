@@ -38,6 +38,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
+    from razertux.gui.battery_icon import BatteryTray
     from razertux.gui.dbus_client import DaemonClient
     from razertux.gui.language import (
         LanguageController, install_language, restart_args, start_new_instance,
@@ -77,6 +78,17 @@ def main(argv: list[str] | None = None) -> int:
     osd = OsdController(client, store, theme_name=lambda: theme.name)
     tray.set_osd_checked(osd.enabled)
     tray.osdRequested.connect(osd.set_enabled)
+    battery = BatteryTray(client, store.load_settings().battery_icon)
+    tray.set_battery_icon_checked(battery.enabled)
+
+    def set_battery_icon(on: bool) -> None:
+        battery.set_enabled(on)
+        s = store.load_settings()
+        s.battery_icon = on
+        store.save_settings(s)
+        tray.set_battery_icon_checked(on)
+
+    tray.batteryIconRequested.connect(set_battery_icon)
     language = LanguageController(store, dialog_parent=window)
     for view in (window, tray):
         view.set_language_checked(language.name)

@@ -283,7 +283,8 @@
     "Restore failed": "Échec de la restauration",
     "Cannot restore": "Restauration impossible",
     "On-screen display": "Affichage à l'écran",
-    "Record device…": "Enregistrer un appareil…"
+    "Record device…": "Enregistrer un appareil…",
+    "Battery icon": "Icône de batterie"
   },
   "app": {
     "Configuration for the Razer Naga V2 Pro": "Configuration de la Razer Naga V2 Pro",
@@ -580,5 +581,8 @@
     "USB ID %1 · probably %2": "ID USB %1 · probablement %2",
     "full size": "pleine taille",
     "tenkeyless": "sans pavé numérique (TKL)"
+  },
+  "BatteryIcon": {
+    "charging": "en charge"
   }
 }

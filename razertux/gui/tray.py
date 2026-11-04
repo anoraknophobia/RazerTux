@@ -45,6 +45,7 @@ class TrayIcon(QSystemTrayIcon):
     themeRequested = Signal(str)  # "synapse" | "system"
     languageRequested = Signal(str)  # Settings.language
     osdRequested = Signal(bool)  # Settings.osd
+    batteryIconRequested = Signal(bool)  # Settings.battery_icon
     recordRequested = Signal()  # "Record device…" (the device recorder wizard)
 
     def __init__(self, client: DaemonClient, parent: QObject | None = None,
@@ -55,6 +56,7 @@ class TrayIcon(QSystemTrayIcon):
         self._theme = "synapse"
         self._language = "system"
         self._osd = True
+        self._battery_icon = True
         self._language_menu: QMenu | None = None
         self.setToolTip(APP_NAME)
         self.menu = QMenu()
@@ -86,6 +88,10 @@ class TrayIcon(QSystemTrayIcon):
 
     def set_osd_checked(self, on: bool) -> None:
         self._osd = on
+        self.rebuild_menu()
+
+    def set_battery_icon_checked(self, on: bool) -> None:
+        self._battery_icon = on
         self.rebuild_menu()
 
     def set_language_checked(self, name: str) -> None:
@@ -133,6 +139,10 @@ class TrayIcon(QSystemTrayIcon):
         osd.setCheckable(True)
         osd.setChecked(self._osd)
         osd.triggered.connect(lambda on: self.osdRequested.emit(on))
+        battery = m.addAction(self.tr("Battery icon"))
+        battery.setCheckable(True)
+        battery.setChecked(self._battery_icon)
+        battery.triggered.connect(lambda on: self.batteryIconRequested.emit(on))
         self._language_menu = add_language_menu(m, self._language, self.languageRequested.emit)
         m.addAction(self.tr("Record device…")).triggered.connect(lambda _=False: self.recordRequested.emit())
         m.addAction(self.tr("Open window")).triggered.connect(lambda _=False: self.showWindowRequested.emit())
