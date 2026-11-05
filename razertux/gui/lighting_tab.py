@@ -159,6 +159,10 @@ class LightingTab(QWidget):
     def load(self, profile: Profile) -> None:
         self._quiet = True
         self.profile = profile
+        if not self.device_zones:  # a mouse without lighting (tab hidden): nothing to show
+            self._zones = {}
+            self._quiet = False
+            return
         light = profile.lighting
         first = next((light[z] for z in self.device_zones if z in light), DEFAULT_ZONE)
         self._zones = {z: light.get(z, first) for z in self.device_zones}
@@ -171,6 +175,8 @@ class LightingTab(QWidget):
 
     def _show(self) -> None:
         """Push self._zones into the widgets (no commits)."""
+        if not self.device_zones:
+            return
         quiet, self._quiet = self._quiet, True
         same = self.all_same.isChecked()
         shown = {"all": self._zones[self.device_zones[0]], **self._zones}
@@ -221,7 +227,7 @@ class LightingTab(QWidget):
     def _on_all_same(self, on: bool) -> None:
         if self._quiet:
             return
-        if on:  # every zone takes the first zone's effect and colour
+        if on and self.device_zones:  # every zone takes the first zone's effect and colour
             logo = self._zones[self.device_zones[0]]
             for z in self.device_zones:
                 self._zones[z] = replace(self._zones[z], effect=logo.effect, color=logo.color)
@@ -231,7 +237,7 @@ class LightingTab(QWidget):
         self._commit()
 
     def _commit(self) -> None:
-        if self._quiet or self.profile is None:
+        if self._quiet or self.profile is None or not self.device_zones:
             return
         if self.enable_box.isChecked():  # zones this mouse lacks are kept as they are
             kept = {z: c for z, c in self.profile.lighting.items() if z not in self.device_zones}

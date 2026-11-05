@@ -115,3 +115,16 @@ def test_zone_names_are_translated_and_unknown_ones_raw(tab):
     names = {k: tab.zone_labels[k].text() for k in zones}
     assert names == {"logo": "Logo", "scroll": "Scroll wheel", "thumb": "Thumb grid", "left": "Left",
                      "right": "Right", "backlight": "Backlight", "chroma_x": "chroma_x"}
+
+
+def test_device_without_lighting_zones_does_not_crash(tab):
+    from razertux.devices.db import load_devices
+    # Naga V2 HyperSpeed (no RGB): no zones at all (issue #3)
+    tab.set_device(load_devices()["naga_v2_hyper_speed"])
+    assert tab.device_zones == ()
+    profile = Profile(id="p", name="P", lighting={"logo": LightingZone("static", (1, 2, 3), 100)})
+    tab.load(profile)
+    tab._on_all_same(True)
+    tab._on_brightness(50)
+    tab._commit()
+    assert profile.lighting == {"logo": LightingZone("static", (1, 2, 3), 100)}  # untouched

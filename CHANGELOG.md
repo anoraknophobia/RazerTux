@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.12.1] - 2026-11-05
+
+### Fixed
+- The window no longer crashes at start with a mouse without lighting, such as the
+  non-RGB Naga V2 HyperSpeed (issue #3).
+- New test: every one of the 237 devices in the database opens in the window with a full
+  profile, and every keyboard opens its page, so a missing function cannot crash a tab.
+
 ## [0.12.0] - 2026-11-05
 
 ### Added
