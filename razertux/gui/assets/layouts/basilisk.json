@@ -1,0 +1,60 @@
+{
+ "template": "basilisk",
+ "views": [
+  {
+   "name": "top",
+   "asset": "basilisk_v3_top.svg",
+   "style": "laser"
+  }
+ ],
+ "buttons": {
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right"
+  },
+  "wheel_up": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.2135
+   ]
+  },
+  "middle": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.3567
+   ],
+   "primary": true
+  },
+  "wheel_down": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  },
+  "left": {
+   "view": "top",
+   "element": "left",
+   "side": "left"
+  },
+  "forward": {
+   "view": "top",
+   "element": "forward",
+   "side": "left"
+  },
+  "back": {
+   "view": "top",
+   "element": "back",
+   "side": "left"
+  }
+ }
+}

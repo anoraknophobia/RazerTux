@@ -1,0 +1,60 @@
+{
+ "template": "death_adder",
+ "views": [
+  {
+   "name": "top",
+   "asset": "death_adder_top.svg",
+   "style": "laser"
+  }
+ ],
+ "buttons": {
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right"
+  },
+  "wheel_up": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.2135
+   ]
+  },
+  "middle": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "primary": true
+  },
+  "left": {
+   "view": "top",
+   "element": "left",
+   "side": "left"
+  },
+  "wheel_down": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.7865
+   ]
+  },
+  "forward": {
+   "view": "top",
+   "element": "forward",
+   "side": "left"
+  },
+  "back": {
+   "view": "top",
+   "element": "back",
+   "side": "left"
+  }
+ }
+}

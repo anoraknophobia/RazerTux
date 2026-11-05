@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 400" width="240" height="400">
+  <!-- Basilisk (thumb rest on the left, sensitivity clutch in front of the thumb keys) from above, front at the top, thumb keys on the left flank (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M96 8 C70 12 54 40 50 86 C46 130 52 170 50 200 C40 222 14 246 12 284 C10 330 40 366 80 384 C100 393 122 394 142 392 C188 388 214 346 216 292 C218 236 210 180 204 136 C198 86 186 36 160 14 C142 4 116 4 96 8 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M114 12 C88 14 66 34 60 76 L58 148 C76 154 98 154 114 150 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M138 12 C164 14 184 36 192 80 C196 108 198 130 198 148 C180 155 156 155 138 150 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="113" y="28" width="26" height="66" rx="11" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M118 44 L134 44 M118 54 L134 54 M118 64 L134 64 M118 74 L134 74" stroke="@ACC@" stroke-width="0.7"/>
+<rect x="117" y="106" width="18" height="12" rx="4" stroke="@ACC@" stroke-width="0.9"/>
+<rect x="53" y="156" width="10" height="16" rx="4" stroke="@ACC@" stroke-width="0.9"/>
+  <g id="forward"><rect x="54" y="180" width="17" height="38" rx="7" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="50" y="224" width="17" height="38" rx="7" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>

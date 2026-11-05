@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 340" width="216" height="340">
+  <!-- Cobra (compact shape) from above, front at the top, thumb keys on the left flank (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M94 8 C64 10 42 34 38 74 C34 116 38 152 40 186 C42 214 32 240 36 270 C42 314 74 334 110 334 C148 334 176 312 180 268 C184 230 176 198 176 168 C176 128 178 98 172 64 C166 28 142 8 116 6 C108 5 100 6 94 8 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M100 12 C72 14 52 32 48 66 L47 128 C64 133 84 133 100 130 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M116 12 C144 14 162 32 166 66 L169 128 C150 133 132 133 116 130 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="98" y="26" width="20" height="52" rx="9" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M102 38 L114 38 M102 48 L114 48 M102 58 L114 58 M102 68 L114 68" stroke="@ACC@" stroke-width="0.7"/>
+<rect x="101" y="88" width="14" height="10" rx="4" stroke="@ACC@" stroke-width="0.9"/>
+  <g id="forward"><rect x="42" y="146" width="15" height="34" rx="6" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="41" y="186" width="15" height="34" rx="6" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>

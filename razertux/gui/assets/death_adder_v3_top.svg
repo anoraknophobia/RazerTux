@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 400" width="240" height="400">
+  <!-- DeathAdder V3 (slimmer shape, no DPI keys on top) from above, front at the top, thumb keys on the left flank (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M86 8 C62 12 48 40 44 86 C40 128 46 166 50 200 C54 234 42 262 44 300 C48 354 82 392 122 392 C164 392 192 352 194 296 C196 240 190 190 186 146 C182 96 172 40 148 14 C130 4 106 4 86 8 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M102 12 C78 14 58 34 52 78 L51 154 C68 160 88 160 102 156 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M122 12 C146 14 166 36 174 80 C178 108 180 134 180 154 C164 161 138 161 122 156 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="102" y="30" width="20" height="60" rx="9" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M106 46 L118 46 M106 56 L118 56 M106 66 L118 66 M106 76 L118 76" stroke="@ACC@" stroke-width="0.7"/>
+  <g id="forward"><rect x="52" y="168" width="15" height="42" rx="7" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="52" y="216" width="15" height="42" rx="7" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>

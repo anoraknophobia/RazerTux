@@ -1,9 +1,9 @@
 {
- "template": "template_ergo",
+ "template": "basilisk_v3",
  "views": [
   {
    "name": "top",
-   "asset": "template_ergo_top.svg",
+   "asset": "basilisk_v3_top.svg",
    "style": "laser"
   }
  ],
@@ -11,11 +11,7 @@
   "right": {
    "view": "top",
    "element": "right",
-   "side": "right",
-   "anchor": [
-    0.2155,
-    0.1287
-   ]
+   "side": "right"
   },
   "wheel_up": {
    "view": "top",
@@ -57,11 +53,7 @@
   "left": {
    "view": "top",
    "element": "left",
-   "side": "left",
-   "anchor": [
-    0.3789,
-    0.4636
-   ]
+   "side": "left"
   },
   "wheel_right": {
    "view": "top",
@@ -75,20 +67,12 @@
   "forward": {
    "view": "top",
    "element": "forward",
-   "side": "left",
-   "anchor": [
-    0.3355,
-    0.5
-   ]
+   "side": "left"
   },
   "back": {
    "view": "top",
    "element": "back",
-   "side": "left",
-   "anchor": [
-    0.3355,
-    0.5
-   ]
+   "side": "left"
   }
  }
 }

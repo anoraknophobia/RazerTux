@@ -3,18 +3,18 @@
  "views": [
   {
    "name": "plate",
-   "asset": "template_mmo_plate12.svg",
+   "asset": "naga_v2_pro_plate12.svg",
    "style": "laser",
    "scale": 0.74,
    "variants": {
-    "12": "template_mmo_plate12.svg",
-    "6": "template_mmo_plate6.svg",
-    "2": "template_mmo_plate2.svg"
+    "12": "naga_v2_pro_plate12.svg",
+    "6": "naga_v2_pro_plate6.svg",
+    "2": "naga_v2_pro_plate2.svg"
    }
   },
   {
    "name": "top",
-   "asset": "template_mmo_top.svg",
+   "asset": "naga_pro_top.svg",
    "style": "laser"
   }
  ],
@@ -25,7 +25,7 @@
     "element": "side_1",
     "side": "left",
     "anchor": [
-     0.2481,
+     0.1471,
      0.5
     ]
    },
@@ -34,14 +34,14 @@
     "element": "side_2",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.8421
     ],
-    "entry": 0.2794,
+    "entry": 0.3,
     "via": [
      [
-      0.5,
-      0.2794
+      0.4194,
+      0.3
      ]
     ]
    },
@@ -50,14 +50,14 @@
     "element": "side_3",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.9474
     ],
-    "entry": 0.2923,
+    "entry": 0.3129,
     "via": [
      [
-      0.7903,
-      0.2923
+      0.5591,
+      0.3097
      ]
     ]
    },
@@ -66,7 +66,7 @@
     "element": "side_4",
     "side": "left",
     "anchor": [
-     0.2481,
+     0.1471,
      0.5
     ]
    },
@@ -75,14 +75,14 @@
     "element": "side_5",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.8421
     ],
-    "entry": 0.4858,
+    "entry": 0.4871,
     "via": [
      [
-      0.5,
-      0.4858
+      0.4355,
+      0.4871
      ]
     ]
    },
@@ -91,14 +91,14 @@
     "element": "side_6",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.9474
     ],
-    "entry": 0.4987,
+    "entry": 0.5,
     "via": [
      [
-      0.7903,
-      0.4987
+      0.5753,
+      0.4968
      ]
     ]
    },
@@ -107,7 +107,7 @@
     "element": "side_7",
     "side": "left",
     "anchor": [
-     0.2481,
+     0.1471,
      0.5
     ]
    },
@@ -116,14 +116,14 @@
     "element": "side_8",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.8421
     ],
-    "entry": 0.6923,
+    "entry": 0.6742,
     "via": [
      [
-      0.5,
-      0.6923
+      0.4516,
+      0.6742
      ]
     ]
    },
@@ -132,14 +132,14 @@
     "element": "side_9",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.9474
     ],
-    "entry": 0.7052,
+    "entry": 0.6871,
     "via": [
      [
-      0.7903,
-      0.7052
+      0.5914,
+      0.6839
      ]
     ]
    },
@@ -148,7 +148,7 @@
     "element": "side_10",
     "side": "left",
     "anchor": [
-     0.2481,
+     0.1471,
      0.5
     ]
    },
@@ -157,14 +157,14 @@
     "element": "side_11",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.8421
     ],
-    "entry": 0.8987,
+    "entry": 0.8613,
     "via": [
      [
-      0.5,
-      0.8987
+      0.4677,
+      0.8613
      ]
     ]
    },
@@ -173,66 +173,45 @@
     "element": "side_12",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7687
+     0.2353,
+     0.9474
     ],
-    "entry": 0.9116,
+    "entry": 0.8742,
     "via": [
      [
-      0.7903,
-      0.9116
+      0.6075,
+      0.871
      ]
     ]
    }
   },
   "6": {
+   "side_6": {
+    "view": "plate",
+    "element": "side_6",
+    "side": "left",
+    "anchor": [
+     0.0962,
+     0.5
+    ]
+   },
    "side_1": {
     "view": "plate",
     "element": "side_1",
     "side": "left",
     "anchor": [
-     0.2339,
-     0.5
-    ]
-   },
-   "side_2": {
-    "view": "plate",
-    "element": "side_2",
-    "side": "left",
-    "anchor": [
-     0.5,
-     0.7829
+     0.4783,
+     0.9
     ],
-    "entry": 0.3503,
+    "entry": 0.3774,
     "via": [
      [
-      0.7043,
-      0.3503
-     ]
-    ]
-   },
-   "side_3": {
-    "view": "plate",
-    "element": "side_3",
-    "side": "left",
-    "anchor": [
-     0.2339,
-     0.5
-    ]
-   },
-   "side_4": {
-    "view": "plate",
-    "element": "side_4",
-    "side": "left",
-    "anchor": [
-     0.5,
-     0.7829
-    ],
-    "entry": 0.6213,
-    "via": [
+      0.5376,
+      0.3806
+     ],
      [
-      0.7043,
-      0.6213
+      0.6344,
+      0.3806
      ]
     ]
    },
@@ -241,23 +220,56 @@
     "element": "side_5",
     "side": "left",
     "anchor": [
-     0.2339,
+     0.0962,
      0.5
     ]
    },
-   "side_6": {
+   "side_2": {
     "view": "plate",
-    "element": "side_6",
+    "element": "side_2",
     "side": "left",
     "anchor": [
-     0.5,
-     0.7829
+     0.4783,
+     0.9
     ],
-    "entry": 0.8923,
+    "entry": 0.6161,
     "via": [
      [
-      0.7043,
-      0.8923
+      0.5376,
+      0.6194
+     ],
+     [
+      0.6344,
+      0.6194
+     ]
+    ]
+   },
+   "side_4": {
+    "view": "plate",
+    "element": "side_4",
+    "side": "left",
+    "anchor": [
+     0.0962,
+     0.5
+    ]
+   },
+   "side_3": {
+    "view": "plate",
+    "element": "side_3",
+    "side": "left",
+    "anchor": [
+     0.4783,
+     0.9
+    ],
+    "entry": 0.8548,
+    "via": [
+     [
+      0.5376,
+      0.8581
+     ],
+     [
+      0.6344,
+      0.8581
      ]
     ]
    }
@@ -268,7 +280,7 @@
     "element": "side_1",
     "side": "left",
     "anchor": [
-     0.2232,
+     0.0882,
      0.5
     ]
    },
@@ -277,7 +289,7 @@
     "element": "side_2",
     "side": "left",
     "anchor": [
-     0.2232,
+     0.0882,
      0.5
     ]
    }
@@ -289,11 +301,12 @@
    "element": "left",
    "side": "right",
    "anchor": [
-    0.7772,
-    0.076
+    0.5976,
+    0.1094
    ],
    "through": [
-    "right"
+    "right",
+    "wheel"
    ]
   },
   "right": {
@@ -301,8 +314,8 @@
    "element": "right",
    "side": "right",
    "anchor": [
-    0.226,
-    0.1279
+    0.3289,
+    0.1969
    ]
   },
   "wheel_up": {
@@ -311,7 +324,7 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.2069
+    0.2571
    ],
    "through": [
     "right"
@@ -323,12 +336,12 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.5
+    0.4286
    ],
-   "primary": true,
    "through": [
     "right"
-   ]
+   ],
+   "primary": true
   },
   "wheel_down": {
    "view": "top",
@@ -336,7 +349,7 @@
    "side": "right",
    "anchor": [
     0.5,
-    0.7931
+    0.6
    ],
    "through": [
     "right"

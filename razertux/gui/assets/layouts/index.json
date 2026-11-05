@@ -1,12 +1,12 @@
 {
  "prefixes": {
-  "death_adder": "template_ergo",
-  "basilisk": "template_ergo",
-  "cobra": "template_ergo",
+  "death_adder": "death_adder",
+  "basilisk": "basilisk",
+  "cobra": "cobra",
   "pro_click": "template_ergo",
   "pro_click_mini": "template_compact",
   "pro_click_v2_vertical": "template_vertical",
-  "viper": "template_ambi",
+  "viper": "viper",
   "lancehead": "template_ambi",
   "mamba": "template_ambi",
   "diamondback": "template_ambi",
@@ -16,6 +16,10 @@
   "atheris": "template_compact",
   "naga": "template_mmo",
   "naga_hex": "template_mmo_hex",
-  "naga_left_handed": "generic"
+  "naga_left_handed": "generic",
+  "death_adder_v3": "death_adder_v3",
+  "death_adder_v4": "death_adder_v3",
+  "basilisk_v3": "basilisk_v3",
+  "basilisk_v3x": "basilisk"
  }
 }

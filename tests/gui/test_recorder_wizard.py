@@ -192,7 +192,7 @@ def test_known_mouse_full_flow(make, tmp_path):
     data = json.loads(w.pages["review"].json_view.toPlainText())
     assert data["notes"] == "Bought in 2024"
     b = data["buttons"]
-    assert b["template"] == "template_ergo"
+    assert b["template"] == "death_adder_v2"
     assert b["results"]["left"] == ["if0:mouse:BTN_LEFT"] and b["results"]["dpi_down"] == "absent"
     assert b["signals"] == ["if0:mouse:BTN_0"]
     assert data["reads"]["firmware"]["value"] == "1.2.3"

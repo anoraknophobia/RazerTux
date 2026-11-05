@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 360" width="200" height="360">
+  <!-- Viper (flat symmetric shape) from above, front at the top, thumb keys on the left flank (stroke only, @ACC@ = line colour, key groups with exactly one shape) -->
+<path d="M100 6 C70 6 50 24 46 66 C42 110 46 150 50 190 C52 222 44 258 48 290 C54 334 78 354 100 354 C122 354 146 334 152 290 C156 258 148 222 150 190 C154 150 158 110 154 66 C150 24 130 6 100 6 Z" stroke="@ACC@" stroke-width="2.2"/>
+  <g id="left"><path d="M88 10 C68 12 54 30 52 66 L52 138 C64 142 76 142 88 140 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="right"><path d="M112 10 C132 12 146 30 148 66 L148 138 C136 142 124 142 112 140 Z" stroke="@ACC@" stroke-width="1.4"/></g>
+  <g id="wheel"><rect x="91" y="26" width="18" height="50" rx="8" stroke="@ACC@" stroke-width="1.6"/></g>
+<path d="M95 38 L105 38 M95 48 L105 48 M95 58 L105 58 M95 68 L105 68" stroke="@ACC@" stroke-width="0.7"/>
+  <g id="forward"><rect x="53" y="152" width="13" height="36" rx="6" stroke="@ACC@" stroke-width="1.2"/></g>
+  <g id="back"><rect x="53" y="194" width="13" height="36" rx="6" stroke="@ACC@" stroke-width="1.2"/></g>
+</svg>

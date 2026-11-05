@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.12.0] - 2026-11-05
+
+### Added
+- Own drawings for the DeathAdder (classic, V2 with DPI keys, V3), Basilisk, Viper, Cobra
+  and Naga Pro in the Buttons tab, instead of a generic shape. Other models of the same
+  series use their family's drawing. Key positions follow product photos; please report
+  a drawing that does not match your mouse.
+
 ## [0.11.0] - 2026-11-04
 
 ### Added

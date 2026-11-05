@@ -206,18 +206,32 @@ TILT = {"wheel_left", "wheel_right"}
 THUMB = {"forward", "back"}
 BASE = {"left", "right"} | WHEEL3
 EXPECTED = {  # slug -> (template, view names, button set)
-    "death_adder_v2": ("template_ergo", BASE | THUMB | {"dpi_up", "dpi_down"}),
-    "death_adder_v3": ("template_ergo", BASE | THUMB),
-    "death_adder_v3_pro": ("template_ergo", BASE | THUMB),
-    "viper": ("template_ambi", BASE | THUMB),
-    "viper_v2_pro": ("template_ambi", BASE | THUMB),
-    "viper_mini": ("template_ambi", BASE | THUMB),
-    "basilisk_v3": ("template_ergo", BASE | TILT | THUMB),
-    "basilisk_v3_pro": ("template_ergo", BASE | TILT | THUMB),
-    "cobra": ("template_ergo", BASE | THUMB),
-    "cobra_pro": ("template_ergo", BASE | THUMB),
+    "death_adder_v2": ("death_adder_v2", BASE | THUMB | {"dpi_up", "dpi_down"}),
+    "death_adder_v3": ("death_adder_v3", BASE | THUMB),
+    "death_adder_v3_pro": ("death_adder_v3_pro", BASE | THUMB),
+    "viper": ("viper", BASE | THUMB),
+    "viper_v2_pro": ("viper_v2_pro", BASE | THUMB),
+    "viper_mini": ("viper_mini", BASE | THUMB),
+    "basilisk_v3": ("basilisk_v3", BASE | TILT | THUMB),
+    "basilisk_v3_pro": ("basilisk_v3_pro", BASE | TILT | THUMB),
+    "cobra": ("cobra", BASE | THUMB),
+    "cobra_pro": ("cobra_pro", BASE | THUMB),
     "orochi_v2": ("template_compact", BASE | THUMB),
 }
+
+FAMILIES = {  # variant -> family layout (own drawing, no own file)
+    "death_adder_elite": "death_adder", "death_adder_v2_pro": "death_adder",
+    "death_adder_v3_hyper_speed": "death_adder_v3", "death_adder_v4_pro": "death_adder_v3",
+    "basilisk_v2": "basilisk", "basilisk_v3x_hyper_speed": "basilisk",
+    "basilisk_v3_35k": "basilisk_v3", "viper_ultimate": "viper", "cobra_hyper_speed": "cobra",
+}
+
+
+@pytest.mark.parametrize("slug", sorted(FAMILIES))
+def test_variants_use_their_family_drawing(slug):
+    lay = layout_for(load_devices()[slug], None)
+    assert lay.template == FAMILIES[slug]
+    assert not lay.views[0].asset.startswith("template_")
 
 
 @pytest.mark.parametrize("slug", sorted(EXPECTED))
@@ -232,13 +246,14 @@ def test_mouse_models_have_their_own_layout_file(slug):
     assert {b.value for b in lay.buttons_on("left")} >= THUMB
 
 
-@pytest.mark.parametrize("slug,plates", [("naga_pro", (12, 6, 2)), ("naga_trinity", (12, 7, 2))])
-def test_swappable_plate_nagas_have_plate_variants(slug, plates):
+@pytest.mark.parametrize("slug,plates,prefix", [("naga_pro", (12, 6, 2), "naga_v2_pro_plate"),
+                                                ("naga_trinity", (12, 7, 2), "template_mmo_plate")])
+def test_swappable_plate_nagas_have_plate_variants(slug, plates, prefix):
     for plate in plates:
         lay = layout_for(load_devices()[slug], plate)
         assert lay.template == slug
         assert [v.name for v in lay.views] == ["plate", "top"]
-        assert lay.view("plate").asset == f"template_mmo_plate{plate}.svg"
+        assert lay.view("plate").asset == f"{prefix}{plate}.svg"
         assert {b.value for b in lay.buttons_on("left")} == {f"side_{n}" for n in range(1, plate + 1)}
         assert {"left", "right", "middle"} <= {b.value for b in lay.buttons_on("right")}
 
@@ -252,9 +267,9 @@ def test_fixed_twelve_key_nagas(slug):
 def test_prefix_rules_map_the_families_to_templates():
     rules = json.loads((LAYOUTS / "index.json").read_text(encoding="utf-8"))["prefixes"]
     devices = load_devices()
-    want = {"death_adder_1800": "template_ergo", "basilisk_x_hyper_speed": "template_ergo",
-            "cobra_hyper_speed": "template_ergo", "pro_click_v2": "template_ergo",
-            "viper_ultimate": "template_ambi", "lancehead_te": "template_ambi", "mamba_te": "template_ambi",
+    want = {"death_adder_1800": "death_adder", "basilisk_x_hyper_speed": "basilisk",
+            "cobra_hyper_speed": "cobra", "pro_click_v2": "template_ergo",
+            "viper_ultimate": "viper", "lancehead_te": "template_ambi", "mamba_te": "template_ambi",
             "taipan": "template_ambi", "orochi_2013": "template_compact", "atheris": "template_compact",
             "pro_click_mini": "template_compact", "pro_click_v2_vertical_edition": "template_vertical",
             "naga_epic": "template_mmo", "naga_2014": "template_mmo",
