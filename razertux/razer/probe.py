@@ -12,7 +12,7 @@ from typing import Any
 from .. import __version__
 from ..devices.db import DeviceInfo
 from .mouse import RazerMouse
-from .report import STATUS_OK, RazerResponse
+from .report import STATUS_OK, STATUS_TIMEOUT, RazerResponse
 from .transport import RazerError
 
 DPI_MIN = 100
@@ -24,6 +24,7 @@ class ProbeResult:
     values: dict[str, Any] = field(default_factory=dict)
     problems: list[str] = field(default_factory=list)
     raw: list[tuple[str, bytes]] = field(default_factory=list)
+    unreachable: bool = False  # every query timed out (0x04): asleep or not linked to the receiver yet
 
 
 class _Recorder:
@@ -105,7 +106,10 @@ def probe(mouse: RazerMouse) -> ProbeResult:
         problems.append("no readable core feature (firmware, dpi, poll_rate)")
     raw = [(f"{label} {cls:#04x}/{cid:#04x}" + (" (no response)" if resp is None else ""),
             _raw(resp)) for label, cls, cid, resp in rec.records]
-    return ProbeResult(ok=not problems, values=values, problems=problems, raw=raw)
+    unreachable = bool(rec.records) and all(
+        resp is not None and resp.status == STATUS_TIMEOUT for _, _, _, resp in rec.records)
+    return ProbeResult(ok=not problems, values=values, problems=problems, raw=raw,
+                       unreachable=unreachable and bool(problems))
 
 
 def diagnostics(info: DeviceInfo, pid: int, result: ProbeResult,

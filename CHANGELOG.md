@@ -2,6 +2,14 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [0.12.2] - 2026-11-06
+
+### Fixed
+- A wireless mouse that does not answer yet when the service starts (cold boot: not
+  linked to the receiver) is no longer write-protected until replugged. RazerTux tries
+  again after 2, 5, 10, 20, 30 seconds and then every minute, and connects it fully
+  (profile, DPI, battery) as soon as it answers (issue #4).
+
 ## [0.12.1] - 2026-11-05
 
 ### Fixed

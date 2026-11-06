@@ -722,3 +722,85 @@ async def test_resume_without_skipped_writes_sends_nothing(tmp_path):
     await s.resume()
     assert t.requests[before:] == []
     await s.close()
+
+
+# -- mouse not answering yet (issue #4: cold boot, receiver not linked) ------------
+
+class SleepyTransport(FakeTransport):
+    """Answers every query with status 0x04 (timeout) while `asleep`."""
+
+    def __init__(self):
+        full = FakeTransport.full()
+        super().__init__(full.responses)
+        self.asleep = True
+
+    def query(self, report):
+        from razertux.razer.report import STATUS_TIMEOUT, RazerResponse, parse_report
+        from razertux.razer.transport import RazerError
+        if self.asleep:
+            req = parse_report(report)
+            self.sent.append((req.cmd_class, req.cmd_id))
+            self.requests.append(req)
+            raise RazerError("timeout", response=RazerResponse(
+                STATUS_TIMEOUT, req.cmd_class, req.cmd_id, req.size, bytes(req.size)))
+        return super().query(report)
+
+
+async def _wait(cond, steps=200):
+    for _ in range(steps):
+        if cond():
+            return True
+        await asyncio.sleep(0.005)
+    return cond()
+
+
+async def test_unreachable_mouse_is_probed_again_and_then_connected(tmp_path, caplog):
+    t = SleepyTransport()
+    s, store, _ = make_session(tmp_path, transport=t)
+    s._reprobe_delays = (0.01,)
+    store.for_model(DA).save_profile(da_profile())
+    store.save_settings(Settings(active_profiles={DA: "dpi"}))
+    with caplog.at_level(logging.INFO):
+        s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event30", product=DA_PID))
+        await s.settle()
+        assert s.probe_result.unreachable and s.status()["writable"] is False
+        assert writes(t) == []
+        assert not any("until reconnected" in r.getMessage() for r in caplog.records)
+        await asyncio.sleep(0.05)  # still asleep: keeps trying, writes nothing
+        assert writes(t) == [] and s._reprobe is not None
+        t.asleep = False
+        assert await _wait(lambda: s.probe_result.ok)
+        await s.settle()
+    assert s.status()["writable"] is True and s.status()["connected"] is True
+    assert (tmp_path / "backups" / f"{DA}.json").exists()  # backup after the good probe
+    assert (0x04, 0x05) in t.sent  # the profile's DPI is applied now
+    assert any("answers now" in r.getMessage() for r in caplog.records)
+    await s.close()
+
+
+async def test_reprobe_stops_when_the_mouse_is_unplugged_or_closed(tmp_path):
+    t = SleepyTransport()
+    s, store, _ = make_session(tmp_path, transport=t)
+    s._reprobe_delays = (0.01,)
+    dev = QueueDev("/dev/input/event30", product=DA_PID)
+    s.add_input(DA_PID, "mouse", dev)
+    await s.settle()
+    task = s._reprobe
+    assert task is not None
+    s.remove_input("/dev/input/event30")
+    await s.settle()
+    assert s._reprobe is None and await _wait(task.done)
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event31", product=DA_PID))
+    await s.settle()
+    task = s._reprobe
+    await s.close()
+    assert s._reprobe is None and await _wait(task.done)
+
+
+async def test_other_probe_failures_are_not_retried(tmp_path):
+    s, store, _ = make_session(tmp_path, transport=bad_probe_transport())
+    s.add_input(DA_PID, "mouse", QueueDev("/dev/input/event30", product=DA_PID))
+    await s.settle()
+    assert s.probe_result.ok is False and not s.probe_result.unreachable
+    assert s._reprobe is None
+    await s.close()

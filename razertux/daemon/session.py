@@ -55,6 +55,9 @@ _HW_ERRORS = (RazerError, OSError, ValueError, IndexError, OpenRazerError)
 # a just-plugged device may not be listed by OpenRazer yet: ask again this often
 REMATCH_DELAY = 2.0  # seconds
 REMATCH_TRIES = 5
+# a wireless mouse that does not answer yet (cold boot: not linked to the receiver):
+# probe again after these pauses, then every last one while it stays connected
+REPROBE_DELAYS = (2.0, 5.0, 10.0, 20.0, 30.0, 60.0)
 
 
 LOW_BATTERY_LOG = 20  # % at which a low battery is logged (not charging)
@@ -281,6 +284,8 @@ class DeviceSession:
         self._access = "razertux"
         self._remote_state = "unavailable"  # "ok" | "unknown" | "unavailable"
         self._rematch: asyncio.Task | None = None
+        self._reprobe: asyncio.Task | None = None
+        self._reprobe_delays = REPROBE_DELAYS
 
     @property
     def _is_naga_model(self) -> bool:
@@ -335,6 +340,7 @@ class DeviceSession:
     async def close(self) -> None:
         """Clean shutdown: write-back, normal mode, release and ungrab."""
         self._stop_rematch()
+        self._stop_reprobe()
         await self.settle()
         self._paused = False
         self._write_back()
@@ -887,6 +893,33 @@ class DeviceSession:
         self._power_applied = {}
         return True
 
+    async def _reprobe_later(self, pid: int, mouse: RazerMouse) -> None:
+        """Probe again until the mouse answers, then connect it properly (backup,
+        profile, battery). Read-only until then; ends with the connection."""
+        delays = iter(self._reprobe_delays)
+        delay = next(delays)
+        while self._mouse is mouse:
+            await asyncio.sleep(delay)
+            delay = next(delays, delay)
+            if self._mouse is not mouse:
+                return
+            if self._paused:
+                continue
+            try:
+                result = probe(mouse)
+            except Exception:  # noqa: BLE001 - keep trying, the connect logs any real problem
+                continue
+            if not result.unreachable:
+                logger.info("%s answers now - connecting", self.info.name)
+                self._reprobe = None  # _connect -> _disconnect must not cancel this task
+                self._spawn(self._connect(pid))
+                return
+
+    def _stop_reprobe(self) -> None:
+        task, self._reprobe = self._reprobe, None
+        if task is not None and task is not asyncio.current_task():
+            task.cancel()
+
     def _stop_rematch(self) -> None:
         if self._rematch is not None:
             self._rematch.cancel()
@@ -945,6 +978,10 @@ class DeviceSession:
         self.probe_result = result
         if result.ok:
             self._write_ok = True
+        elif result.unreachable:
+            self._write_ok = False
+            logger.warning("%s does not answer yet (asleep or not linked to the receiver) - "
+                           "trying again", self.info.name)
         elif self.info.verified:
             self._write_ok = True
             logger.warning("Probe of %s failed (%s) - verified model, settings "
@@ -995,6 +1032,8 @@ class DeviceSession:
         self._access = self._settings().device_access
         self._probe(mouse)
         self._mouse = mouse
+        if self.probe_result is not None and self.probe_result.unreachable:
+            self._reprobe = asyncio.get_running_loop().create_task(self._reprobe_later(pid, mouse))
         if self._write_ok:
             self._ensure_backup(mouse)  # before anything persistent is written
             if not self.info.verified and not self.backup_path.exists():
@@ -1113,6 +1152,7 @@ class DeviceSession:
                 close()
         was_connected = self._hw["connected"]
         self._stop_rematch()
+        self._stop_reprobe()
         if self._routed is not None and self._routed.remote is not None:
             self._routed.remote.drop()
         self._transport = self._mouse = None
