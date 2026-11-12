@@ -2,10 +2,11 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
-## [Unreleased]
+## [0.13.0] - 2026-11-12
 
 ### Added
-- Razer Naga V3 Pro (1532:00E7 wired, 00E8 dongle) on the Naga V2 Pro driver. Checked
+- Razer Naga V3 Pro (1532:00E7 wired, 00E8 dongle) on the Naga V2 Pro driver, contributed
+  by @rrisque in #5. Checked
   over USB; the dongle PID is untested. Not in OpenRazer yet, so the generator adds the
   PIDs (`EXTRA_PIDS` in `tools/import_openrazer.py`). See docs/hardware-notes.md.
   - All five top buttons are freely assignable: the two DPI buttons top left (default:
