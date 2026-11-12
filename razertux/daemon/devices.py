@@ -28,7 +28,7 @@ __all__ = ["VIRTUAL_NAME", "VIRTUAL_NAMES", "DeviceWatcher", "HidrawReader", "In
            "classify", "source_from_links"]
 
 NAGA_VENDOR = RAZER_VENDOR = "1532"
-NAGA_PIDS = {"00a7", "00a8"}
+NAGA_PIDS = {"00a7", "00a8", "00e7", "00e8"}
 
 
 def known_pids() -> frozenset[int]:

@@ -24,6 +24,7 @@ _BUTTON_NAMES: dict[ButtonId, str] = {
     ButtonId.WHEEL_RIGHT: QT_TRANSLATE_NOOP("labels", "Scroll Right"),
     ButtonId.TOP_1: QT_TRANSLATE_NOOP("labels", "Top button front"),
     ButtonId.TOP_2: QT_TRANSLATE_NOOP("labels", "Top button rear"),
+    ButtonId.RING: QT_TRANSLATE_NOOP("labels", "Ring finger button"),
     ButtonId.BACK: QT_TRANSLATE_NOOP("labels", "Side button rear"),
     ButtonId.FORWARD: QT_TRANSLATE_NOOP("labels", "Side button front"),
     ButtonId.DPI_UP: QT_TRANSLATE_NOOP("labels", "DPI up"),

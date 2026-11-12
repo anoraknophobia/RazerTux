@@ -128,3 +128,12 @@ def test_device_without_lighting_zones_does_not_crash(tab):
     tab._on_brightness(50)
     tab._commit()
     assert profile.lighting == {"logo": LightingZone("static", (1, 2, 3), 100)}  # untouched
+
+
+def test_naga_v3_pro_has_a_scroll_wheel_zone(monkeypatch):
+    from razertux.devices.db import load_devices
+    from razertux.gui import lighting_tab
+    info = load_devices()["naga_v2_pro"]
+    assert set(lighting_tab.zones_for(info)) == {"logo", "thumb"}
+    monkeypatch.setattr(lighting_tab, "_naga_v3_pro_connected", lambda: True)
+    assert set(lighting_tab.zones_for(info)) == {"logo", "scroll", "thumb"}

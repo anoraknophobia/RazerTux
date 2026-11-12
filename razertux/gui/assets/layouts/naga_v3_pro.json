@@ -1,0 +1,448 @@
+{
+ "template": "naga_v2_pro",
+ "views": [
+  {
+   "name": "plate",
+   "asset": "naga_v2_pro_plate12.svg",
+   "style": "laser",
+   "scale": 0.74,
+   "variants": {
+    "12": "naga_v2_pro_plate12.svg",
+    "6": "naga_v2_pro_plate6.svg",
+    "2": "naga_v2_pro_plate2.svg"
+   }
+  },
+  {
+   "name": "top",
+   "asset": "naga_v3_pro_top.svg",
+   "style": "laser"
+  }
+ ],
+ "plate_buttons": {
+  "12": {
+   "side_1": {
+    "view": "plate",
+    "element": "side_1",
+    "side": "left",
+    "anchor": [
+     0.1471,
+     0.5
+    ]
+   },
+   "side_2": {
+    "view": "plate",
+    "element": "side_2",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.8421
+    ],
+    "entry": 0.3,
+    "via": [
+     [
+      0.4194,
+      0.3
+     ]
+    ]
+   },
+   "side_3": {
+    "view": "plate",
+    "element": "side_3",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.9474
+    ],
+    "entry": 0.3129,
+    "via": [
+     [
+      0.5591,
+      0.3097
+     ]
+    ]
+   },
+   "side_4": {
+    "view": "plate",
+    "element": "side_4",
+    "side": "left",
+    "anchor": [
+     0.1471,
+     0.5
+    ]
+   },
+   "side_5": {
+    "view": "plate",
+    "element": "side_5",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.8421
+    ],
+    "entry": 0.4871,
+    "via": [
+     [
+      0.4355,
+      0.4871
+     ]
+    ]
+   },
+   "side_6": {
+    "view": "plate",
+    "element": "side_6",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.9474
+    ],
+    "entry": 0.5,
+    "via": [
+     [
+      0.5753,
+      0.4968
+     ]
+    ]
+   },
+   "side_7": {
+    "view": "plate",
+    "element": "side_7",
+    "side": "left",
+    "anchor": [
+     0.1471,
+     0.5
+    ]
+   },
+   "side_8": {
+    "view": "plate",
+    "element": "side_8",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.8421
+    ],
+    "entry": 0.6742,
+    "via": [
+     [
+      0.4516,
+      0.6742
+     ]
+    ]
+   },
+   "side_9": {
+    "view": "plate",
+    "element": "side_9",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.9474
+    ],
+    "entry": 0.6871,
+    "via": [
+     [
+      0.5914,
+      0.6839
+     ]
+    ]
+   },
+   "side_10": {
+    "view": "plate",
+    "element": "side_10",
+    "side": "left",
+    "anchor": [
+     0.1471,
+     0.5
+    ]
+   },
+   "side_11": {
+    "view": "plate",
+    "element": "side_11",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.8421
+    ],
+    "entry": 0.8613,
+    "via": [
+     [
+      0.4677,
+      0.8613
+     ]
+    ]
+   },
+   "side_12": {
+    "view": "plate",
+    "element": "side_12",
+    "side": "left",
+    "anchor": [
+     0.2353,
+     0.9474
+    ],
+    "entry": 0.8742,
+    "via": [
+     [
+      0.6075,
+      0.871
+     ]
+    ]
+   }
+  },
+  "6": {
+   "side_6": {
+    "view": "plate",
+    "element": "side_6",
+    "side": "left",
+    "anchor": [
+     0.0962,
+     0.5
+    ]
+   },
+   "side_1": {
+    "view": "plate",
+    "element": "side_1",
+    "side": "left",
+    "anchor": [
+     0.4783,
+     0.9
+    ],
+    "entry": 0.3774,
+    "via": [
+     [
+      0.5376,
+      0.3806
+     ],
+     [
+      0.6344,
+      0.3806
+     ]
+    ]
+   },
+   "side_5": {
+    "view": "plate",
+    "element": "side_5",
+    "side": "left",
+    "anchor": [
+     0.0962,
+     0.5
+    ]
+   },
+   "side_2": {
+    "view": "plate",
+    "element": "side_2",
+    "side": "left",
+    "anchor": [
+     0.4783,
+     0.9
+    ],
+    "entry": 0.6161,
+    "via": [
+     [
+      0.5376,
+      0.6194
+     ],
+     [
+      0.6344,
+      0.6194
+     ]
+    ]
+   },
+   "side_4": {
+    "view": "plate",
+    "element": "side_4",
+    "side": "left",
+    "anchor": [
+     0.0962,
+     0.5
+    ]
+   },
+   "side_3": {
+    "view": "plate",
+    "element": "side_3",
+    "side": "left",
+    "anchor": [
+     0.4783,
+     0.9
+    ],
+    "entry": 0.8548,
+    "via": [
+     [
+      0.5376,
+      0.8581
+     ],
+     [
+      0.6344,
+      0.8581
+     ]
+    ]
+   }
+  },
+  "2": {
+   "side_1": {
+    "view": "plate",
+    "element": "side_1",
+    "side": "left",
+    "anchor": [
+     0.0882,
+     0.5
+    ]
+   },
+   "side_2": {
+    "view": "plate",
+    "element": "side_2",
+    "side": "left",
+    "anchor": [
+     0.0882,
+     0.5
+    ]
+   }
+  }
+ },
+ "buttons": {
+  "left": {
+   "view": "top",
+   "element": "left",
+   "side": "right",
+   "anchor": [
+    0.5976,
+    0.1094
+   ],
+   "through": [
+    "right",
+    "wheel",
+    "ring"
+   ]
+  },
+  "right": {
+   "view": "top",
+   "element": "right",
+   "side": "right",
+   "anchor": [
+    0.3289,
+    0.1969
+   ]
+  },
+  "ring": {
+   "view": "top",
+   "element": "ring",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  },
+  "wheel_up": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.2571
+   ],
+   "through": [
+    "right",
+    "ring"
+   ]
+  },
+  "middle": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.4286
+   ],
+   "through": [
+    "right",
+    "ring"
+   ],
+   "primary": true
+  },
+  "wheel_down": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.6
+   ],
+   "through": [
+    "right",
+    "ring"
+   ]
+  },
+  "wheel_left": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.7714
+   ],
+   "through": [
+    "right",
+    "ring"
+   ]
+  },
+  "wheel_right": {
+   "view": "top",
+   "element": "wheel",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.9143
+   ],
+   "through": [
+    "right",
+    "ring"
+   ]
+  },
+  "dpi_up": {
+   "view": "top",
+   "element": "dpi_up",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "through": [
+    "left",
+    "wheel",
+    "right",
+    "ring"
+   ]
+  },
+  "dpi_down": {
+   "view": "top",
+   "element": "dpi_down",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "through": [
+    "left",
+    "wheel",
+    "top_1",
+    "top_2",
+    "right",
+    "ring"
+   ]
+  },
+  "top_1": {
+   "view": "top",
+   "element": "top_1",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  },
+  "top_2": {
+   "view": "top",
+   "element": "top_2",
+   "side": "right",
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  }
+ }
+}

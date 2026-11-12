@@ -33,6 +33,7 @@ class ButtonId(StrEnum):
     WHEEL_RIGHT = "wheel_right"
     TOP_1 = "top_1"
     TOP_2 = "top_2"
+    RING = "ring"  # Naga V3 Pro: ring finger button right of the right click
     BACK = "back"
     FORWARD = "forward"
     DPI_UP = "dpi_up"
@@ -70,7 +71,12 @@ NORMAL_MODE = 0x00
 DRIVER_MODE = 0x03
 
 # hidraw (if01) input report 0x04, byte 1 -> top button
-TOP_BUTTON_CODES = {0x57: ButtonId.TOP_1, 0x52: ButtonId.TOP_2}
+TOP_BUTTON_CODES = {0x57: ButtonId.TOP_1, 0x52: ButtonId.TOP_2,
+                    # Naga V3 Pro (1532:00e7/00e8), driver mode only, probed button by
+                    # button 2026-11-12: DPI up/down = the two buttons top left (front/rear),
+                    # 54/d2 = the two behind the wheel (front/rear), 59 = ring finger button
+                    0x20: ButtonId.DPI_UP, 0x21: ButtonId.DPI_DOWN,
+                    0x54: ButtonId.TOP_1, 0xD2: ButtonId.TOP_2, 0x59: ButtonId.RING}
 
 _SIDE_KEYS = {
     key: ButtonId(f"side_{n}")

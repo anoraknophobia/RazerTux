@@ -12938,12 +12938,14 @@
    ],
    "interface": 0,
    "model": "naga_v2_pro",
-   "name": "Razer Naga V2 Pro",
+   "name": "Razer Naga V2/V3 Pro",
    "pid_features": {},
    "pid_protocol": {},
    "pids": {
     "0x00A7": "wired",
-    "0x00A8": "wireless"
+    "0x00A8": "wireless",
+    "0x00E7": "wired",
+    "0x00E8": "wireless"
    },
    "poll_rates": [
     125,

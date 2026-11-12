@@ -3,6 +3,10 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+
+import razertux.gui.layouts as _layouts
+
+_layouts._v3_pro = lambda: False  # before test modules build layouts at import time
 from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
@@ -34,3 +38,9 @@ def _dispose_qt_objects() -> None:
 def _close_top_level_widgets():
     yield
     _dispose_qt_objects()
+
+
+@pytest.fixture(autouse=True)
+def _no_naga_v3_pro(monkeypatch):
+    """GUI tests must not depend on a Naga V3 Pro plugged into the test machine."""
+    monkeypatch.setattr("razertux.gui.lighting_tab._naga_v3_pro_connected", lambda: False)

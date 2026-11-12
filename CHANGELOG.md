@@ -2,6 +2,19 @@
 
 All notable changes to RazerTux. Each version below becomes a GitHub release with these notes.
 
+## [Unreleased]
+
+### Added
+- Razer Naga V3 Pro (1532:00E7 wired, 00E8 dongle) on the Naga V2 Pro driver. Checked
+  over USB; the dongle PID is untested. Not in OpenRazer yet, so the generator adds the
+  PIDs (`EXTRA_PIDS` in `tools/import_openrazer.py`). See docs/hardware-notes.md.
+  - All five top buttons are freely assignable: the two DPI buttons top left (default:
+    DPI stage up/down, as on the mouse), the two behind the wheel (top button
+    front/rear, defaults as on the V2 Pro) and the new ring finger button (no default).
+  - Own top drawing (`naga_v3_pro.json`, `naga_v3_pro_top.svg`), chosen when a V3 Pro
+    is connected; a V2 Pro keeps its drawing.
+  - Lighting: the scroll wheel zone (LED 0x01), which the V2 Pro does not have.
+
 ## [0.12.2] - 2026-11-06
 
 ### Fixed

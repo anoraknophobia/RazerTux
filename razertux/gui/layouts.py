@@ -86,6 +86,11 @@ def parse(data: dict, plate: int | None = None) -> Layout:
     return Layout(data["template"], tuple(views), buttons)
 
 
+def _v3_pro() -> bool:
+    from razertux.razer.transport import naga_v3_pro_connected
+    return naga_v3_pro_connected()
+
+
 def by_name(name: str, plate: int | None = None) -> Layout:
     """A layout file by name (e.g. a template such as "template_ergo")."""
     return parse(_read(name), plate)
@@ -94,6 +99,8 @@ def by_name(name: str, plate: int | None = None) -> Layout:
 def layout_for(info: DeviceInfo, plate: int | None = None) -> Layout:
     """Model file, else the template of the longest matching prefix rule, else generic."""
     candidates = [info.model]
+    if info.model == "naga_v2_pro" and _v3_pro():
+        candidates.insert(0, "naga_v3_pro")
     prefixes = _index()
     best = max((p for p in prefixes if info.model.startswith(p)), key=len, default=None)
     if best is not None:

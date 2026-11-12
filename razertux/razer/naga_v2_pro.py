@@ -148,7 +148,7 @@ class NagaV2Pro(RazerMouse):
                     raise ValueError(f"DPI {v} is not a multiple of 50")
         args = bytearray([store, active, len(stages)])
         for i, (x, y) in enumerate(stages):
-            args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, 0, 0])  # 1-based ids
+            args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, x >> 8, x & 0xFF])  # 1-based ids; V3 Pro repeats x
         self._raw(0x04, 0x06, bytes(args), 0x26)
 
     # -- scroll wheel stages (class 0x15, from a Synapse capture, 2026-10-27) --

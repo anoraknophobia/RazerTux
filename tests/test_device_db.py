@@ -3,7 +3,7 @@ from razertux.devices.db import Command, DeviceInfo, by_pid, load_devices
 
 def test_generated_db_naga_v2_pro_matches_hardware_facts():
     model = load_devices()["naga_v2_pro"]
-    assert model.verified and model.dpi_max == 30000 and set(model.pids) == {0x00A7, 0x00A8}
+    assert model.verified and model.dpi_max == 30000 and set(model.pids) == {0x00A7, 0x00A8, 0x00E7, 0x00E8}
     assert model.pids[0x00A7] == "wired" and model.pids[0x00A8] == "wireless"
     for pid in (0x00A7, 0x00A8):
         d = model.for_pid(pid)

@@ -80,7 +80,7 @@ def test_device_suffixes():
 def test_button_values_are_lowercase_names():
     assert ButtonId.SIDE_1 == "side_1"
     assert ButtonId.WHEEL_LEFT.value == "wheel_left"
-    assert len(ButtonId) == 12 + 3 + 4 + 2 + 6 + 16
+    assert len(ButtonId) == 12 + 3 + 4 + 2 + 1 + 6 + 16  # + RING (Naga V3 Pro)
 
 
 def test_probe_recording_maps_to_side_buttons_in_order():
@@ -96,7 +96,9 @@ def test_probe_recording_maps_to_side_buttons_in_order():
 
 def test_vendor_constants():
     assert (NORMAL_MODE, DRIVER_MODE) == (0x00, 0x03)
-    assert TOP_BUTTON_CODES == {0x57: ButtonId.TOP_1, 0x52: ButtonId.TOP_2}
+    assert TOP_BUTTON_CODES == {0x57: ButtonId.TOP_1, 0x52: ButtonId.TOP_2,
+                                0x20: ButtonId.DPI_UP, 0x21: ButtonId.DPI_DOWN,
+                                0x54: ButtonId.TOP_1, 0xD2: ButtonId.TOP_2, 0x59: ButtonId.RING}
 
 
 def test_vendor_reports_from_driver_mode_recording():

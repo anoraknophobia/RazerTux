@@ -39,6 +39,12 @@ ZONES = [
     ("right", QT_TRANSLATE_NOOP("LightingTab", "Right")),
 ]
 DEVICE_ZONES = ("logo", "thumb")  # the Naga V2 Pro's own zone names
+V3_PRO_ZONES = ("logo", "scroll", "thumb")  # the Naga V3 Pro also lights its scroll wheel (LED 0x01)
+
+
+def _naga_v3_pro_connected() -> bool:
+    from razertux.razer.transport import naga_v3_pro_connected
+    return naga_v3_pro_connected()
 DEFAULT_ZONE = LightingZone("static", (68, 214, 44), 191)
 _DB_EFFECT = {"off": "none"}  # LightingZone effect -> device database effect name
 
@@ -46,7 +52,8 @@ _DB_EFFECT = {"off": "none"}  # LightingZone effect -> device database effect na
 def zones_for(info: DeviceInfo) -> dict[str, tuple[str, ...]]:
     """Zone -> offered effects of a mouse (Naga V2 Pro: logo and thumb, every effect)."""
     if info.model == "naga_v2_pro":
-        return {z: tuple(e for e, _ in EFFECTS) for z in DEVICE_ZONES}
+        zones = V3_PRO_ZONES if _naga_v3_pro_connected() else DEVICE_ZONES
+        return {z: tuple(e for e, _ in EFFECTS) for z in zones}
     return {z: tuple(e for e, _ in EFFECTS if _DB_EFFECT.get(e, e) in fx) for z, fx in info.zones.items()}
 
 

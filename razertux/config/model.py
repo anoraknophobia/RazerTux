@@ -405,7 +405,10 @@ def _dpi_limit(value: Any) -> int:
 # What the Naga's top buttons do out of the box (and under Synapse): front = next scroll
 # wheel stage, back = next DPI stage; both wrap around.
 TOP_BUTTON_DEFAULTS: dict[ButtonId, Action] = {ButtonId.TOP_1: ScrollStageAction("cycle"),
-                                               ButtonId.TOP_2: DpiStageAction("cycle")}
+                                               ButtonId.TOP_2: DpiStageAction("cycle"),
+                                               # Naga V3 Pro DPI buttons: stock behaviour
+                                               ButtonId.DPI_UP: DpiStageAction("up"),
+                                               ButtonId.DPI_DOWN: DpiStageAction("down")}
 
 
 def default_profile() -> Profile:

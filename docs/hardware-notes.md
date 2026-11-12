@@ -152,3 +152,37 @@ the last slot in `~/.config/razertux/state.json`.
   (global `get/setBrightness d`). No scroll-wheel interface, no zone for the thumb grid.
 - `getDPIStages` returns all five stages and the active id (`3 5 800 800 1600 1600 …`),
   unlike the 0x86 read noted above.
+
+## Naga V3 Pro (2026-11-12, firmware v1.1, wired 1532:00E7)
+
+- Not in OpenRazer (3.12.4). Same report protocol as the V2 Pro: serial, firmware, device
+  mode, DPI and the onboard stage table (0x04/0x83) answer with transaction id 0x1F (0xFF
+  and 0x3F answer as well). Control on interface 0; every hidraw node of the mouse answers
+  feature reports.
+- Interfaces: 0 mouse, 1 keyboard + vendor reports (hidraw), 2 keyboard (side keys), 3
+  hidraw only (one more than the V2 Pro, nothing seen on it).
+- Side keys: identical to the V2 Pro (if02, `KEY_1` .. `KEY_EQUAL`).
+- **Normal mode:** the DPI buttons step the onboard stages; the firmware reports
+  `05 02 <x hi> <x lo> <y hi> <y lo>` on the if01 hidraw node, as on the V2 Pro.
+  Side-plate report `05 0e 03` also appears.
+- **Driver mode (0x03):** if01 hidraw sends, checked one physical button at a time
+  (release `04 00` for all):
+
+  | Button | Report | ButtonId |
+  |---|---|---|
+  | top left, front | `04 20` | `DPI_UP` (default: DPI stage up) |
+  | top left, rear | `04 21` | `DPI_DOWN` (default: DPI stage down) |
+  | behind the wheel, front | `04 54` | `TOP_1` (default as V2 Pro: scroll stage cycle) |
+  | behind the wheel, rear | `04 d2` | `TOP_2` (default as V2 Pro: DPI stage cycle) |
+  | ring finger button, right of the right click | `04 59` | `RING` (no default) |
+
+  The firmware then does not change the DPI.
+- Onboard stage table: each 7-byte entry is `id x_hi x_lo y_hi y_lo x_hi x_lo` here (the
+  last two bytes repeat x; read: `01 0190 0190 0190`, `02 0320 0320 0320` ...), so
+  `set_dpi_stages` now writes x there instead of `00 00`.
+- Lighting: extended matrix (0x0F) like the V2 Pro, LEDs 0x04 logo and 0x05 thumb grid,
+  plus 0x01 **scroll wheel** (answers 0x0F/0x84 and lights up with 0x0F/0x02; the V2 Pro
+  has no wheel LED). Since both share the `naga_v2_pro` entry, the GUI asks
+  `transport.naga_v3_pro_connected()` (PID 00E7/00E8 present) to add the scroll zone and
+  to pick the V3 Pro layout.
+- Not checked: scroll-wheel stages/haptics, tilt wheel, battery over the dongle.

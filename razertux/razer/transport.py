@@ -119,12 +119,24 @@ def _find_hidraw(interface: str, pid_filter) -> str | None:
     return None
 
 
-def find_control_hidraw(pid_filter=(0x00A7, 0x00A8)) -> str | None:
+def find_control_hidraw(pid_filter=(0x00A7, 0x00A8, 0x00E7, 0x00E8)) -> str | None:
     """Return the hidraw node of the mouse interface (interface 0), or None."""
     return _find_hidraw("00", pid_filter)
 
 
-def find_vendor_hidraw(pid_filter=(0x00A7, 0x00A8)) -> str | None:
+NAGA_V3_PRO_PIDS = (0x00E7, 0x00E8)
+
+
+def naga_v3_pro_connected() -> bool:
+    """The Naga V3 Pro shares the naga_v2_pro database entry; its body differs (DPI
+    buttons top left, ring finger button, scroll wheel LED)."""
+    try:
+        return find_control_hidraw(NAGA_V3_PRO_PIDS) is not None
+    except Exception:
+        return False
+
+
+def find_vendor_hidraw(pid_filter=(0x00A7, 0x00A8, 0x00E7, 0x00E8)) -> str | None:
     """Return the hidraw node of interface 1 (vendor input reports: top
     buttons in driver mode), or None."""
     return _find_hidraw("01", pid_filter)

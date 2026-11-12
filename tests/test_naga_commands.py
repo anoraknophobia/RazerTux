@@ -150,8 +150,8 @@ def test_set_dpi_stages_layout():
     r = one(lambda d: d.set_dpi_stages(2, [(800, 800), (1600, 3200)]))
     assert (r.cmd_class, r.cmd_id, r.size) == (0x04, 0x06, 0x26)
     assert r.args[:3] == bytes([NOSTORE, 2, 2])  # store, active (1-based), count
-    assert r.args[3:10] == bytes([1, 0x03, 0x20, 0x03, 0x20, 0, 0])  # 1-based ids
-    assert r.args[10:17] == bytes([2, 0x06, 0x40, 0x0C, 0x80, 0, 0])
+    assert r.args[3:10] == bytes([1, 0x03, 0x20, 0x03, 0x20, 0x03, 0x20])  # 1-based ids, x repeated
+    assert r.args[10:17] == bytes([2, 0x06, 0x40, 0x0C, 0x80, 0x06, 0x40])
     assert r.args[17:] == bytes(len(r.args) - 17)
 
 

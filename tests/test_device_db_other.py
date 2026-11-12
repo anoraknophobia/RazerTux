@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLONE = Path("/tmp/claude-1000/-home-anoraknophobia-REA/26c3406c-5a53-44d1-89a7-08bb13495a0c/scratchpad/ext/openrazer")
 MICE_PATH = ROOT / "razertux" / "devices" / "openrazer_mice.json"
 OTHER_PATH = ROOT / "razertux" / "devices" / "openrazer_other.json"
-MICE_SHA256 = "fa40c4abbd75006324dbd1ac86de42900ccf5969131584e0483dc407ec98b4c2"
+MICE_SHA256 = "b9e60ba959b9d829a343492f14cbdec650f45180fadecb7f98b10164de78d318"
 KINDS = {"mouse", "keyboard", "keypad", "headset", "mousemat", "accessory", "dock", "other"}
 HARDWARE = ("keyboards", "accessory", "headsets", "mouse_mat", "core", "monitor")
 

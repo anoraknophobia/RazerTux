@@ -97,6 +97,7 @@ After updating some other way, restart the service:
 | Device | Status |
 |---|---|
 | Razer Naga V2 Pro (dongle and USB) | verified, full feature set |
+| Razer Naga V3 Pro (USB; dongle untested) | buttons, DPI, lighting checked; V2 Pro driver |
 | 88 other Razer mice (OpenRazer database) | experimental: untested, no guarantee |
 | 107 Razer keyboards (OpenRazer database) | recognised only, not configurable yet |
 
