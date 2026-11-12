@@ -179,7 +179,7 @@ the last slot in `~/.config/razertux/state.json`.
   The firmware then does not change the DPI.
 - Onboard stage table: each 7-byte entry is `id x_hi x_lo y_hi y_lo x_hi x_lo` here (the
   last two bytes repeat x; read: `01 0190 0190 0190`, `02 0320 0320 0320` ...), so
-  `set_dpi_stages` now writes x there instead of `00 00`.
+  `set_dpi_stages` writes x there for the V3 Pro PIDs only; a V2 Pro keeps `00 00`.
 - Lighting: extended matrix (0x0F) like the V2 Pro, LEDs 0x04 logo and 0x05 thumb grid,
   plus 0x01 **scroll wheel** (answers 0x0F/0x84 and lights up with 0x0F/0x02; the V2 Pro
   has no wheel LED). Since both share the `naga_v2_pro` entry, the GUI asks

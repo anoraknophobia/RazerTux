@@ -206,7 +206,7 @@ def test_layer_pill_switches_layer(window):
 
 
 def test_header_title_and_battery_glyph(window):
-    assert window.header.title.text() == "Naga V2/V3 Pro"
+    assert window.header.title.text() == "Naga V2 Pro"
     centre = window.header.title.geometry().center().x()
     assert abs(centre - window.header.width() / 2) <= 2
     window.client.statusChanged.emit("naga_v2_pro", {"connected": True, "battery": 80, "charging": False,

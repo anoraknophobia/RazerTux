@@ -12938,8 +12938,12 @@
    ],
    "interface": 0,
    "model": "naga_v2_pro",
-   "name": "Razer Naga V2/V3 Pro",
+   "name": "Razer Naga V2 Pro",
    "pid_features": {},
+   "pid_names": {
+    "0x00E7": "Razer Naga V3 Pro",
+    "0x00E8": "Razer Naga V3 Pro"
+   },
    "pid_protocol": {},
    "pids": {
     "0x00A7": "wired",

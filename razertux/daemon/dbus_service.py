@@ -69,7 +69,7 @@ class Daemon1Service(ServiceInterface):
         out = []
         for model, session in self._sessions().items():
             st = session.status()
-            out.append([model, session.info.name, str(st["connection"]), bool(st["connected"])])
+            out.append([model, str(st["name"]), str(st["connection"]), bool(st["connected"])])
         return out
 
     def list_profiles(self, model: str) -> list[list[str]]:
@@ -225,7 +225,7 @@ class Daemon1Service(ServiceInterface):
             "paused": Variant("b", bool(st.get("paused", False))),
             "experimental": Variant("b", not st["verified"]),
             "model": Variant("s", model),
-            "name": Variant("s", session.info.name),
+            "name": Variant("s", str(st["name"])),
             "device_access": Variant("s", str(st.get("device_access", "razertux"))),
             "openrazer_available": Variant("b", bool(self._openrazer_available())),
         }

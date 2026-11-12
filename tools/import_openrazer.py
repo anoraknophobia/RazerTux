@@ -31,7 +31,8 @@ DEFAULT_TXN = 0xFF  # OpenRazer default transaction id
 # PIDs OpenRazer does not know yet that speak a model's protocol, verified on hardware.
 # Naga V3 Pro (wired 0x00E7, dongle 0x00E8): same commands and driver mode as the V2 Pro.
 EXTRA_PIDS = {"naga_v2_pro": {0x00E7: "wired", 0x00E8: "wireless"}}
-NAME_OVERRIDES = {"naga_v2_pro": "Razer Naga V2/V3 Pro"}
+# Their own product name; every other PID of the model keeps the model's name.
+PID_NAMES = {"naga_v2_pro": {0x00E7: "Razer Naga V3 Pro", 0x00E8: "Razer Naga V3 Pro"}}
 
 # attribute (suffix of razer_attr_<read|write>_<attr>) -> protocol key
 ATTR_KEYS = {
@@ -584,13 +585,15 @@ def build_db(clone: Path, stderr=sys.stderr) -> dict:
 
         devices.append({
             "model": slug,
-            "name": NAME_OVERRIDES.get(slug, ci.name),
+            "name": ci.name,
             "pids": {**{f"0x{p:04X}": ci.pids[p] for p in pids},
                      **{f"0x{p:04X}": kind for p, kind in EXTRA_PIDS.get(slug, {}).items()}},
             "dpi_max": ci.dpi_max,
             "poll_rates": list(ci.poll_rates),
             "features": sorted(common_feats),
             "pid_features": pid_features,
+            **({"pid_names": {f"0x{p:04X}": n for p, n in PID_NAMES[slug].items()}}
+               if slug in PID_NAMES else {}),
             "zones": zones,
             "protocol": {k: enc(c) for k, c in sorted(common_proto.items())},
             "pid_protocol": pid_protocol,

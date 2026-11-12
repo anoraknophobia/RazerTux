@@ -15,7 +15,7 @@ from . import commands as C
 from . import naga_scroll_curve as CURVE
 from .mouse import RazerMouse
 from .report import build_report
-from .transport import Transport
+from .transport import NAGA_V3_PRO_PIDS, Transport
 
 VARSTORE = 0x01
 NOSTORE = 0x00
@@ -59,10 +59,14 @@ def _led(zone: str | int) -> int:
 class NagaV2Pro(RazerMouse):
     PERSISTENT_COMMANDS = PERSISTENT_COMMANDS
 
-    def __init__(self, transport: Transport, info: DeviceInfo | None = None):
+    def __init__(self, transport: Transport, info: DeviceInfo | None = None,
+                 pid: int | None = None):
         """``NagaV2Pro(transport)`` uses the database entry ``naga_v2_pro``;
         ``make_mouse`` passes the (flattened) info explicitly."""
         super().__init__(info if info is not None else load_devices()["naga_v2_pro"], transport)
+        # The Naga V3 Pro repeats x in the last two bytes of a DPI stage entry (read from
+        # the mouse); the V2 Pro has 00 00 there, as Synapse writes it.
+        self._stage_repeats_x = pid in NAGA_V3_PRO_PIDS
 
     def _raw(self, cmd_class: int, cmd_id: int, args: bytes, size: int) -> bytes:
         report = build_report(cmd_class, cmd_id, args, size=size, txn=TXN)
@@ -148,7 +152,8 @@ class NagaV2Pro(RazerMouse):
                     raise ValueError(f"DPI {v} is not a multiple of 50")
         args = bytearray([store, active, len(stages)])
         for i, (x, y) in enumerate(stages):
-            args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, x >> 8, x & 0xFF])  # 1-based ids; V3 Pro repeats x
+            tail = (x >> 8, x & 0xFF) if self._stage_repeats_x else (0, 0)
+            args += bytes([i + 1, x >> 8, x & 0xFF, y >> 8, y & 0xFF, *tail])  # 1-based ids
         self._raw(0x04, 0x06, bytes(args), 0x26)
 
     # -- scroll wheel stages (class 0x15, from a Synapse capture, 2026-10-27) --

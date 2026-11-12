@@ -40,6 +40,8 @@ class DeviceInfo:
     # protocol/features above hold only what is identical for ALL PIDs; per-PID additions/differences:
     pid_protocol: dict[int, dict[str, Command]] = field(default_factory=dict)
     pid_features: dict[int, frozenset[str]] = field(default_factory=dict)
+    # PIDs sold under another product name than the model (Naga V3 Pro on the V2 Pro entry)
+    pid_names: dict[int, str] = field(default_factory=dict)
     # "mouse" | "keyboard" | "keypad" | "headset" | "mousemat" | "accessory" | "dock" | "other"
     kind: str = "mouse"
 
@@ -49,11 +51,17 @@ class DeviceInfo:
             raise KeyError(pid)
         return replace(
             self,
+            name=self.name_for(pid),
+            pid_names={},
             protocol={**self.protocol, **self.pid_protocol.get(pid, {})},
             features=self.features | self.pid_features.get(pid, frozenset()),
             pid_protocol={},
             pid_features={},
         )
+
+    def name_for(self, pid: int | None) -> str:
+        """Product name of one PID (the model's name unless that PID has its own)."""
+        return self.pid_names.get(pid, self.name) if pid is not None else self.name
 
     def __hash__(self) -> int:  # dict fields: hash on identity-defining model slug
         return hash(self.model)
@@ -77,6 +85,7 @@ def _from_json(d: dict) -> DeviceInfo:
         verified=d.get("verified", False),
         pid_protocol={int(p, 16): _commands(c) for p, c in d.get("pid_protocol", {}).items()},
         pid_features={int(p, 16): frozenset(f) for p, f in d.get("pid_features", {}).items()},
+        pid_names={int(p, 16): n for p, n in d.get("pid_names", {}).items()},
         kind=d.get("kind", "mouse"),
     )
 

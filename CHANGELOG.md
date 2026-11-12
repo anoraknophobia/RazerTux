@@ -14,6 +14,8 @@ All notable changes to RazerTux. Each version below becomes a GitHub release wit
   - Own top drawing (`naga_v3_pro.json`, `naga_v3_pro_top.svg`), chosen when a V3 Pro
     is connected; a V2 Pro keeps its drawing.
   - Lighting: the scroll wheel zone (LED 0x01), which the V2 Pro does not have.
+  - Shown as "Razer Naga V3 Pro" (own name per PID); a V2 Pro keeps its name, and the
+    V3 Pro's DPI stage layout (x repeated in each entry) is only written to a V3 Pro.
 
 ## [0.12.2] - 2026-11-06
 

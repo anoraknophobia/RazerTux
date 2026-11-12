@@ -257,6 +257,7 @@ class DeviceSession:
         # unplugging one falls back to the other)
         self._mice: dict[str, int] = {}
         self._pid: int | None = None
+        self._name_pid: int | None = None  # last connected PID, kept for the name
         self._connect_gen = 0  # newest _connect run (older overlapping runs give up)
         self._transport: Any = None
         self._mouse: RazerMouse | None = None
@@ -489,9 +490,14 @@ class DeviceSession:
 
     # -- status ----------------------------------------------------------------------
 
+    @property
+    def name(self) -> str:
+        """Product name of the connected (or last connected) mouse of this model."""
+        return self.info.name_for(self._name_pid)
+
     def status(self) -> dict[str, Any]:
         return {**self._hw, "scroll_stage": self._scroll_stage,
-                "model": self.model, "name": self.info.name,
+                "model": self.model, "name": self.name,
                 "verified": self.info.verified, "writable": self.writable,
                 "probe_ok": None if self.probe_result is None else self.probe_result.ok,
                 "grabbed": self.router.grabbed, "learning": self._learning,
@@ -1027,7 +1033,7 @@ class DeviceSession:
             logger.warning("Cannot open %s: %s", path, e)
             return
         mouse = make_mouse(self.info, self._transport, pid)
-        self._pid = pid
+        self._pid = self._name_pid = pid
         self._routed = RoutedMouse(mouse, remote, self.model)
         self._access = self._settings().device_access
         self._probe(mouse)

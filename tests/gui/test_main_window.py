@@ -367,7 +367,7 @@ def test_device_bar_lists_both_mice_and_starts_on_the_naga(two):
     w, *_ = two
     assert w.model == "naga_v2_pro" and set(w.device_bar.pills) == {"naga_v2_pro", DA}
     assert w.device_bar.pills["naga_v2_pro"].isChecked()
-    assert w.header.title.text() == "Naga V2/V3 Pro"
+    assert w.header.title.text() == "Naga V2 Pro"
 
 
 def test_switching_loads_the_profiles_of_that_model(two):

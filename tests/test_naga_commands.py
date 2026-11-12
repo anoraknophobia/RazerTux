@@ -150,9 +150,19 @@ def test_set_dpi_stages_layout():
     r = one(lambda d: d.set_dpi_stages(2, [(800, 800), (1600, 3200)]))
     assert (r.cmd_class, r.cmd_id, r.size) == (0x04, 0x06, 0x26)
     assert r.args[:3] == bytes([NOSTORE, 2, 2])  # store, active (1-based), count
-    assert r.args[3:10] == bytes([1, 0x03, 0x20, 0x03, 0x20, 0x03, 0x20])  # 1-based ids, x repeated
-    assert r.args[10:17] == bytes([2, 0x06, 0x40, 0x0C, 0x80, 0x06, 0x40])
+    assert r.args[3:10] == bytes([1, 0x03, 0x20, 0x03, 0x20, 0, 0])  # 1-based ids
+    assert r.args[10:17] == bytes([2, 0x06, 0x40, 0x0C, 0x80, 0, 0])
     assert r.args[17:] == bytes(len(r.args) - 17)
+
+
+def test_set_dpi_stages_repeats_x_only_for_the_naga_v3_pro():
+    """The V3 Pro's stage entries end in x again (read from the mouse); a V2 Pro keeps 00 00."""
+    for pid, tail in ((0x00E7, bytes([0x06, 0x40])), (0x00E8, bytes([0x06, 0x40])),
+                      (0x00A7, bytes(2)), (0x00A8, bytes(2))):
+        t = FakeTransport.full()
+        NagaV2Pro(t, pid=pid).set_dpi_stages(1, [(1600, 3200)])
+        (r,) = [q for q in t.requests if (q.cmd_class, q.cmd_id) == (0x04, 0x06)]
+        assert r.args[3:10] == bytes([1, 0x06, 0x40, 0x0C, 0x80]) + tail
 
 
 def test_set_dpi_stages_five_ok_six_rejected():

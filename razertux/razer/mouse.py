@@ -504,5 +504,5 @@ def make_mouse(info: DeviceInfo, transport: Transport, pid: int | None = None) -
         info = info.for_pid(pid)
     if info.model == "naga_v2_pro":
         from .naga_v2_pro import NagaV2Pro
-        return NagaV2Pro(transport, info)
+        return NagaV2Pro(transport, info, pid)
     return RazerMouse(info, transport)

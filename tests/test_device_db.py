@@ -10,6 +10,18 @@ def test_generated_db_naga_v2_pro_matches_hardware_facts():
         assert d.protocol["set_dpi"].txn == 0x1F and "battery" in d.features
 
 
+def test_naga_v3_pro_pids_carry_their_own_name():
+    model = load_devices()["naga_v2_pro"]
+    assert model.name == "Razer Naga V2 Pro" and model.name_for(None) == "Razer Naga V2 Pro"
+    assert by_pid(0x00E7) is model and by_pid(0x00E8) is model
+    assert (model.pids[0x00E7], model.pids[0x00E8]) == ("wired", "wireless")
+    for pid in (0x00A7, 0x00A8):
+        assert model.name_for(pid) == model.for_pid(pid).name == "Razer Naga V2 Pro"
+    for pid in (0x00E7, 0x00E8):
+        assert model.name_for(pid) == model.for_pid(pid).name == "Razer Naga V3 Pro"
+        assert model.for_pid(pid).pid_names == {}
+
+
 def test_only_naga_v2_pro_verified():
     assert [m for m, d in load_devices().items() if d.verified] == ["naga_v2_pro"]
 
